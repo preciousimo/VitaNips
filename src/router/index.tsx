@@ -16,7 +16,8 @@ import LoginPage from '../features/auth/pages/LoginPage';
 import RegisterPage from '../features/auth/pages/RegisterPage';
 import DashboardPage from '../pages/DashboardPage'; // Example dashboard
 // import NotFoundPage from '../pages/NotFoundPage';
-import DoctorListPage from '../pages/DoctorListPage'; // Example
+import DoctorListPage from '../pages/DoctorListPage';
+import DoctorDetailPage from '../pages/DoctorDetailPage';
 import ProfilePage from '../pages/ProfilePage'; // Example
 // Import other page components...
 
@@ -69,6 +70,7 @@ const AppRouter: React.FC = () => {
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/doctors" element={<DoctorListPage />} />
+          <Route path="/doctors/:doctorId" element={<DoctorDetailPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           {/* Add other protected routes here inside MainLayout */}
           {/* e.g., <Route path="/pharmacy" element={<PharmacyPage />} /> */}
