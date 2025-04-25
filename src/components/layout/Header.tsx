@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { UserIcon, ArrowLeftOnRectangleIcon, Cog6ToothIcon } from '@heroicons/react/24/outline'; // Example icons
+import { UserIcon, ArrowLeftOnRectangleIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
 
 const Header: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuth();
@@ -28,8 +28,8 @@ const Header: React.FC = () => {
             {isAuthenticated ? (
               <>
                 {/* Add other navigation links here if needed */}
-                {/* <Link to="/doctors" className="text-gray-600 hover:text-primary">Doctors</Link> */}
-                {/* <Link to="/pharmacy" className="text-gray-600 hover:text-primary">Pharmacy</Link> */}
+                <Link to="/doctors" className="text-gray-600 hover:text-primary px-3 py-2 rounded-md text-sm font-medium">Doctors</Link>
+                <Link to="/pharmacies" className="text-gray-600 hover:text-primary px-3 py-2 rounded-md text-sm font-medium">Pharmacies</Link>
 
                 <span className="text-muted hidden sm:block">
                    Welcome, {user?.first_name || user?.username || 'User'}!
