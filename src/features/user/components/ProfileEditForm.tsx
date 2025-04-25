@@ -1,0 +1,179 @@
+// src/features/user/components/ProfileEditForm.tsx
+import React, { useState, useEffect, FormEvent } from 'react';
+import { User } from '../../../types/user';
+import { UserProfileUpdatePayload } from '../../../api/user'; // Import the payload type
+
+interface ProfileEditFormProps {
+    initialData: User | null;
+    onSubmit: (payload: UserProfileUpdatePayload) => Promise<User | void>; // Return updated user or void
+    onCancel: () => void;
+    isSubmitting: boolean;
+}
+
+// Example blood groups - tailor as needed
+const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+
+const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
+    initialData,
+    onSubmit,
+    onCancel,
+    isSubmitting
+}) => {
+    const [formData, setFormData] = useState<UserProfileUpdatePayload>({});
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (initialData) {
+            // Pre-fill form with editable fields
+            setFormData({
+                first_name: initialData.first_name || '',
+                last_name: initialData.last_name || '',
+                phone_number: initialData.phone_number || null,
+                date_of_birth: initialData.date_of_birth ? initialData.date_of_birth.split('T')[0] : null,
+                blood_group: initialData.blood_group || null,
+                allergies: initialData.allergies || null,
+                chronic_conditions: initialData.chronic_conditions || null,
+                weight: initialData.weight || null,
+                height: initialData.height || null,
+                // Include emergency contacts if editable here
+                emergency_contact_name: initialData.emergency_contact_name || null,
+                emergency_contact_relationship: initialData.emergency_contact_relationship || null,
+                emergency_contact_phone: initialData.emergency_contact_phone || null,
+            });
+        }
+    }, [initialData]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+        const { name, value, type } = e.target;
+
+        let processedValue: string | number | boolean | null = value;
+        // Handle empty strings for optional fields -> null
+        if (value === '' && ['phone_number', 'date_of_birth', 'blood_group', 'allergies', 'chronic_conditions', 'weight', 'height', 'emergency_contact_name', 'emergency_contact_relationship', 'emergency_contact_phone'].includes(name)) {
+            processedValue = null;
+        } else if ((type === 'number') && name !== 'height' && name !== 'weight') {
+             // Regular number input (if any others added)
+             processedValue = value ? parseFloat(value) : null;
+        } else if (name === 'height' || name === 'weight') {
+             // Allow decimals for weight/height, store as number or null
+            processedValue = value ? parseFloat(value) : null;
+            if (isNaN(processedValue as number)) processedValue = null; // Handle NaN if input is invalid text
+        }
+
+
+        setFormData(prev => ({ ...prev, [name]: processedValue }));
+    };
+
+    const handleSubmit = async (e: FormEvent) => {
+        e.preventDefault();
+        setError(null);
+
+        // Basic validation
+        if (!formData.first_name || !formData.last_name) {
+            setError("First Name and Last Name are required.");
+            return;
+        }
+
+        // Ensure weight/height are numbers or null
+        const payload: UserProfileUpdatePayload = {
+           ...formData,
+           weight: formData.weight ? Number(formData.weight) : null,
+           height: formData.height ? Number(formData.height) : null,
+        };
+
+
+        try {
+            await onSubmit(payload);
+        } catch (err: any) {
+            console.error("Profile update error:", err);
+            // Extract backend validation errors if possible
+            const errorData = err.response?.data;
+            if (typeof errorData === 'object' && errorData !== null) {
+                const messages = Object.entries(errorData).map(([key, value]) => `${key}: ${(value as string[]).join(', ')}`);
+                setError(messages.join(' '));
+            } else {
+                 setError(err.message || "Failed to update profile.");
+            }
+        }
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="space-y-4">
+            {error && <p className="text-red-600 text-sm bg-red-50 p-3 rounded-md">{error}</p>}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Basic Info */}
+                <div>
+                    <label htmlFor="first_name" className="block text-sm font-medium text-gray-700">First Name *</label>
+                    <input type="text" name="first_name" id="first_name" required value={formData.first_name ?? ''} onChange={handleChange} className="input-field" />
+                </div>
+                <div>
+                    <label htmlFor="last_name" className="block text-sm font-medium text-gray-700">Last Name *</label>
+                    <input type="text" name="last_name" id="last_name" required value={formData.last_name ?? ''} onChange={handleChange} className="input-field" />
+                </div>
+                <div>
+                    <label htmlFor="phone_number" className="block text-sm font-medium text-gray-700">Phone Number</label>
+                    <input type="tel" name="phone_number" id="phone_number" value={formData.phone_number ?? ''} onChange={handleChange} className="input-field" />
+                </div>
+                <div>
+                    <label htmlFor="date_of_birth" className="block text-sm font-medium text-gray-700">Date of Birth</label>
+                    <input type="date" name="date_of_birth" id="date_of_birth" value={formData.date_of_birth ?? ''} onChange={handleChange} className="input-field" />
+                </div>
+
+                 {/* Health Info */}
+                 <div>
+                     <label htmlFor="blood_group" className="block text-sm font-medium text-gray-700">Blood Group</label>
+                     <select name="blood_group" id="blood_group" value={formData.blood_group ?? ''} onChange={handleChange} className="input-field">
+                         <option value="">-- Select --</option>
+                         {bloodGroups.map(group => <option key={group} value={group}>{group}</option>)}
+                     </select>
+                 </div>
+                 <div className="md:col-span-2">
+                     <label htmlFor="allergies" className="block text-sm font-medium text-gray-700">Allergies</label>
+                     <textarea name="allergies" id="allergies" rows={3} value={formData.allergies ?? ''} onChange={handleChange} className="input-field" placeholder="e.g., Penicillin, Peanuts, Pollen"></textarea>
+                 </div>
+                <div className="md:col-span-2">
+                     <label htmlFor="chronic_conditions" className="block text-sm font-medium text-gray-700">Chronic Conditions</label>
+                     <textarea name="chronic_conditions" id="chronic_conditions" rows={3} value={formData.chronic_conditions ?? ''} onChange={handleChange} className="input-field" placeholder="e.g., Hypertension, Diabetes Type 2, Asthma"></textarea>
+                 </div>
+                <div>
+                    <label htmlFor="weight" className="block text-sm font-medium text-gray-700">Weight (kg)</label>
+                    <input type="number" step="0.1" name="weight" id="weight" value={formData.weight ?? ''} onChange={handleChange} className="input-field" placeholder="e.g., 70.5"/>
+                </div>
+                <div>
+                    <label htmlFor="height" className="block text-sm font-medium text-gray-700">Height (cm)</label>
+                    <input type="number" step="0.1" name="height" id="height" value={formData.height ?? ''} onChange={handleChange} className="input-field" placeholder="e.g., 175.0"/>
+                </div>
+
+                {/* Optional: Primary Emergency Contact Fields */}
+                 <hr className="md:col-span-2 my-2"/>
+                 <h4 className="md:col-span-2 text-md font-semibold text-gray-700">Primary Emergency Contact</h4>
+                 {/* (Only include if these fields are meant to be edited directly on User, not just via EmergencyContacts page) */}
+                <div>
+                    <label htmlFor="emergency_contact_name" className="block text-sm font-medium text-gray-700">Contact Name</label>
+                    <input type="text" name="emergency_contact_name" id="emergency_contact_name" value={formData.emergency_contact_name ?? ''} onChange={handleChange} className="input-field" />
+                </div>
+                 <div>
+                    <label htmlFor="emergency_contact_phone" className="block text-sm font-medium text-gray-700">Contact Phone</label>
+                    <input type="tel" name="emergency_contact_phone" id="emergency_contact_phone" value={formData.emergency_contact_phone ?? ''} onChange={handleChange} className="input-field" />
+                </div>
+                 <div className="md:col-span-2">
+                    <label htmlFor="emergency_contact_relationship" className="block text-sm font-medium text-gray-700">Relationship</label>
+                    <input type="text" name="emergency_contact_relationship" id="emergency_contact_relationship" value={formData.emergency_contact_relationship ?? ''} onChange={handleChange} className="input-field" />
+                </div>
+
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-end space-x-3 pt-5 border-t">
+                <button type="button" onClick={onCancel} className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button type="submit" disabled={isSubmitting} className="btn-primary inline-flex justify-center px-4 py-2 text-sm font-medium disabled:opacity-50">
+                    {isSubmitting ? 'Saving...' : 'Save Changes'}
+                </button>
+            </div>
+        </form>
+    );
+};
+
+export default ProfileEditForm;
