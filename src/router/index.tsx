@@ -22,6 +22,7 @@ import ProfilePage from '../pages/ProfilePage';
 import PharmacyListPage from '../pages/PharmacyListPage';
 import VaccinationsPage from '../pages/VaccinationsPage';
 import UserInsurancePage from '../pages/UserInsurancePage';
+import EmergencyContactsPage from '../pages/EmergencyContactsPage';
 // Import other page components...
 
 // Protected Route Component
@@ -77,6 +78,7 @@ const AppRouter: React.FC = () => {
           <Route path="/pharmacies" element={<PharmacyListPage />} />
           <Route path="/vaccinations" element={<VaccinationsPage />} />
           <Route path="/insurance" element={<UserInsurancePage />} />
+          <Route path="/emergency-contacts" element={<EmergencyContactsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           {/* Add other protected routes here inside MainLayout */}
           {/* e.g., <Route path="/pharmacy" element={<PharmacyPage />} /> */}
