@@ -1,10 +1,11 @@
 // src/pages/VaccinationsPage.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { PlusIcon } from '@heroicons/react/24/solid';
-import { getUserVaccinations, addVaccination, updateVaccination, deleteVaccination, VaccinationPayload } from '../api/vaccinations';
-import { Vaccination } from '../types/health';
+import { getUserVaccinations, addVaccination, updateVaccination, deleteVaccination } from '../api/vaccinations';
+import { Vaccination, VaccinationPayload } from '../types/health';
 import VaccinationListItem from '../features/health/components/VaccinationListItem';
 import VaccinationForm from '../features/health/components/VaccinationForm';
+import Modal from '../components/common/Modal';
 // Import Loading/Error components if available
 
 const VaccinationsPage: React.FC = () => {

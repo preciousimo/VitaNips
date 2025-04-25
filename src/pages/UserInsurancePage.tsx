@@ -1,11 +1,11 @@
 // src/pages/UserInsurancePage.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { PlusIcon } from '@heroicons/react/24/solid';
-import { getUserInsurances, addUserInsurance, updateUserInsurance, deleteUserInsurance, UserInsurancePayload } from '../api/insurance';
-import { UserInsurance } from '../types/insurance';
+import { getUserInsurances, addUserInsurance, updateUserInsurance, deleteUserInsurance } from '../api/insurance';
+import { UserInsurance, UserInsurancePayload } from '../types/insurance';
 import UserInsuranceCard from '../features/insurance/components/UserInsuranceCard';
 import UserInsuranceForm from '../features/insurance/components/UserInsuranceForm';
-import Modal from '../components/common/Modal'; // Assuming you create a simple Modal component
+import Modal from '../components/common/Modal';
 
 const UserInsurancePage: React.FC = () => {
     const [insurances, setInsurances] = useState<UserInsurance[]>([]);

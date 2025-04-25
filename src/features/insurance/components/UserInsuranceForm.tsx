@@ -1,7 +1,7 @@
 // src/features/insurance/components/UserInsuranceForm.tsx
 import React, { useState, useEffect, FormEvent } from 'react';
 import { UserInsurance, UserInsurancePayload, InsurancePlan } from '../../../types/insurance';
-import { getAvailablePlans } from '../../../api/insurance'; // API to fetch plans
+import { getAvailablePlans } from '../../../api/insurance';
 
 interface UserInsuranceFormProps {
     initialData?: UserInsurance | null;
@@ -66,7 +66,7 @@ const UserInsuranceForm: React.FC<UserInsuranceFormProps> = ({
         if (type === 'checkbox') {
             processedValue = (e.target as HTMLInputElement).checked;
         } else if (name === 'plan') {
-            processedValue = value ? parseInt(value, 10) : undefined;
+            processedValue = value ? parseInt(value, 10) : null;
         } else if ((name === 'end_date' || name === 'group_number') && value === '') {
              processedValue = null;
         }
