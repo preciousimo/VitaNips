@@ -33,8 +33,20 @@ const UserInsuranceForm: React.FC<UserInsuranceFormProps> = ({
     useEffect(() => {
         setLoadingPlans(true);
         getAvailablePlans()
-            .then(plans => setAvailablePlans(plans))
-            .catch(() => setError("Failed to load available insurance plans."))
+            .then(response => {
+                if (response && Array.isArray(response.results)) {
+                    setAvailablePlans(response.results);
+                } else {
+                    console.warn("Received unexpected available plans structure:", response);
+                    setError("Failed to process available insurance plans.");
+                    setAvailablePlans([]);
+                }
+            })
+            .catch((err) => {
+                console.error("Error fetching available plans:", err)
+                setError("Failed to load available insurance plans.");
+                setAvailablePlans([]);
+            })
             .finally(() => setLoadingPlans(false));
     }, []);
 
