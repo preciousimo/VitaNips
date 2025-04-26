@@ -1,15 +1,27 @@
 // src/api/insurance.ts
 import axiosInstance from './axiosInstance';
 import { UserInsurance, UserInsurancePayload, InsurancePlan } from '../types/insurance';
+import { PaginatedResponse } from '../types/common'; // Import common type
+
+type InsuranceListParams = { page?: number; is_primary?: boolean };
+type PlanListParams = { page?: number; provider?: number };
 
 /**
- * Fetches the logged-in user's insurance records.
- * Assumes backend returns a direct array.
+ * Fetches the logged-in user's insurance records, handling pagination.
  */
-export const getUserInsurances = async (): Promise<UserInsurance[]> => {
+export const getUserInsurances = async (
+    paramsOrUrl: InsuranceListParams | string | null = null
+): Promise<PaginatedResponse<UserInsurance>> => { // <-- Updated return type
+    const endpoint = '/insurance/user-insurance/';
     try {
-        // Endpoint from insurance/urls.py
-        const response = await axiosInstance.get<UserInsurance[]>('/insurance/user-insurance/');
+        let response;
+        if (typeof paramsOrUrl === 'string') {
+            const url = new URL(paramsOrUrl);
+            const pathWithQuery = url.pathname + url.search;
+            response = await axiosInstance.get<PaginatedResponse<UserInsurance>>(pathWithQuery);
+        } else {
+            response = await axiosInstance.get<PaginatedResponse<UserInsurance>>(endpoint, { params: paramsOrUrl });
+        }
         return response.data;
     } catch (error) {
         console.error('Failed to fetch user insurances:', error);
@@ -19,13 +31,23 @@ export const getUserInsurances = async (): Promise<UserInsurance[]> => {
 
 /**
  * Fetches a list of all available (active) insurance plans.
- * Used for populating dropdowns when adding/editing user insurance.
- * Assumes backend returns a direct array.
+ * NOTE: Assuming this list MIGHT be long and COULD be paginated by DRF defaults.
+ * If it's guaranteed to be short and unpaginated, revert to Promise<InsurancePlan[]>.
  */
-export const getAvailablePlans = async (): Promise<InsurancePlan[]> => {
-     try {
-        // Endpoint from insurance/urls.py (assuming it filters for active=True)
-        const response = await axiosInstance.get<InsurancePlan[]>('/insurance/plans/');
+export const getAvailablePlans = async (
+    paramsOrUrl: PlanListParams | string | null = null
+): Promise<PaginatedResponse<InsurancePlan>> => { // <-- Updated return type (assuming pagination)
+    const endpoint = '/insurance/plans/';
+    try {
+        let response;
+        if (typeof paramsOrUrl === 'string') {
+             const url = new URL(paramsOrUrl);
+            const pathWithQuery = url.pathname + url.search;
+            response = await axiosInstance.get<PaginatedResponse<InsurancePlan>>(pathWithQuery);
+        } else {
+            // Ensure backend filters for active=True if needed, or add param here
+            response = await axiosInstance.get<PaginatedResponse<InsurancePlan>>(endpoint, { params: paramsOrUrl });
+        }
         return response.data;
     } catch (error) {
         console.error('Failed to fetch available insurance plans:', error);
@@ -33,11 +55,10 @@ export const getAvailablePlans = async (): Promise<InsurancePlan[]> => {
     }
 };
 
+// --- Functions for single items or actions remain the same ---
 
 /**
  * Adds a new insurance record for the user.
- * Note: File uploads (card images) usually require FormData and potentially a separate endpoint or handling.
- * This function handles the core data submission.
  */
 export const addUserInsurance = async (payload: UserInsurancePayload): Promise<UserInsurance> => {
     try {
@@ -51,7 +72,6 @@ export const addUserInsurance = async (payload: UserInsurancePayload): Promise<U
 
 /**
  * Updates an existing user insurance record.
- * Note: File uploads handled separately. This updates core data.
  */
 export const updateUserInsurance = async (id: number, payload: Partial<UserInsurancePayload>): Promise<UserInsurance> => {
     try {
@@ -75,11 +95,4 @@ export const deleteUserInsurance = async (id: number): Promise<void> => {
     }
 };
 
-// --- TODO: File Upload Logic ---
-// Separate functions might be needed to upload card images using FormData
-// e.g., uploadInsuranceCard(userInsuranceId, cardSide, file)
-// These would typically hit a dedicated endpoint or the standard update endpoint
-// configured to handle multipart/form-data. For simplicity, we'll omit
-// direct file upload in the form submission here.
-
-// Add API functions for Claims and Documents later
+// Add API functions for Claims and Documents later (will likely need pagination too)

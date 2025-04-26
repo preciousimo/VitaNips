@@ -1,24 +1,34 @@
 // src/api/vaccinations.ts
 import axiosInstance from './axiosInstance';
 import { Vaccination, VaccinationPayload } from '../types/health';
+import { PaginatedResponse } from '../types/common'; // Import common type
 
-// Type for the payload when creating/updating (omit read-only fields)
-// export type VaccinationPayload = Omit<Vaccination, 'id' | 'user' | 'created_at' | 'updated_at'>;
+type VaccinationListParams = { page?: number; ordering?: string };
 
 /**
- * Fetches vaccinations for the logged-in user.
- * Assumes backend returns a direct array.
+ * Fetches vaccinations for the logged-in user, handling pagination.
  */
-export const getUserVaccinations = async (): Promise<Vaccination[]> => {
+export const getUserVaccinations = async (
+    paramsOrUrl: VaccinationListParams | string | null = null
+): Promise<PaginatedResponse<Vaccination>> => { // <-- Updated return type
+    const endpoint = '/users/vaccinations/';
     try {
-        // Endpoint from users/urls.py
-        const response = await axiosInstance.get<Vaccination[]>('/users/vaccinations/');
+        let response;
+         if (typeof paramsOrUrl === 'string') {
+             const url = new URL(paramsOrUrl);
+            const pathWithQuery = url.pathname + url.search;
+            response = await axiosInstance.get<PaginatedResponse<Vaccination>>(pathWithQuery);
+        } else {
+            response = await axiosInstance.get<PaginatedResponse<Vaccination>>(endpoint, { params: paramsOrUrl });
+        }
         return response.data;
     } catch (error) {
         console.error('Failed to fetch vaccinations:', error);
         throw error;
     }
 };
+
+// --- Functions for single items or actions remain the same ---
 
 /**
  * Adds a new vaccination record for the logged-in user.
@@ -29,7 +39,6 @@ export const addVaccination = async (payload: VaccinationPayload): Promise<Vacci
         return response.data;
     } catch (error) {
         console.error('Failed to add vaccination:', error);
-        // Consider checking for validation errors (e.g., error.response.data)
         throw error;
     }
 };
@@ -39,7 +48,6 @@ export const addVaccination = async (payload: VaccinationPayload): Promise<Vacci
  */
 export const updateVaccination = async (id: number, payload: Partial<VaccinationPayload>): Promise<Vaccination> => {
     try {
-        // Using PATCH for partial updates
         const response = await axiosInstance.patch<Vaccination>(`/users/vaccinations/${id}/`, payload);
         return response.data;
     } catch (error) {

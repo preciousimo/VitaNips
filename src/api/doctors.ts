@@ -1,32 +1,40 @@
 // src/api/doctors.ts
 import axiosInstance from './axiosInstance';
-import {
-    Doctor,
-    DoctorListResponse,
-    DoctorReview, // Add this type import
-    DoctorAvailability // Add this type import
-} from '../types/doctors';
+import { Doctor, DoctorReview, DoctorAvailability } from '../types/doctors';
+import { PaginatedResponse } from '../types/common'; // Import the generic type
 
 interface GetDoctorsParams {
     search?: string;
     specialty?: number; // Filter by specialty ID
+    page?: number; // Add page parameter for explicit page fetching if needed
     // Add other filter params as needed (e.g., virtual, rating)
 }
 
 /**
- * Fetches a list of doctors, possibly filtered.
- * Adjust the return type if your backend doesn't use pagination (e.g., Promise<Doctor[]>)
+ * Fetches a list of doctors. Handles pagination.
+ * Can accept query parameters OR a full URL for next/prev page fetching.
  */
-export const getDoctors = async (params?: GetDoctorsParams): Promise<Doctor[]> => {
+export const getDoctors = async (
+    paramsOrUrl: GetDoctorsParams | string | null = null
+): Promise<PaginatedResponse<Doctor>> => { // <--- Updated return type
     try {
-      // CHANGE THIS LINE: Adjust the expected response type VVVVVV
-      const response = await axiosInstance.get<Doctor[]>('/doctors/', { params });
-      return response.data; // response.data is now the Doctor array directly
+        let response;
+        if (typeof paramsOrUrl === 'string') {
+            // Fetching next/previous page using the full URL provided by the API
+            // Need to strip base URL if axiosInstance adds it automatically
+            const url = new URL(paramsOrUrl);
+            const pathWithQuery = url.pathname + url.search;
+            response = await axiosInstance.get<PaginatedResponse<Doctor>>(pathWithQuery);
+        } else {
+            // Initial fetch with parameters
+            response = await axiosInstance.get<PaginatedResponse<Doctor>>('/doctors/', { params: paramsOrUrl });
+        }
+        return response.data; // <--- response.data now matches PaginatedResponse<Doctor>
     } catch (error) {
-      console.error('Failed to fetch doctors:', error);
-      throw error;
+        console.error('Failed to fetch doctors:', error);
+        throw error;
     }
-  };
+};
 
 /**
  * Fetches details for a single doctor.
@@ -42,12 +50,22 @@ export const getDoctorById = async (doctorId: number): Promise<Doctor> => {
 };
 
 /**
- * Fetches reviews for a specific doctor.
+ * Fetches reviews for a specific doctor. (Assuming it might be paginated too)
  */
-export const getDoctorReviews = async (doctorId: number): Promise<DoctorReview[]> => {
+export const getDoctorReviews = async (
+    doctorId: number,
+    paramsOrUrl: { page?: number } | string | null = null // Example for pagination
+): Promise<PaginatedResponse<DoctorReview>> => { // <--- Updated return type
     try {
-        // Assumes backend returns a list directly, not paginated. Adjust if needed.
-        const response = await axiosInstance.get<DoctorReview[]>(`/doctors/${doctorId}/reviews/`);
+        const basePath = `/doctors/${doctorId}/reviews/`;
+        let response;
+        if (typeof paramsOrUrl === 'string') {
+            const url = new URL(paramsOrUrl);
+            const pathWithQuery = url.pathname + url.search; // Use full path from API
+            response = await axiosInstance.get<PaginatedResponse<DoctorReview>>(pathWithQuery);
+        } else {
+            response = await axiosInstance.get<PaginatedResponse<DoctorReview>>(basePath, { params: paramsOrUrl });
+        }
         return response.data;
     } catch (error) {
         console.error(`Failed to fetch reviews for doctor ${doctorId}:`, error);
@@ -58,10 +76,17 @@ export const getDoctorReviews = async (doctorId: number): Promise<DoctorReview[]
 /**
  * Fetches availability slots for a specific doctor.
  */
-export const getDoctorAvailability = async (doctorId: number): Promise<DoctorAvailability[]> => {
+export const getDoctorAvailability = async (
+    doctorId: number,
+    // Optional: Add paramsOrUrl if you anticipate needing > 1 page, but unlikely for availability
+    params: { page?: number } | null = null
+): Promise<PaginatedResponse<DoctorAvailability>> => { // <--- Updated return type
     try {
-        // Assumes backend returns a list directly. Adjust if needed.
-        const response = await axiosInstance.get<DoctorAvailability[]>(`/doctors/${doctorId}/availability/`);
+        // Assuming first page is sufficient unless pagination controls are added later
+        const response = await axiosInstance.get<PaginatedResponse<DoctorAvailability>>(
+            `/doctors/${doctorId}/availability/`,
+            { params } // Send params if provided (e.g., page=1)
+        );
         return response.data;
     } catch (error) {
         console.error(`Failed to fetch availability for doctor ${doctorId}:`, error);

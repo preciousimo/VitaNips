@@ -1,27 +1,44 @@
 // src/api/appointments.ts
 import axiosInstance from './axiosInstance';
 import { Appointment, AppointmentPayload } from '../types/appointments';
+import { PaginatedResponse } from '../types/common'; // Import common type
+
+// Define specific parameters if needed, otherwise use a generic object
+type AppointmentListParams = { page?: number; ordering?: string /* Add other filters */ };
 
 /**
- * Fetches the logged-in user's appointments.
- * Assumes backend returns a direct array.
+ * Fetches the logged-in user's appointments, handling pagination.
  */
-export const getUserAppointments = async (): Promise<Appointment[]> => {
+export const getUserAppointments = async (
+    paramsOrUrl: AppointmentListParams | string | null = null
+): Promise<PaginatedResponse<Appointment>> => { // <-- Updated return type
+    const endpoint = '/doctors/appointments/';
     try {
-        // Endpoint from doctors/urls.py
-        const response = await axiosInstance.get<Appointment[]>('/doctors/appointments/');
-        return response.data;
+        let response;
+        if (typeof paramsOrUrl === 'string') {
+            // Fetching next/previous page using the full URL
+            const url = new URL(paramsOrUrl);
+            // Use only path + query string, as baseURL is handled by axiosInstance
+            const pathWithQuery = url.pathname + url.search;
+            response = await axiosInstance.get<PaginatedResponse<Appointment>>(pathWithQuery);
+        } else {
+            // Initial fetch with parameters
+            response = await axiosInstance.get<PaginatedResponse<Appointment>>(endpoint, { params: paramsOrUrl });
+        }
+        return response.data; // response.data is the PaginatedResponse object
     } catch (error) {
         console.error('Failed to fetch appointments:', error);
         throw error;
     }
 };
 
+// --- Functions for single items or actions remain the same ---
+
 /**
  * Fetches details for a single appointment.
  */
 export const getAppointmentDetails = async (id: number): Promise<Appointment> => {
-     try {
+    try {
         const response = await axiosInstance.get<Appointment>(`/doctors/appointments/${id}/`);
         return response.data;
     } catch (error) {
@@ -29,7 +46,6 @@ export const getAppointmentDetails = async (id: number): Promise<Appointment> =>
         throw error;
     }
 };
-
 
 /**
  * Creates a new appointment.
@@ -40,7 +56,6 @@ export const createAppointment = async (payload: AppointmentPayload): Promise<Ap
         return response.data;
     } catch (error) {
         console.error('Failed to create appointment:', error);
-        // Extract validation errors if possible: error.response?.data
         throw error;
     }
 };
@@ -59,16 +74,12 @@ export const updateAppointment = async (id: number, payload: Partial<Appointment
 };
 
 /**
- * Cancels (deletes) an appointment.
- * Consider if you want DELETE or PATCH with status='cancelled'. Let's use PATCH.
+ * Cancels an appointment (using PATCH).
  */
 export const cancelAppointment = async (id: number): Promise<Appointment> => {
-     try {
-         // Using PATCH to update status to 'cancelled'
+    try {
         const response = await axiosInstance.patch<Appointment>(`/doctors/appointments/${id}/`, { status: 'cancelled' });
         return response.data;
-        // Or use DELETE if backend is set up for that:
-        // await axiosInstance.delete(`/doctors/appointments/${id}/`);
     } catch (error) {
         console.error(`Failed to cancel appointment ${id}:`, error);
         throw error;

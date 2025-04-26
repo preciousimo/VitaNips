@@ -1,24 +1,40 @@
 // src/api/pharmacy.ts
 import axiosInstance from './axiosInstance';
 import { Pharmacy, Medication } from '../types/pharmacy';
+import { PaginatedResponse } from '../types/common'; // Import common type
 
 interface GetPharmaciesParams {
   search?: string;
+  page?: number;
   // Add other filters if backend supports them (e.g., offers_delivery)
 }
 
+interface GetMedicationsParams {
+  search?: string;
+  page?: number;
+}
+
 /**
- * Fetches a list of pharmacies.
- * Assumes the backend returns a direct array (no pagination).
+ * Fetches a list of pharmacies, handling pagination.
  */
-export const getPharmacies = async (params?: GetPharmaciesParams): Promise<Pharmacy[]> => {
-  try {
-    const response = await axiosInstance.get<Pharmacy[]>('/pharmacy/', { params });
-    return response.data;
-  } catch (error) {
-    console.error('Failed to fetch pharmacies:', error);
-    throw error;
-  }
+export const getPharmacies = async (
+    paramsOrUrl: GetPharmaciesParams | string | null = null
+): Promise<PaginatedResponse<Pharmacy>> => { // <-- Updated return type
+    const endpoint = '/pharmacy/';
+    try {
+        let response;
+         if (typeof paramsOrUrl === 'string') {
+             const url = new URL(paramsOrUrl);
+            const pathWithQuery = url.pathname + url.search;
+            response = await axiosInstance.get<PaginatedResponse<Pharmacy>>(pathWithQuery);
+        } else {
+            response = await axiosInstance.get<PaginatedResponse<Pharmacy>>(endpoint, { params: paramsOrUrl });
+        }
+        return response.data;
+    } catch (error) {
+        console.error('Failed to fetch pharmacies:', error);
+        throw error;
+    }
 };
 
 /**
@@ -26,7 +42,6 @@ export const getPharmacies = async (params?: GetPharmaciesParams): Promise<Pharm
  */
 export const getPharmacyById = async (pharmacyId: number): Promise<Pharmacy> => {
     try {
-        // Assuming an endpoint like /api/pharmacy/{id}/ exists or will be created
         const response = await axiosInstance.get<Pharmacy>(`/pharmacy/${pharmacyId}/`);
         return response.data;
     } catch (error) {
@@ -35,15 +50,23 @@ export const getPharmacyById = async (pharmacyId: number): Promise<Pharmacy> => 
     }
 };
 
-
 /**
- * Fetches a list of all medications.
+ * Fetches a list of all medications, handling pagination.
+ * (Assuming this list could be long)
  */
-export const getMedications = async (search?: string): Promise<Medication[]> => {
-    try {
-        const params = search ? { search } : {};
-        // Assuming endpoint from pharmacy/urls.py and it returns a direct array
-        const response = await axiosInstance.get<Medication[]>('/pharmacy/medications/', { params });
+export const getMedications = async (
+    paramsOrUrl: GetMedicationsParams | string | null = null
+): Promise<PaginatedResponse<Medication>> => { // <-- Updated return type
+    const endpoint = '/pharmacy/medications/';
+     try {
+        let response;
+         if (typeof paramsOrUrl === 'string') {
+             const url = new URL(paramsOrUrl);
+            const pathWithQuery = url.pathname + url.search;
+            response = await axiosInstance.get<PaginatedResponse<Medication>>(pathWithQuery);
+        } else {
+            response = await axiosInstance.get<PaginatedResponse<Medication>>(endpoint, { params: paramsOrUrl });
+        }
         return response.data;
     } catch (error) {
         console.error('Failed to fetch medications:', error);
@@ -55,8 +78,7 @@ export const getMedications = async (search?: string): Promise<Medication[]> => 
  * Fetches details for a single medication (if needed later).
  */
 export const getMedicationById = async (medicationId: number): Promise<Medication> => {
-     try {
-        // Assuming an endpoint like /api/pharmacy/medications/{id}/ exists or will be created
+    try {
         const response = await axiosInstance.get<Medication>(`/pharmacy/medications/${medicationId}/`);
         return response.data;
     } catch (error) {
@@ -65,8 +87,7 @@ export const getMedicationById = async (medicationId: number): Promise<Medicatio
     }
 };
 
-
-// Add other pharmacy/medication related API functions:
-// - getPharmacyInventory(pharmacyId, medicationId?)
-// - createMedicationOrder(...)
-// - getMedicationReminders() / createMedicationReminder() / etc.
+// Add other pharmacy/medication related API functions later
+// - getPharmacyInventory (might need pagination if many items per pharmacy)
+// - createMedicationOrder / getMedicationOrders (list likely needs pagination)
+// - getMedicationReminders / createMedicationReminder (list likely needs pagination)

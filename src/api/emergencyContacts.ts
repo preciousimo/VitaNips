@@ -1,21 +1,35 @@
 // src/api/emergencyContacts.ts
 import axiosInstance from './axiosInstance';
 import { EmergencyContact, EmergencyContactPayload } from '../types/user';
+import { PaginatedResponse } from '../types/common'; // Import common type
+
+// Define specific parameters if needed
+type ContactListParams = { page?: number; ordering?: string };
 
 /**
- * Fetches the logged-in user's emergency contacts.
- * Assumes backend returns a direct array.
+ * Fetches the logged-in user's emergency contacts, handling pagination.
  */
-export const getUserEmergencyContacts = async (): Promise<EmergencyContact[]> => {
+export const getUserEmergencyContacts = async (
+    paramsOrUrl: ContactListParams | string | null = null
+): Promise<PaginatedResponse<EmergencyContact>> => { // <-- Updated return type
+    const endpoint = '/emergency/contacts/';
     try {
-        // Endpoint from emergency/urls.py
-        const response = await axiosInstance.get<EmergencyContact[]>('/emergency/contacts/');
+        let response;
+        if (typeof paramsOrUrl === 'string') {
+            const url = new URL(paramsOrUrl);
+            const pathWithQuery = url.pathname + url.search;
+            response = await axiosInstance.get<PaginatedResponse<EmergencyContact>>(pathWithQuery);
+        } else {
+            response = await axiosInstance.get<PaginatedResponse<EmergencyContact>>(endpoint, { params: paramsOrUrl });
+        }
         return response.data;
     } catch (error) {
         console.error('Failed to fetch emergency contacts:', error);
         throw error;
     }
 };
+
+// --- Functions for single items or actions remain the same ---
 
 /**
  * Adds a new emergency contact for the logged-in user.
