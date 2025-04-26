@@ -16,9 +16,8 @@ const PrescriptionsPage: React.FC = () => {
         setError(null);
         try {
             const data = await getUserPrescriptions();
-            // Sort newest first
-            setPrescriptions(data.sort((a, b) => new Date(b.date_prescribed).getTime() - new Date(a.date_prescribed).getTime()));
-            setSelectedPrescriptionId(null); // Reset selection on load/reload
+            setPrescriptions(data.sort((a, b) => new Date(b.date_prescribed).getTime() - new Date(a.date_prescribed).getTime())); // Sort newest first
+            setSelectedPrescriptionId(null);
         } catch (err) {
             setError("Failed to load your prescriptions.");
             console.error(err);
@@ -32,9 +31,11 @@ const PrescriptionsPage: React.FC = () => {
     }, [loadPrescriptions]);
 
     const handleSelectPrescription = (id: number) => {
-        setSelectedPrescriptionId(prevId => (prevId === id ? null : id)); // Toggle selection
+        // If clicking the already selected one, deselect it, otherwise select the new one.
+        setSelectedPrescriptionId(prevId => (prevId === id ? null : id));
     };
 
+    // Find the full prescription object only if an ID is selected
     const selectedPrescription = prescriptions.find(p => p.id === selectedPrescriptionId);
 
     return (
@@ -46,7 +47,7 @@ const PrescriptionsPage: React.FC = () => {
             ) : error ? (
                 <p className="text-red-600 text-center py-4">{error}</p>
             ) : prescriptions.length > 0 ? (
-                 <ul className="space-y-0"> {/* No space needed, margin on item */}
+                 <ul className="space-y-0"> {/* Let margin on item handle spacing */}
                     {prescriptions.map(presc => (
                         <React.Fragment key={presc.id}>
                             <PrescriptionListItem
@@ -54,9 +55,12 @@ const PrescriptionsPage: React.FC = () => {
                                 isSelected={selectedPrescriptionId === presc.id}
                                 onSelect={handleSelectPrescription}
                             />
-                             {/* Conditionally render details below the selected item */}
+                            {/* Conditionally render details immediately below the selected item */}
                             {selectedPrescriptionId === presc.id && selectedPrescription && (
-                                <PrescriptionDetailView prescription={selectedPrescription} />
+                                // Use a key based on ID to force re-render on selection change if needed
+                                <div key={`detail-${selectedPrescription.id}`}>
+                                     <PrescriptionDetailView prescription={selectedPrescription} />
+                                </div>
                              )}
                         </React.Fragment>
                     ))}

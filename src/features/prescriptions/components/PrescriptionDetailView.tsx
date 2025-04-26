@@ -1,6 +1,6 @@
 // src/features/prescriptions/components/PrescriptionDetailView.tsx
 import React from 'react';
-import { Prescription, PrescriptionItem } from '../../../types/prescriptions';
+import { Prescription } from '../../../types/prescriptions';
 import { Link } from 'react-router-dom';
 import { ClipboardDocumentListIcon, TagIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
 
@@ -18,7 +18,7 @@ const PrescriptionDetailView: React.FC<PrescriptionDetailViewProps> = ({ prescri
     };
 
     return (
-        <div className="bg-primary-light/10 p-4 border border-primary rounded-b-lg -mt-3 pt-6"> {/* Adjust styling as needed */}
+        <div className="bg-indigo-50 p-4 border border-indigo-200 rounded-b-lg -mt-3 pt-6 animate-fade-in"> {/* Added subtle background and animation */}
             <div className="mb-4">
                 <h4 className="font-semibold text-gray-800 mb-1">Diagnosis & Notes</h4>
                 <p className="text-sm text-gray-700 mb-1"><span className='font-medium'>Diagnosis:</span> {prescription.diagnosis}</p>
@@ -27,7 +27,7 @@ const PrescriptionDetailView: React.FC<PrescriptionDetailViewProps> = ({ prescri
                 )}
                 <p className="text-xs text-gray-500 mt-1">Prescribed on: {formatDate(prescription.date_prescribed)}</p>
                  {/* Optional: Link to the associated appointment */}
-                 {/* <Link to={`/appointments/${prescription.appointment}`} className="text-xs text-primary hover:underline">View Associated Appointment</Link> */}
+                 <Link to={`/appointments/${prescription.appointment}`} className="text-xs text-primary hover:underline">View Associated Appointment</Link>
             </div>
 
             <div>
@@ -51,11 +51,22 @@ const PrescriptionDetailView: React.FC<PrescriptionDetailViewProps> = ({ prescri
             </div>
 
              {/* Add "Forward to Pharmacy" button here later */}
-             {/* <div className="mt-4 text-right">
-                 <button className="btn-secondary text-sm">Forward to Pharmacy</button>
-             </div> */}
+             <div className="mt-4 text-right">
+                 <button className="btn-primary text-sm px-3 py-1">Forward to Pharmacy</button>
+                 {/* Add onClick handler later */}
+             </div>
         </div>
     );
 };
+// Helper style for animation (add to your src/index.css or similar)
+/*
+@keyframes fade-in {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+    animation: fade-in 0.3s ease-out forwards;
+}
+*/
 
 export default PrescriptionDetailView;

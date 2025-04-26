@@ -21,10 +21,10 @@ export interface Appointment {
 
 // Type for creating an appointment
 export interface AppointmentPayload {
-    doctor: number; // Doctor ID is required
+    doctor: number; // Doctor ID
     date: string; // YYYY-MM-DD
-    start_time: string; // HH:MM format might be easier from input, backend expects HH:MM:SS? Check serializer validation
-    end_time: string; // HH:MM format might be easier
+    start_time: string; // HH:MM or HH:MM:SS (ensure backend compatibility)
+    end_time: string; // HH:MM or HH:MM:SS (derived from start_time + duration)
     appointment_type: 'in_person' | 'virtual';
     reason: string;
     notes?: string | null;

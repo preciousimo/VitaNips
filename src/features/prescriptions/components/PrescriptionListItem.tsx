@@ -1,7 +1,7 @@
 // src/features/prescriptions/components/PrescriptionListItem.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { CalendarDaysIcon, DocumentTextIcon, ChevronRightIcon } from '@heroicons/react/24/outline'; // Assuming UserDoctorIcon exists or use a different one
+import { CalendarDaysIcon, ChevronRightIcon } from '@heroicons/react/24/outline'; // Assuming UserDoctorIcon exists or use a different one
 import { Prescription } from '../../../types/prescriptions';
 
 interface PrescriptionListItemProps {
@@ -39,8 +39,8 @@ const PrescriptionListItem: React.FC<PrescriptionListItemProps> = ({ prescriptio
                             onClick={(e) => e.stopPropagation()} // Prevent button click when clicking link
                             className="text-md font-semibold text-primary hover:underline mb-1 inline-flex items-center"
                         >
-                            {/* Add UserDoctorIcon or similar */}
-                            {/* <UserDoctorIcon className="h-5 w-5 mr-1.5 text-gray-600"/> */}
+                            {/* Add UserDoctorIcon or similar if you have one */}
+                            {/* <UserIcon className="h-5 w-5 mr-1.5 text-gray-600"/> */}
                             Prescribing Doctor ID: {prescription.doctor} {/* Replace with name if fetched */}
                         </Link>
                         <p className="text-sm text-gray-700 line-clamp-1">

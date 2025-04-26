@@ -8,7 +8,6 @@ import { Prescription } from '../types/prescriptions';
  */
 export const getUserPrescriptions = async (): Promise<Prescription[]> => {
     try {
-        // Endpoint from doctors/urls.py
         const response = await axiosInstance.get<Prescription[]>('/doctors/prescriptions/');
         return response.data;
     } catch (error) {
@@ -19,12 +18,10 @@ export const getUserPrescriptions = async (): Promise<Prescription[]> => {
 
 /**
  * Fetches details for a single prescription.
- * ASSUMPTION: Requires backend endpoint like /api/doctors/prescriptions/{id}/
+ * Uses the new backend endpoint.
  */
 export const getPrescriptionDetails = async (id: number): Promise<Prescription> => {
      try {
-        // ** NOTE: Ensure this endpoint exists or is added to your backend doctors/urls.py **
-        // Example backend view: generics.RetrieveAPIView using PrescriptionSerializer
         const response = await axiosInstance.get<Prescription>(`/doctors/prescriptions/${id}/`);
         return response.data;
     } catch (error) {
@@ -32,6 +29,3 @@ export const getPrescriptionDetails = async (id: number): Promise<Prescription> 
         throw error;
     }
 };
-
-// Add other prescription-related functions later if needed
-// e.g., forwardPrescriptionToPharmacy(...)
