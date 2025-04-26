@@ -1,6 +1,6 @@
 // src/api/pharmacy.ts
 import axiosInstance from './axiosInstance';
-import { Pharmacy, Medication, Prescription } from '../types/pharmacy';
+import { Pharmacy, Medication } from '../types/pharmacy';
 
 interface GetPharmaciesParams {
   search?: string;
@@ -61,23 +61,6 @@ export const getMedicationById = async (medicationId: number): Promise<Medicatio
         return response.data;
     } catch (error) {
         console.error(`Failed to fetch medication ${medicationId}:`, error);
-        throw error;
-    }
-};
-
-
-/**
- * Fetches prescriptions for the logged-in user.
- * NOTE: Endpoint is currently defined under 'doctors' app in your backend urls.
- */
-export const getUserPrescriptions = async (): Promise<Prescription[]> => {
-    try {
-        // Using the endpoint from doctors/urls.py which returns user's prescriptions
-        // Assuming it returns a direct array. Adjust if paginated.
-        const response = await axiosInstance.get<Prescription[]>('/doctors/prescriptions/');
-        return response.data;
-    } catch (error) {
-        console.error('Failed to fetch user prescriptions:', error);
         throw error;
     }
 };

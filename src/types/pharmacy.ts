@@ -32,25 +32,3 @@ export interface Pharmacy {
     updated_at: string;
   }
   
-  export interface PrescriptionItem {
-      id: number;
-      prescription: number; // Prescription ID
-      medication_name: string;
-      dosage: string;
-      frequency: string;
-      duration: string;
-      instructions: string;
-  }
-  
-  export interface Prescription {
-      id: number;
-      appointment: number; // Appointment ID
-      user: number; // User ID
-      doctor: number; // Doctor ID
-      date_prescribed: string; // Date string
-      diagnosis: string;
-      notes: string | null;
-      items: PrescriptionItem[]; // Nested items
-      created_at: string;
-      updated_at: string;
-  }
