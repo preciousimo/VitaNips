@@ -1,7 +1,8 @@
 // src/api/prescriptions.ts
 import axiosInstance from './axiosInstance';
 import { Prescription } from '../types/prescriptions';
-import { PaginatedResponse } from '../types/common'; // Import common type
+import { PaginatedResponse } from '../types/common';
+import { MedicationOrder } from '../types/pharmacy';
 
 type PrescriptionListParams = { page?: number; ordering?: string };
 
@@ -42,5 +43,22 @@ export const getPrescriptionDetails = async (id: number): Promise<Prescription> 
     }
 };
 
-// Add function for forwarding/creating order later
-// export const forwardPrescriptionToPharmacy = async (...) => { ... }
+/**
+ * Creates a MedicationOrder from a Prescription for a specific Pharmacy.
+ */
+export const createOrderFromPrescription = async (
+    prescriptionId: number,
+    pharmacyId: number
+): Promise<MedicationOrder> => { // Returns the created order
+    try {
+        const response = await axiosInstance.post<MedicationOrder>(
+            `/doctors/prescriptions/${prescriptionId}/create_order/`, // Matches backend URL
+            { pharmacy_id: pharmacyId } // Send pharmacy_id in request body
+        );
+        return response.data;
+    } catch (error) {
+        console.error(`Failed to create order for prescription ${prescriptionId}:`, error);
+        // TODO: Extract specific validation errors from error.response.data if possible
+        throw error;
+    }
+};
