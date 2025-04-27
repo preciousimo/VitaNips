@@ -61,3 +61,13 @@ export interface MedicationOrder {
     notes: string | null;
     items: MedicationOrderItem[];
 }
+
+// --- NEW Payload Type ---
+// Based on PharmacyOrderUpdateSerializer fields
+export interface MedicationOrderUpdatePayload {
+  status?: 'pending' | 'processing' | 'ready' | 'delivering' | 'completed' | 'cancelled';
+  notes?: string | null;
+  pickup_or_delivery_date?: string | null; // ISO datetime string or null
+  total_amount?: string | null; // If pharmacy sets this
+  // Add fields for updating item prices if done via the order endpoint
+}

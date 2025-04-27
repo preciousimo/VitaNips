@@ -1,7 +1,8 @@
 // src/types/user.ts
 
+// Assuming EmergencyContact types are also here or imported
+
 // --- Main User Profile Structure ---
-// (Moved from auth.ts and updated based on backend model)
 export interface User {
     id: number;
     email: string;
@@ -12,27 +13,29 @@ export interface User {
     date_of_birth?: string | null; // YYYY-MM-DD
     profile_picture?: string | null; // URL
 
-    // Health-related fields from backend User model
+    // Health-related fields
     blood_group?: string | null;
     allergies?: string | null;
     chronic_conditions?: string | null;
     weight?: number | null; // Float (kg)
     height?: number | null; // Float (cm)
 
-    // Primary emergency contact fields (if kept directly on User model)
-    // Consider removing if exclusively using the separate EmergencyContact model
+    // Primary emergency contact fields (consider removing if using separate model exclusively)
     emergency_contact_name?: string | null;
     emergency_contact_relationship?: string | null;
     emergency_contact_phone?: string | null;
 
-    // Optional: Add timestamps if included in your UserSerializer output
+    // --- ADD PHARMACY STAFF FIELDS ---
+    is_pharmacy_staff?: boolean; // Flag indicating pharmacy role
+    works_at_pharmacy?: number | null; // ID of the pharmacy they belong to, or null
+    // --- END PHARMACY STAFF FIELDS ---
+
+    // Timestamps if included in serializer
     // created_at?: string;
     // updated_at?: string;
 }
 
-
 // --- Emergency Contact Structure ---
-// (Added during Emergency Contacts feature implementation)
 export interface EmergencyContact {
     id: number;
     user: number; // User ID
@@ -44,5 +47,5 @@ export interface EmergencyContact {
     updated_at: string; // ISO date string
 }
 
-// Type for the payload when adding/editing Emergency Contacts
+// Payload for adding/editing Emergency Contacts
 export type EmergencyContactPayload = Omit<EmergencyContact, 'id' | 'user' | 'created_at' | 'updated_at'>;
