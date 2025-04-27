@@ -4,14 +4,18 @@ import { Pharmacy, Medication } from '../types/pharmacy';
 import { PaginatedResponse } from '../types/common'; // Import common type
 
 interface GetPharmaciesParams {
-  search?: string;
-  page?: number;
-  // Add other filters if backend supports them (e.g., offers_delivery)
+    search?: string;
+    page?: number;
+    lat?: number;
+    lon?: number;
+    radius?: number;
+    offers_delivery?: boolean;
+    is_24_hours?: boolean;
 }
 
 interface GetMedicationsParams {
-  search?: string;
-  page?: number;
+    search?: string;
+    page?: number;
 }
 
 /**
@@ -19,12 +23,12 @@ interface GetMedicationsParams {
  */
 export const getPharmacies = async (
     paramsOrUrl: GetPharmaciesParams | string | null = null
-): Promise<PaginatedResponse<Pharmacy>> => { // <-- Updated return type
+): Promise<PaginatedResponse<Pharmacy>> => {
     const endpoint = '/pharmacy/';
     try {
         let response;
-         if (typeof paramsOrUrl === 'string') {
-             const url = new URL(paramsOrUrl);
+        if (typeof paramsOrUrl === 'string') {
+            const url = new URL(paramsOrUrl);
             const pathWithQuery = url.pathname + url.search;
             response = await axiosInstance.get<PaginatedResponse<Pharmacy>>(pathWithQuery);
         } else {
@@ -58,10 +62,10 @@ export const getMedications = async (
     paramsOrUrl: GetMedicationsParams | string | null = null
 ): Promise<PaginatedResponse<Medication>> => { // <-- Updated return type
     const endpoint = '/pharmacy/medications/';
-     try {
+    try {
         let response;
-         if (typeof paramsOrUrl === 'string') {
-             const url = new URL(paramsOrUrl);
+        if (typeof paramsOrUrl === 'string') {
+            const url = new URL(paramsOrUrl);
             const pathWithQuery = url.pathname + url.search;
             response = await axiosInstance.get<PaginatedResponse<Medication>>(pathWithQuery);
         } else {

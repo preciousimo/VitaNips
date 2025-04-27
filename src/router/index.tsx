@@ -26,6 +26,7 @@ import EmergencyContactsPage from '../pages/EmergencyContactsPage';
 import AppointmentsPage from '../pages/AppointmentsPage';
 import PrescriptionsPage from '../pages/PrescriptionsPage';
 import MedicalDocumentsPage from '../pages/MedicalDocumentsPage';
+import MapLocatorPage from '../pages/MapLocatorPage';
 // Import other page components...
 
 // Protected Route Component
@@ -86,6 +87,7 @@ const AppRouter: React.FC = () => {
           <Route path="/prescriptions" element={<PrescriptionsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/medical-documents" element={<MedicalDocumentsPage />} />
+          <Route path="/map-locator" element={<MapLocatorPage />} />
         </Route>
 
         {/* Catch-all Not Found Route */}
