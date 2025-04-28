@@ -44,21 +44,25 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
     }, [initialData]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-        const { name, value, type } = e.target;
+        const { name, value, type } = e.target as HTMLInputElement; // Cast to access 'checked'
 
         let processedValue: string | number | boolean | null = value;
+
+        // Handle checkboxes
+        if (type === 'checkbox') {
+            processedValue = (e.target as HTMLInputElement).checked;
+        }
         // Handle empty strings for optional fields -> null
-        if (value === '' && ['phone_number', 'date_of_birth', 'blood_group', 'allergies', 'chronic_conditions', 'weight', 'height', 'emergency_contact_name', 'emergency_contact_relationship', 'emergency_contact_phone'].includes(name)) {
+        else if (value === '' && ['phone_number', 'date_of_birth', 'blood_group', 'allergies', 'chronic_conditions', 'weight', 'height', 'emergency_contact_name', 'emergency_contact_relationship', 'emergency_contact_phone'].includes(name)) {
             processedValue = null;
         } else if ((type === 'number') && name !== 'height' && name !== 'weight') {
-             // Regular number input (if any others added)
-             processedValue = value ? parseFloat(value) : null;
+            // Regular number input (if any others added)
+            processedValue = value ? parseFloat(value) : null;
         } else if (name === 'height' || name === 'weight') {
-             // Allow decimals for weight/height, store as number or null
+            // Allow decimals for weight/height, store as number or null
             processedValue = value ? parseFloat(value) : null;
             if (isNaN(processedValue as number)) processedValue = null; // Handle NaN if input is invalid text
         }
-
 
         setFormData(prev => ({ ...prev, [name]: processedValue }));
     };
@@ -75,9 +79,9 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
 
         // Ensure weight/height are numbers or null
         const payload: UserProfileUpdatePayload = {
-           ...formData,
-           weight: formData.weight ? Number(formData.weight) : null,
-           height: formData.height ? Number(formData.height) : null,
+            ...formData,
+            weight: formData.weight ? Number(formData.weight) : null,
+            height: formData.height ? Number(formData.height) : null,
         };
 
 
@@ -91,7 +95,7 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
                 const messages = Object.entries(errorData).map(([key, value]) => `${key}: ${(value as string[]).join(', ')}`);
                 setError(messages.join(' '));
             } else {
-                 setError(err.message || "Failed to update profile.");
+                setError(err.message || "Failed to update profile.");
             }
         }
     };
@@ -119,48 +123,81 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
                     <input type="date" name="date_of_birth" id="date_of_birth" value={formData.date_of_birth ?? ''} onChange={handleChange} className="input-field" />
                 </div>
 
-                 {/* Health Info */}
-                 <div>
-                     <label htmlFor="blood_group" className="block text-sm font-medium text-gray-700">Blood Group</label>
-                     <select name="blood_group" id="blood_group" value={formData.blood_group ?? ''} onChange={handleChange} className="input-field">
-                         <option value="">-- Select --</option>
-                         {bloodGroups.map(group => <option key={group} value={group}>{group}</option>)}
-                     </select>
-                 </div>
-                 <div className="md:col-span-2">
-                     <label htmlFor="allergies" className="block text-sm font-medium text-gray-700">Allergies</label>
-                     <textarea name="allergies" id="allergies" rows={3} value={formData.allergies ?? ''} onChange={handleChange} className="input-field" placeholder="e.g., Penicillin, Peanuts, Pollen"></textarea>
-                 </div>
+                {/* Health Info */}
+                <div>
+                    <label htmlFor="blood_group" className="block text-sm font-medium text-gray-700">Blood Group</label>
+                    <select name="blood_group" id="blood_group" value={formData.blood_group ?? ''} onChange={handleChange} className="input-field">
+                        <option value="">-- Select --</option>
+                        {bloodGroups.map(group => <option key={group} value={group}>{group}</option>)}
+                    </select>
+                </div>
                 <div className="md:col-span-2">
-                     <label htmlFor="chronic_conditions" className="block text-sm font-medium text-gray-700">Chronic Conditions</label>
-                     <textarea name="chronic_conditions" id="chronic_conditions" rows={3} value={formData.chronic_conditions ?? ''} onChange={handleChange} className="input-field" placeholder="e.g., Hypertension, Diabetes Type 2, Asthma"></textarea>
-                 </div>
+                    <label htmlFor="allergies" className="block text-sm font-medium text-gray-700">Allergies</label>
+                    <textarea name="allergies" id="allergies" rows={3} value={formData.allergies ?? ''} onChange={handleChange} className="input-field" placeholder="e.g., Penicillin, Peanuts, Pollen"></textarea>
+                </div>
+                <div className="md:col-span-2">
+                    <label htmlFor="chronic_conditions" className="block text-sm font-medium text-gray-700">Chronic Conditions</label>
+                    <textarea name="chronic_conditions" id="chronic_conditions" rows={3} value={formData.chronic_conditions ?? ''} onChange={handleChange} className="input-field" placeholder="e.g., Hypertension, Diabetes Type 2, Asthma"></textarea>
+                </div>
                 <div>
                     <label htmlFor="weight" className="block text-sm font-medium text-gray-700">Weight (kg)</label>
-                    <input type="number" step="0.1" name="weight" id="weight" value={formData.weight ?? ''} onChange={handleChange} className="input-field" placeholder="e.g., 70.5"/>
+                    <input type="number" step="0.1" name="weight" id="weight" value={formData.weight ?? ''} onChange={handleChange} className="input-field" placeholder="e.g., 70.5" />
                 </div>
                 <div>
                     <label htmlFor="height" className="block text-sm font-medium text-gray-700">Height (cm)</label>
-                    <input type="number" step="0.1" name="height" id="height" value={formData.height ?? ''} onChange={handleChange} className="input-field" placeholder="e.g., 175.0"/>
+                    <input type="number" step="0.1" name="height" id="height" value={formData.height ?? ''} onChange={handleChange} className="input-field" placeholder="e.g., 175.0" />
                 </div>
 
                 {/* Optional: Primary Emergency Contact Fields */}
-                 <hr className="md:col-span-2 my-2"/>
-                 <h4 className="md:col-span-2 text-md font-semibold text-gray-700">Primary Emergency Contact</h4>
-                 {/* (Only include if these fields are meant to be edited directly on User, not just via EmergencyContacts page) */}
+                <hr className="md:col-span-2 my-2" />
+                <h4 className="md:col-span-2 text-md font-semibold text-gray-700">Primary Emergency Contact</h4>
+                {/* (Only include if these fields are meant to be edited directly on User, not just via EmergencyContacts page) */}
                 <div>
                     <label htmlFor="emergency_contact_name" className="block text-sm font-medium text-gray-700">Contact Name</label>
                     <input type="text" name="emergency_contact_name" id="emergency_contact_name" value={formData.emergency_contact_name ?? ''} onChange={handleChange} className="input-field" />
                 </div>
-                 <div>
+                <div>
                     <label htmlFor="emergency_contact_phone" className="block text-sm font-medium text-gray-700">Contact Phone</label>
                     <input type="tel" name="emergency_contact_phone" id="emergency_contact_phone" value={formData.emergency_contact_phone ?? ''} onChange={handleChange} className="input-field" />
                 </div>
-                 <div className="md:col-span-2">
+                <div className="md:col-span-2">
                     <label htmlFor="emergency_contact_relationship" className="block text-sm font-medium text-gray-700">Relationship</label>
                     <input type="text" name="emergency_contact_relationship" id="emergency_contact_relationship" value={formData.emergency_contact_relationship ?? ''} onChange={handleChange} className="input-field" />
                 </div>
 
+            </div>
+
+            <hr className="md:col-span-2 my-2" />
+            <h4 className="md:col-span-2 text-md font-semibold text-gray-700">Notification Preferences</h4>
+
+            <div className="md:col-span-2 space-y-2">
+                <div className="flex items-center">
+                    <input
+                        type="checkbox"
+                        id="notify_appointment_reminder_email"
+                        name="notify_appointment_reminder_email" // Must match User model field name
+                        checked={formData.notify_appointment_reminder_email ?? false}
+                        onChange={handleChange} // Ensure handleChange handles checkboxes
+                        className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
+                    />
+                    <label htmlFor="notify_appointment_reminder_email" className="ml-2 block text-sm text-gray-900">
+                        Receive Appointment Reminders via Email
+                    </label>
+                </div>
+                <div className="flex items-center">
+                    <input
+                        type="checkbox"
+                        id="notify_refill_reminder_email"
+                        name="notify_refill_reminder_email"
+                        checked={formData.notify_refill_reminder_email ?? false}
+                        onChange={handleChange}
+                        className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
+                    />
+                    <label htmlFor="notify_refill_reminder_email" className="ml-2 block text-sm text-gray-900">
+                        Receive Medication Refill Reminders via Email
+                    </label>
+                </div>
+                {/* Add toggles for SMS/Push if implementing */}
             </div>
 
             {/* Action Buttons */}

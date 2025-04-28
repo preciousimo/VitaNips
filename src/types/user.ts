@@ -28,8 +28,12 @@ export interface User {
     // --- ADD PHARMACY STAFF FIELDS ---
     is_pharmacy_staff?: boolean; // Flag indicating pharmacy role
     works_at_pharmacy?: number | null; // ID of the pharmacy they belong to, or null
-    // --- END PHARMACY STAFF FIELDS ---
-
+    
+    // --- ADD Notification Preferences ---
+    notify_appointment_reminder_email?: boolean;
+    notify_appointment_reminder_sms?: boolean;
+    notify_refill_reminder_email?: boolean;
+    
     // Timestamps if included in serializer
     // created_at?: string;
     // updated_at?: string;

@@ -18,6 +18,10 @@ export type UserProfileUpdatePayload = Partial<{
   emergency_contact_name: string | null;
   emergency_contact_relationship: string | null;
   emergency_contact_phone: string | null;
+  // --- ADD Notification Preferences ---
+  notify_appointment_reminder_email?: boolean;
+  notify_appointment_reminder_sms?: boolean;
+  notify_refill_reminder_email?: boolean;
 }>;
 
 
