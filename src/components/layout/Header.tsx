@@ -1,7 +1,9 @@
+// src/components/layout/Header.tsx
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { UserIcon, ArrowLeftOnRectangleIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
+import NotificationBell from './NotificationBell';
 
 const Header: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuth();
@@ -18,48 +20,40 @@ const Header: React.FC = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <img src="/logo.png" alt="VitaNips Logo" className="h-10 w-auto" /> {/* Use logo from public folder */}
-             {/* Optional: Add text logo if needed */}
-             {/* <span className="text-xl font-bold text-primary">VitaNips</span> */}
+            <img src="/logo.png" alt="VitaNips Logo" className="h-10 w-auto" />
+             <span className="text-xl font-bold text-primary">VitaNips</span>
           </Link>
 
           {/* Navigation / User Menu */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4">
             {isAuthenticated ? (
               <>
-                {/* Add other navigation links here if needed */}
-                <Link to="/doctors" className="text-gray-600 hover:text-primary px-3 py-2 rounded-md text-sm font-medium">Doctors</Link>
-                <Link to="/pharmacies" className="text-gray-600 hover:text-primary px-3 py-2 rounded-md text-sm font-medium">Pharmacies</Link>
+                {/* Show links based on role? Example: */}
+                {!user?.is_pharmacy_staff && (
+                    <>
+                         <Link to="/doctors" className="text-gray-600 hover:text-primary px-3 py-2 rounded-md text-sm font-medium hidden sm:block">Doctors</Link>
+                         <Link to="/pharmacies" className="text-gray-600 hover:text-primary px-3 py-2 rounded-md text-sm font-medium hidden sm:block">Pharmacies</Link>
+                     </>
+                 )}
+                 {user?.is_pharmacy_staff && (
+                     <Link to="/portal/dashboard" className="text-gray-600 hover:text-primary px-3 py-2 rounded-md text-sm font-medium hidden sm:block">Portal Dashboard</Link>
+                 )}
 
-                <span className="text-muted hidden sm:block">
-                   Welcome, {user?.first_name || user?.username || 'User'}!
-                 </span>
-                <div className="relative">
-                  {/* Simple Dropdown Example */}
-                  <button className="flex items-center text-muted hover:text-primary focus:outline-none">
-                    {/* Profile Pic or Icon */}
+                 {/* Common elements for all logged-in users */}
+                 <NotificationBell /> {/* <-- INTEGRATE BELL */}
+
+                 {/* Profile Dropdown/Links */}
+                 {/* Consider making this a dropdown later */}
+                 <Link to="/profile" title="Profile & Settings" className="text-muted hover:text-primary p-1 sm:p-2">
                     {user?.profile_picture ? (
-                       <img src={user.profile_picture} alt="Profile" className="h-8 w-8 rounded-full object-cover" />
+                       <img src={user.profile_picture} alt="Profile" className="h-7 w-7 rounded-full object-cover" />
                     ) : (
-                       <UserIcon className="h-7 w-7" />
+                       <UserIcon className="h-6 w-6" />
                     )}
-                  </button>
-                  {/* Dropdown Menu (implement with a library or custom) */}
-                   {/* Example structure:
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 hidden group-focus:block">
-                    <Link to="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profile</Link>
-                    <Link to="/settings" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Settings</Link>
-                    <button onClick={handleLogout} className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Logout</button>
-                  </div>
-                  */}
-                   {/* For simplicity, just add profile and logout */}
-                    <Link to="/profile" title="Profile" className="text-muted hover:text-primary p-2">
-                        <Cog6ToothIcon className="h-6 w-6" />
-                    </Link>
-                   <button onClick={handleLogout} title="Logout" className="text-red-500 hover:text-red-700 p-2">
-                     <ArrowLeftOnRectangleIcon className="h-6 w-6" />
-                   </button>
-                </div>
+                 </Link>
+                 <button onClick={handleLogout} title="Logout" className="text-red-500 hover:text-red-700 p-1 sm:p-2">
+                    <ArrowLeftOnRectangleIcon className="h-6 w-6" />
+                 </button>
               </>
             ) : (
               <>
