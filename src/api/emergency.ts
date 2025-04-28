@@ -1,4 +1,5 @@
 // src/api/emergency.ts
+import axios from 'axios';
 import axiosInstance from './axiosInstance';
 import { PaginatedResponse } from '../types/common';
 // Define EmergencyService type based on your emergency/serializers.py
@@ -44,6 +45,32 @@ export const getEmergencyServices = async (
     } catch (error) {
         console.error('Failed to fetch emergency services:', error);
         throw error;
+    }
+};
+
+interface SOSTriggerPayload {
+    latitude: number;
+    longitude: number;
+    message?: string | null;
+}
+
+/**
+ * Triggers the SOS alert process on the backend.
+ */
+export const triggerSOS = async (payload: SOSTriggerPayload): Promise<{ status: string }> => { // Expects {status: "..."} on 202
+    try {
+        const response = await axiosInstance.post<{ status: string }>(
+            '/emergency/trigger_sos/', // Matches emergency/urls.py
+            payload
+        );
+        return response.data; // Should contain { status: "SOS signal received..." }
+    } catch (error) {
+        console.error('Failed to trigger SOS:', error);
+        // Attempt to extract backend error message
+        if (axios.isAxiosError(error) && error.response?.data?.error) {
+            throw new Error(error.response.data.error);
+        }
+        throw error; // Re-throw original or generic error
     }
 };
 
