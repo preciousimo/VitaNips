@@ -1,5 +1,4 @@
 // src/types/appointments.ts
-import { Doctor } from './doctors'; // Assuming Doctor type is defined here
 
 export interface Appointment {
     id: number;
@@ -28,4 +27,11 @@ export interface AppointmentPayload {
     appointment_type: 'in_person' | 'virtual';
     reason: string;
     notes?: string | null;
+}
+
+// Type for the token response from backend
+export interface TwilioTokenResponse {
+    token: string;
+    roomName: string;
+    identity: string;
 }

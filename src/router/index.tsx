@@ -25,12 +25,14 @@ import VaccinationsPage from '../pages/VaccinationsPage';
 import UserInsurancePage from '../pages/UserInsurancePage';
 import EmergencyContactsPage from '../pages/EmergencyContactsPage';
 import AppointmentsPage from '../pages/AppointmentsPage';
+import AppointmentDetailPage from '../pages/AppointmentDetailPage';
 import PrescriptionsPage from '../pages/PrescriptionsPage';
 import MedicalDocumentsPage from '../pages/MedicalDocumentsPage';
 import MapLocatorPage from '../pages/MapLocatorPage';
 import PharmacyDashboardPage from '../pages/pharmacy/PharmacyDashboardPage';
 import PharmacyOrderListPage from '../pages/pharmacy/PharmacyOrderListPage';
 import PharmacyOrderDetailPage from '../pages/pharmacy/PharmacyOrderDetailPage';
+import VideoCallPage from '../pages/VideoCallPage';
 // import NotFoundPage from '../pages/NotFoundPage';
 
 
@@ -141,6 +143,8 @@ const AppRouter: React.FC = () => {
           <Route path="/insurance" element={<UserInsurancePage />} />
           <Route path="/emergency-contacts" element={<EmergencyContactsPage />} />
           <Route path="/appointments" element={<AppointmentsPage />} />
+          <Route path="/appointments/:appointmentId" element={<AppointmentDetailPage />} />
+          <Route path="/appointments/:appointmentId/call" element={<VideoCallPage />} />
           <Route path="/prescriptions" element={<PrescriptionsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/medical-documents" element={<MedicalDocumentsPage />} />

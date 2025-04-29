@@ -1,7 +1,8 @@
 // src/api/appointments.ts
 import axiosInstance from './axiosInstance';
-import { Appointment, AppointmentPayload } from '../types/appointments';
+import { Appointment, AppointmentPayload, TwilioTokenResponse } from '../types/appointments';
 import { PaginatedResponse } from '../types/common'; // Import common type
+import axios from 'axios';
 
 // Define specific parameters if needed, otherwise use a generic object
 type AppointmentListParams = { page?: number; ordering?: string /* Add other filters */ };
@@ -82,6 +83,25 @@ export const cancelAppointment = async (id: number): Promise<Appointment> => {
         return response.data;
     } catch (error) {
         console.error(`Failed to cancel appointment ${id}:`, error);
+        throw error;
+    }
+};
+
+/**
+ * Fetches a Twilio Access Token for joining a video call.
+ */
+export const getTwilioToken = async (appointmentId: number): Promise<TwilioTokenResponse> => {
+    try {
+        const response = await axiosInstance.get<TwilioTokenResponse>(
+            `/doctors/appointments/${appointmentId}/video_token/` // Matches backend URL
+        );
+        return response.data;
+    } catch (error) {
+        console.error(`Failed to get Twilio token for appointment ${appointmentId}:`, error);
+        // Attempt to extract backend error message
+        if (axios.isAxiosError(error) && error.response?.data?.error) {
+            throw new Error(error.response.data.error);
+        }
         throw error;
     }
 };

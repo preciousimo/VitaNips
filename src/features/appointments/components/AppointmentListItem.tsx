@@ -48,7 +48,8 @@ const AppointmentListItem: React.FC<AppointmentListItemProps> = ({ appointment, 
     const isUpcoming = ['scheduled', 'confirmed'].includes(appointment.status) && new Date(appointment.date + 'T' + appointment.start_time) > new Date();
 
     return (
-        <li className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow duration-150 mb-3">
+        <li className="bg-white rounded-lg shadow hover:shadow-md transition-shadow duration-150 mb-3">
+            <Link to={`/appointments/${appointment.id}`} className="block p-4 group">
             <div className="flex flex-col sm:flex-row justify-between sm:items-start">
                 {/* Details */}
                 <div className="flex-grow mb-3 sm:mb-0 sm:mr-4">
@@ -60,10 +61,10 @@ const AppointmentListItem: React.FC<AppointmentListItemProps> = ({ appointment, 
                         <span>{formatTime(appointment.start_time)} - {formatTime(appointment.end_time)}</span>
                     </div>
                      {/* Link to Doctor Profile - requires Doctor ID */}
-                     <Link to={`/doctors/${appointment.doctor}`} className="text-lg font-semibold text-primary hover:underline mb-1 inline-block">
-                         {/* Ideally display doctor name here if available */}
-                         Doctor ID: {appointment.doctor}
-                     </Link>
+                     <p className="text-lg font-semibold text-primary group-hover:underline mb-1 inline-block">
+                        {/* Ideally display doctor name here */}
+                        Doctor ID: {appointment.doctor}
++                    </p>
                     <p className="text-sm text-gray-600 mb-2">
                         <span className="font-medium">Reason:</span> {appointment.reason || 'Not specified'}
                     </p>
@@ -96,6 +97,7 @@ const AppointmentListItem: React.FC<AppointmentListItemProps> = ({ appointment, 
                      {/* Add link/button for "View Details" or "Join Call" (for virtual) later */}
                 </div>
             </div>
+            </Link>
         </li>
     );
 };
