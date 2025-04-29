@@ -12,7 +12,8 @@ import {
     XCircleIcon,
     InformationCircleIcon,
     PencilIcon, // Maybe for rescheduling later?
-    TrashIcon // Maybe for cancelling here instead of list?
+    TrashIcon, // Maybe for cancelling here instead of list?
+    UserIcon
 } from '@heroicons/react/24/outline'; // Using outline for consistency
 
 import { getAppointmentDetails, cancelAppointment } from '../api/appointments'; // API calls
