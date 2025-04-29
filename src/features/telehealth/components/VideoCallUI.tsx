@@ -1,16 +1,9 @@
 // src/features/telehealth/components/VideoCallUI.tsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import TwilioVideo, {
-    Room,
-    LocalTrack,
-    RemoteParticipant,
-    RemoteTrack,
-    LocalVideoTrack,
-    LocalAudioTrack,
-    RemoteVideoTrack, // Import specific track types
-    RemoteAudioTrack, // Import specific track types
-    ConnectOptions,
-    Participant as TwilioParticipant // Alias Participant type from Twilio
+    Room, LocalTrack, RemoteParticipant, RemoteTrack, LocalVideoTrack,
+    LocalAudioTrack, RemoteVideoTrack, RemoteAudioTrack, ConnectOptions,
+    Participant as TwilioParticipant, TwilioError
 } from 'twilio-video';
 import { MicrophoneIcon, VideoCameraIcon, VideoCameraSlashIcon, PhoneXMarkIcon, UserIcon } from '@heroicons/react/24/solid';
 
@@ -105,12 +98,12 @@ const Participant: React.FC<ParticipantProps> = ({ participant }) => {
             <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 py-0.5 rounded">
                 {participant.identity}
             </div>
-             {/* Placeholder if no video track */}
-             {!videoTrack && (
-                 <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
-                     <UserIcon className="h-1/3 w-1/3 text-gray-500"/>
-                 </div>
-             )}
+            {/* Placeholder if no video track */}
+            {!videoTrack && (
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+                    <UserIcon className="h-1/3 w-1/3 text-gray-500" />
+                </div>
+            )}
         </div>
     );
 };
@@ -137,27 +130,30 @@ const VideoCallUI: React.FC<VideoCallUIProps> = ({ token, roomName, onDisconnect
     // Cleanup function
     const cleanupAndDisconnect = useCallback(() => {
         if (room) {
-           room.localParticipant.tracks.forEach(publication => {
-               const track = publication.track;
-               // **FIX:** Check if track exists and is a media track before stopping/detaching
-               if (track) {
-                   if (track.kind === 'audio' || track.kind === 'video') {
-                       // stop() exists on LocalAudioTrack and LocalVideoTrack
-                       track.stop();
+            room.localParticipant.tracks.forEach(publication => {
+                const track = publication.track;
+                // **FIX:** Check if track exists and is a media track before stopping/detaching
+                if (track) {
+                    if (track.kind === 'audio' || track.kind === 'video') {
+                        // stop() exists on LocalAudioTrack and LocalVideoTrack
+                        track.stop();
                         // detach() also exists on media tracks
-                       track.detach().forEach((element: HTMLElement) => element.remove());
-                   }
-               }
-           });
-           room.disconnect();
-           setRoom(null);
-           setParticipants([]);
-       }
+                        track.detach().forEach((element: HTMLElement) => element.remove());
+                    }
+                }
+            });
+            room.disconnect();
+            setRoom(null);
+            setParticipants([]);
+        }
         onDisconnect();
     }, [room, onDisconnect]);
 
     // Effect to connect
     useEffect(() => {
+        // Ensure cleanup function reference is stable if needed, though defined outside is fine
+        const localCleanupAndDisconnect = cleanupAndDisconnect;
+
         setIsConnecting(true);
         setError(null);
 
@@ -167,73 +163,103 @@ const VideoCallUI: React.FC<VideoCallUIProps> = ({ token, roomName, onDisconnect
             video: { width: 640 }
         };
 
+        let roomReference: Room | null = null; // Local reference for cleanup race condition
+
         TwilioVideo.connect(token, connectOptions).then(
             (connectedRoom) => {
+                roomReference = connectedRoom; // Store reference
                 console.log(`Successfully joined a Room: ${connectedRoom.name}`);
-                setRoom(connectedRoom);
+                setRoom(connectedRoom); // Update state
                 setIsConnecting(false);
 
-                // **FIX:** Attach local video track to the container DIV
+                // Attach local video track
                 if (localVideoContainerRef.current) {
-                    // Clear previous video elements if any
                     localVideoContainerRef.current.innerHTML = '';
                     connectedRoom.localParticipant.tracks.forEach(publication => {
-                        if (publication.track && publication.kind === 'video') {
+                        if (publication.track?.kind === 'video') {
                             const videoElement = publication.track.attach();
                             videoElement.style.width = '100%';
                             videoElement.style.height = '100%';
                             videoElement.style.objectFit = 'cover';
-                            // Mute local video preview to avoid echo
                             videoElement.muted = true;
                             localVideoContainerRef.current?.appendChild(videoElement);
                         }
-                        // Note: Local audio doesn't need to be attached to an element
                     });
                 }
 
-                // Handle participants
+                // --- Event Listeners ---
+
+                // Handle existing participants before setting up listeners for new ones
                 const initialParticipants = Array.from(connectedRoom.participants.values());
                 setParticipants(initialParticipants);
 
-                connectedRoom.on('participantConnected', (participant) => {
+                // **DEFINE THE LISTENER FUNCTIONS**
+                const handleParticipantConnected = (participant: RemoteParticipant) => {
                     console.log(`Participant connected: ${participant.identity}`);
-                    setParticipants(prev => [...prev, participant]);
-                });
-                connectedRoom.on('participantDisconnected', (participant) => {
+                    setParticipants(prevParticipants => {
+                        if (!prevParticipants.some(p => p.sid === participant.sid)) {
+                            return [...prevParticipants, participant];
+                        }
+                        return prevParticipants;
+                    });
+                };
+
+                const handleParticipantDisconnected = (participant: RemoteParticipant) => {
                     console.log(`Participant disconnected: ${participant.identity}`);
-                    setParticipants(prev => prev.filter(p => p.identity !== participant.identity)); // Use identity for filter
-                });
-                connectedRoom.on('disconnected', (room, error) => {
+                    setParticipants(prevParticipants =>
+                        prevParticipants.filter(p => p.sid !== participant.sid)
+                    );
+                };
+
+                // Use TwilioError type if available from import
+                const handleRoomDisconnected = (room: Room, error?: TwilioError | Error) => {
                     console.warn('Disconnected from room:', room.name, error);
                     setError(error ? `Disconnected: ${error.message}` : 'Disconnected from call.');
-                    cleanupAndDisconnect(); // Use the stable cleanup function
-                });
+                    // Call the main cleanup function passed via props or defined with useCallback
+                    localCleanupAndDisconnect();
+                };
+
+                // **ATTACH THE LISTENERS (Replace Comments!)**
+                connectedRoom.on('participantConnected', handleParticipantConnected);
+                connectedRoom.on('participantDisconnected', handleParticipantDisconnected);
+                connectedRoom.on('disconnected', handleRoomDisconnected);
+
+                 // Store detach functions for cleanup
+                 const detachListeners = () => {
+                     connectedRoom.off('participantConnected', handleParticipantConnected);
+                     connectedRoom.off('participantDisconnected', handleParticipantDisconnected);
+                     connectedRoom.off('disconnected', handleRoomDisconnected);
+                 };
+                 // Assign to room reference for potential use in cleanup if state update is slow
+                 (roomReference as any)._detachListeners = detachListeners;
+
 
             },
             (connectionError) => {
-                // ... connection error handling ...
                 console.error(`Failed to connect: ${connectionError.message}`);
                 setError(`Failed to connect: ${connectionError.message}`);
                 setIsConnecting(false);
-                // Use onDisconnect only if it's meant for cleanup after *successful* connection attempt ends
-                // Maybe call a different prop like onConnectionFailed? Or handle directly here.
-                // For simplicity, we call onDisconnect here too.
-                onDisconnect();
+                onDisconnect(); // Call disconnect callback on connection failure
             }
         );
 
-        // Cleanup
+        // Cleanup function for the useEffect hook
         return () => {
-            // Use the stable cleanup function reference
-            if (room) { // Use the state variable 'room' here
-                cleanupAndDisconnect();
-            }
-        };
-        // Ensure stable references or include dependencies carefully
-        //}, [token, roomName, onDisconnect]); // Removed cleanupAndDisconnect from deps temporarily to avoid loops if it changes too often
-        // Let's try adding it back, ensuring useCallback is used correctly for it
+            console.log("Running useEffect cleanup for video connection");
+             // Use the local reference 'roomReference' which is captured at connection time
+             // This avoids issues if the 'room' state update hasn't completed yet when cleanup runs.
+             const roomToDisconnect = roomReference;
+             if (roomToDisconnect) {
+                  // Detach listeners if stored
+                  if (typeof (roomToDisconnect as any)._detachListeners === 'function') {
+                     (roomToDisconnect as any)._detachListeners();
+                 }
+                 // Ensure disconnect runs using the captured reference
+                 localCleanupAndDisconnect(); // Call the main cleanup/disconnect logic
+             }
+         };
+    // Dependencies - ensure stable functions are used where possible
     }, [token, roomName, onDisconnect, cleanupAndDisconnect]);
-
 
     // --- Media Controls (No changes needed here, logic is sound) ---
     const toggleVideo = useCallback(() => { /* ... */ }, [room, isVideoEnabled]);
