@@ -105,3 +105,5 @@ export const getTwilioToken = async (appointmentId: number): Promise<TwilioToken
         throw error;
     }
 };
+
+export type { TwilioTokenResponse };
