@@ -1,21 +1,24 @@
 // src/pages/AppointmentDetailPage.tsx
 
 import React, { useState, useEffect, useCallback } from 'react';
+// MODIFIED: Import useNavigate
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeftIcon, CalendarIcon, ClockIcon, VideoCameraIcon, BuildingOfficeIcon, CheckCircleIcon, XCircleIcon, InformationCircleIcon, PencilIcon, TrashIcon, UserIcon
-} from '@heroicons/react/24/outline'; // Using outline for consistency
+// MODIFIED: Import ArrowPathIcon for follow-up
+import {
+    ArrowLeftIcon, CalendarIcon, ClockIcon, VideoCameraIcon, BuildingOfficeIcon,
+    CheckCircleIcon, XCircleIcon, InformationCircleIcon, PencilIcon, TrashIcon, UserIcon,
+    ArrowPathIcon
+} from '@heroicons/react/24/outline';
 
-import { getAppointmentDetails, cancelAppointment } from '../api/appointments'; // API calls
-import { Appointment } from '../types/appointments'; // Type definition
-// Optional: Import Doctor type if fetching doctor details separately
-// import { Doctor } from '../../types/doctors';
-// import { getDoctorById } from '../../api/doctors';
+import { getAppointmentDetails, cancelAppointment } from '../api/appointments';
+import { Appointment } from '../types/appointments';
 
 // Assume LoadingSpinner and ErrorMessage components exist
-// import LoadingSpinner from '../../components/common/LoadingSpinner';
-// import ErrorMessage from '../../components/common/ErrorMessage';
+const LoadingSpinner: React.FC = () => <p>Loading...</p>;
+const ErrorMessage: React.FC<{ message: string }> = ({ message }) => <p className="text-red-600">{message}</p>;
 
-// --- Helper Functions (Consider moving to a utils file) ---
+
+// --- Helper Functions (Assume these exist from previous steps) ---
 const formatTime = (timeStr: string): string => {
     if (!timeStr) return '';
     try {
@@ -52,55 +55,32 @@ const getStatusInfo = (status: Appointment['status']): { text: string; color: st
 
 const AppointmentDetailPage: React.FC = () => {
     const { appointmentId } = useParams<{ appointmentId: string }>();
-    const navigate = useNavigate();
+    const navigate = useNavigate(); // MODIFIED: Added useNavigate hook
 
     const [appointment, setAppointment] = useState<Appointment | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [isCancelling, setIsCancelling] = useState<boolean>(false);
-    // Optional: state for doctor details if fetched separately
-    // const [doctorDetails, setDoctorDetails] = useState<Doctor | null>(null);
 
-    // --- Fetch Appointment Data ---
+    // Fetch Appointment Data (Assume this function exists and works)
     const fetchAppointment = useCallback(async () => {
-        if (!appointmentId) {
-            setError("Appointment ID not found in URL.");
-            setIsLoading(false);
-            return;
-        }
-
-        // Validate ID format
+        if (!appointmentId) { setError("Appointment ID not found."); setIsLoading(false); return; }
         const id = parseInt(appointmentId, 10);
-        if (isNaN(id)) {
-            setError("Invalid Appointment ID format.");
-            setIsLoading(false);
-            return;
-        }
-
-        setIsLoading(true);
-        setError(null);
+        if (isNaN(id)) { setError("Invalid Appointment ID."); setIsLoading(false); return; }
+        setIsLoading(true); setError(null);
         try {
             const data = await getAppointmentDetails(id);
             setAppointment(data);
-            // Optional: Fetch doctor details if needed
-            // if (data.doctor) {
-            //    const doctorData = await getDoctorById(data.doctor);
-            //    setDoctorDetails(doctorData);
-            // }
         } catch (err: any) {
-            console.error("Failed to fetch appointment details:", err);
-            setError(err.message || "Failed to load appointment details.");
-            setAppointment(null);
-        } finally {
-            setIsLoading(false);
-        }
+            setError(err.message || "Failed to load details."); setAppointment(null);
+        } finally { setIsLoading(false); }
     }, [appointmentId]);
 
     useEffect(() => {
         fetchAppointment();
     }, [fetchAppointment]);
 
-    // --- Handle Cancellation ---
+    // Handle Cancellation (Assume this function exists and works)
     const handleCancel = async () => {
         if (!appointment || !window.confirm("Are you sure you want to cancel this appointment?")) {
             return;
@@ -122,44 +102,43 @@ const AppointmentDetailPage: React.FC = () => {
         // No finally block for setIsCancelling if navigating away
     };
 
+    // --- ADDED: Handle Follow-up Scheduling ---
+    const handleScheduleFollowUp = () => {
+        if (!appointment) return;
+        const doctorId = appointment.doctor;
+        const originalDate = formatDate(appointment.date);
+        const reason = `Follow-up for appointment on ${originalDate}`;
+
+        // Navigate to the doctor's detail page and pass state
+        navigate(`/doctors/${doctorId}`, {
+            state: {
+                prefillReason: reason,
+                openBooking: true // Optional: Hint to auto-open booking modal
+            }
+        });
+    };
+    // --- End Handle Follow-up ---
+
     // --- Render Logic ---
     if (isLoading) {
-        return <div className="text-center py-10"><p>Loading appointment details...</p>{/* Spinner */}</div>;
+        return <div className="text-center py-10"><LoadingSpinner /></div>;
     }
-
     if (error) {
-        return (
-            <div className="text-center py-10 bg-red-50 text-red-700 p-4 rounded-md max-w-2xl mx-auto">
-                <p>{error}</p>
-                <Link to="/appointments" className="mt-4 inline-block text-primary hover:underline">
-                    &larr; Back to Appointments List
-                </Link>
-            </div>
-        );
+        return <div className="text-center py-10"><ErrorMessage message={error} /></div>;
     }
-
     if (!appointment) {
-        return (
-            <div className="text-center py-10">
-                <p className="text-muted">Appointment not found.</p>
-                <Link to="/appointments" className="mt-4 inline-block text-primary hover:underline">
-                    &larr; Back to Appointments List
-                </Link>
-            </div>
-        );
+        return <div className="text-center py-10"><p>Appointment not found.</p></div>;
     }
 
-    // Determine if actions like 'Cancel' or 'Join Call' should be shown
+    // Determine visibility of buttons
     const now = new Date();
     const appointmentStartTime = new Date(`${appointment.date}T${appointment.start_time}`);
-    // Allow joining slightly before start time (e.g., 15 mins) and maybe for a while after
     const joinWindowStart = new Date(appointmentStartTime.getTime() - 15 * 60000);
-    const joinWindowEnd = new Date(appointmentStartTime.getTime() + 60 * 60000); // Allow joining up to 1hr after start
+    const joinWindowEnd = new Date(appointmentStartTime.getTime() + 60 * 60000);
     const canCancel = ['scheduled', 'confirmed'].includes(appointment.status) && appointmentStartTime > now;
-    const canJoinCall = appointment.appointment_type === 'virtual' &&
-        ['scheduled', 'confirmed'].includes(appointment.status) && // Or just 'confirmed'?
-        now >= joinWindowStart && now <= joinWindowEnd;
-
+    const canJoinCall = appointment.appointment_type === 'virtual' && ['scheduled', 'confirmed'].includes(appointment.status) && now >= joinWindowStart && now <= joinWindowEnd;
+    // ADDED: Condition for showing follow-up button
+    const showScheduleFollowUp = appointment.status === 'completed';
 
     const { text: statusText, color: statusColor, icon: StatusIcon } = getStatusInfo(appointment.status);
 
@@ -171,8 +150,8 @@ const AppointmentDetailPage: React.FC = () => {
 
             <div className="bg-white shadow-lg rounded-lg overflow-hidden">
                 <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                    {/* ... Header Content ... */}
                     <h1 className="text-xl font-bold text-gray-800">Appointment Details</h1>
-                    {/* Status Badge */}
                     <span className={`mt-1 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor} bg-opacity-20`}>
                         <StatusIcon className={`h-3 w-3 mr-1 ${statusColor}`} />
                         {statusText}
@@ -180,23 +159,14 @@ const AppointmentDetailPage: React.FC = () => {
                 </div>
 
                 <div className="px-6 py-5 space-y-4">
-                    {/* Doctor Info */}
+                    {/* ... Existing detail rendering (Doctor, Date/Time, Type, Reason, Notes) ... */}
                     <div className="flex items-center space-x-3">
-                        {/* Placeholder for doctor image/icon */}
-                        <div className="h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center">
-                            <UserIcon className="h-6 w-6 text-gray-500" />
-                        </div>
+                        <div className="h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center"><UserIcon className="h-6 w-6 text-gray-500" /></div>
                         <div>
                             <p className="text-sm font-medium text-gray-500">Doctor</p>
-                            {/* Link to Doctor's profile */}
-                            <Link to={`/doctors/${appointment.doctor}`} className="text-lg font-semibold text-primary hover:underline">
-                                {/* TODO: Display Doctor's Name */}
-                                Doctor ID: {appointment.doctor}
-                            </Link>
+                            <Link to={`/doctors/${appointment.doctor}`} className="text-lg font-semibold text-primary hover:underline">Doctor ID: {appointment.doctor}</Link>
                         </div>
                     </div>
-
-                    {/* Date & Time */}
                     <div className='flex flex-col sm:flex-row sm:space-x-6'>
                         <div className="flex items-center">
                             <CalendarIcon className="h-5 w-5 text-gray-400 mr-2" />
@@ -213,69 +183,43 @@ const AppointmentDetailPage: React.FC = () => {
                             </div>
                         </div>
                     </div>
-
-
-                    {/* Type */}
                     <div className="flex items-center">
-                        {appointment.appointment_type === 'virtual' ? (
-                            <VideoCameraIcon className="h-5 w-5 text-purple-600 mr-2" />
-                        ) : (
-                            <BuildingOfficeIcon className="h-5 w-5 text-teal-600 mr-2" />
-                        )}
+                        {appointment.appointment_type === 'virtual' ? <VideoCameraIcon className="h-5 w-5 text-purple-600 mr-2" /> : <BuildingOfficeIcon className="h-5 w-5 text-teal-600 mr-2" />}
                         <div>
                             <p className="text-sm font-medium text-gray-500">Type</p>
                             <p className="text-md text-gray-800 capitalize">{appointment.appointment_type.replace('_', '-')}</p>
                         </div>
                     </div>
-
-                    {/* Reason */}
                     <div>
                         <p className="text-sm font-medium text-gray-500">Reason for Visit</p>
                         <p className="text-md text-gray-700 mt-1">{appointment.reason || <span className='italic'>Not specified</span>}</p>
                     </div>
-
-                    {/* Notes */}
                     {appointment.notes && (
                         <div>
                             <p className="text-sm font-medium text-gray-500">Additional Notes</p>
                             <p className="text-md text-gray-700 mt-1 whitespace-pre-wrap">{appointment.notes}</p>
                         </div>
                     )}
-
-                    {/* Follow-up */}
-                    {appointment.followup_required && (
-                        <p className="text-sm text-orange-600 font-medium">Follow-up Required.</p>
-                    )}
+                    {appointment.followup_required && (<p className="text-sm text-orange-600 font-medium">Follow-up Required.</p>)}
                 </div>
 
-                {/* --- Actions --- */}
+                {/* Actions */}
                 <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex flex-wrap gap-3">
                     {/* Join Call Button */}
-                    {canJoinCall && (
-                        <Link
-                            to={`/appointments/${appointment.id}/call`} // Link to the video call page
-                            className="btn-primary inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 focus:ring-green-500"
-                        >
-                            <VideoCameraIcon className="h-5 w-5 mr-2" />
-                            Join Virtual Call
-                        </Link>
-                    )}
-
+                    {canJoinCall && (<Link to={`/appointments/${appointment.id}/call`} className="btn-primary inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 focus:ring-green-500"><VideoCameraIcon className="h-5 w-5 mr-2" />Join Virtual Call</Link>)}
                     {/* Cancel Button */}
-                    {canCancel && (
+                    {canCancel && (<button onClick={handleCancel} disabled={isCancelling} className="inline-flex items-center px-4 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"><TrashIcon className="h-5 w-5 mr-2" />{isCancelling ? 'Cancelling...' : 'Cancel Appointment'}</button>)}
+                    {/* ADDED: Schedule Follow-up Button */}
+                    {showScheduleFollowUp && (
                         <button
-                            onClick={handleCancel}
-                            disabled={isCancelling}
-                            className="inline-flex items-center px-4 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
+                            onClick={handleScheduleFollowUp}
+                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         >
-                            <TrashIcon className="h-5 w-5 mr-2" />
-                            {isCancelling ? 'Cancelling...' : 'Cancel Appointment'}
+                            <ArrowPathIcon className="h-5 w-5 mr-2" />
+                            Schedule Follow-up
                         </button>
                     )}
-
-                    {/* Add Reschedule Button later if needed */}
                 </div>
-
             </div>
         </div>
     );
