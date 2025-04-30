@@ -1,5 +1,4 @@
 // src/types/user.ts
-
 // Assuming EmergencyContact types are also here or imported
 
 // --- Main User Profile Structure ---

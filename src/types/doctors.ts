@@ -1,5 +1,4 @@
 // src/types/doctors.ts
-
 export interface Specialty {
     id: number;
     name: string;

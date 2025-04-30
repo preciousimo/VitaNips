@@ -1,5 +1,4 @@
 // src/types/appointments.ts
-
 export interface Appointment {
     id: number;
     user: number; // User ID

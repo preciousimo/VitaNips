@@ -1,5 +1,4 @@
 // src/types/auth.ts
-
 // --- Authentication Tokens ---
 export interface AuthTokens {
     access: string;

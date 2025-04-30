@@ -1,5 +1,4 @@
 // src/types/prescriptions.ts
-
 export interface PrescriptionItem {
     id: number;
     prescription: number;

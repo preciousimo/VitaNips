@@ -11,7 +11,7 @@ interface ParticipantProps {
     participant: RemoteParticipant;
 }
 
-// --- Participant Component (with fixes) ---
+// --- Participant Component ---
 const Participant: React.FC<ParticipantProps> = ({ participant }) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const audioRef = useRef<HTMLAudioElement>(null);

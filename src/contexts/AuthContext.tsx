@@ -1,11 +1,5 @@
-import React, {
-    createContext,
-    useState,
-    useContext,
-    useEffect,
-    ReactNode,
-    useCallback,
-} from 'react';
+// src/context/AuthContext.tsx
+import React, {createContext, useState, useContext, useEffect, ReactNode, useCallback, } from 'react';
 import { jwtDecode } from 'jwt-decode'; // Ensure you installed jwt-decode
 import { User } from '../types/user';
 import { DecodedToken } from '../types/auth';
