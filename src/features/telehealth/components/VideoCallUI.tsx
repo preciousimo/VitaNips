@@ -1,27 +1,28 @@
 // src/features/telehealth/components/VideoCallUI.tsx
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import TwilioVideo, {
     Room, LocalTrack, RemoteParticipant, RemoteTrack, LocalVideoTrack,
     LocalAudioTrack, RemoteVideoTrack, RemoteAudioTrack, ConnectOptions,
-    Participant as TwilioParticipant, TwilioError
+    TwilioError // Import TwilioError
 } from 'twilio-video';
 import { MicrophoneIcon, VideoCameraIcon, VideoCameraSlashIcon, PhoneXMarkIcon, UserIcon } from '@heroicons/react/24/solid';
 
+// --- Participant Component (Refined Cleanup) ---
 interface ParticipantProps {
     participant: RemoteParticipant;
 }
 
-// --- Participant Component ---
 const Participant: React.FC<ParticipantProps> = ({ participant }) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const audioRef = useRef<HTMLAudioElement>(null);
-    // Store tracks directly
     const [videoTrack, setVideoTrack] = useState<RemoteVideoTrack | null>(null);
     const [audioTrack, setAudioTrack] = useState<RemoteAudioTrack | null>(null);
 
+    // Effect to handle track subscription and initial attachment
     useEffect(() => {
-        // Handle track subscription/unsubscription events
         const trackSubscribed = (track: RemoteTrack) => {
+             console.log(`Track subscribed for ${participant.identity}: ${track.kind} (${track.sid})`);
             if (track.kind === 'video') {
                 setVideoTrack(track as RemoteVideoTrack);
             } else if (track.kind === 'audio') {
@@ -30,32 +31,37 @@ const Participant: React.FC<ParticipantProps> = ({ participant }) => {
         };
 
         const trackUnsubscribed = (track: RemoteTrack) => {
-            if (track.kind === 'video' && videoTrack === track) { // Check if it's the currently stored track
-                setVideoTrack(null); // Setting to null will trigger cleanup effect below
-            } else if (track.kind === 'audio' && audioTrack === track) {
-                setAudioTrack(null); // Setting to null will trigger cleanup effect below
+             console.log(`Track unsubscribed for ${participant.identity}: ${track.kind} (${track.sid})`);
+            if (track.kind === 'video' && videoTrack?.sid === track.sid) {
+                setVideoTrack(null);
+            } else if (track.kind === 'audio' && audioTrack?.sid === track.sid) {
+                setAudioTrack(null);
             }
         };
 
-        // Handle existing tracks on initial mount
+        // Handle existing tracks
         participant.tracks.forEach(publication => {
-            if (publication.track && publication.isSubscribed) {
+            if (publication.isSubscribed && publication.track) {
                 trackSubscribed(publication.track);
             }
         });
 
+        // Attach listeners
         participant.on('trackSubscribed', trackSubscribed);
         participant.on('trackUnsubscribed', trackUnsubscribed);
 
+        // Cleanup listeners on component unmount or participant change
         return () => {
+            console.log(`Cleaning up listeners for participant ${participant.identity}`);
             participant.off('trackSubscribed', trackSubscribed);
             participant.off('trackUnsubscribed', trackUnsubscribed);
-            // Clear tracks on participant disconnect (handled by parent removing this component)
-            // or component unmount
+            // Setting state to null will trigger the track detach effects below
             setVideoTrack(null);
             setAudioTrack(null);
         };
-    }, [participant, videoTrack, audioTrack]); // Dependencies ensure cleanup if track references change
+        // Rerun if participant identity changes (shouldn't happen often, but safe)
+    }, [participant, videoTrack?.sid, audioTrack?.sid]); // Add track SIDs to deps? Maybe just participant is enough.
+
 
     // Effect to handle VIDEO attachment/detachment
     useEffect(() => {
@@ -66,12 +72,24 @@ const Participant: React.FC<ParticipantProps> = ({ participant }) => {
             track.attach(element);
             return () => {
                 console.log(`Detaching video track ${track.sid} from element for ${participant.identity}`);
-                track.detach(element);
+                 // Ensure track still exists and has detach method before calling
+                 if (track?.detach) {
+                    track.detach(element);
+                 } else {
+                    // If track is gone, try removing children as fallback (less ideal)
+                    while (element.firstChild) {
+                         element.removeChild(element.firstChild);
+                    }
+                 }
             };
+        } else if (element) {
+             // Explicitly clear content if track becomes null and element exists
+             while (element.firstChild) {
+                 element.removeChild(element.firstChild);
+             }
         }
-        // If track becomes null but was previously attached, detach might implicitly happen
-        // but explicitly clearing if element still exists can be safer if needed.
-    }, [videoTrack, participant.identity]); // Depend only on the track itself
+        // Depend only on the videoTrack state
+    }, [videoTrack, participant.identity]);
 
     // Effect to handle AUDIO attachment/detachment
     useEffect(() => {
@@ -82,18 +100,22 @@ const Participant: React.FC<ParticipantProps> = ({ participant }) => {
             track.attach(element);
             return () => {
                 console.log(`Detaching audio track ${track.sid} from element for ${participant.identity}`);
-                track.detach(element);
+                 if (track?.detach) { // Check method exists
+                     track.detach(element);
+                 }
             };
         }
+        // Audio doesn't need visual cleanup like video
+         // Depend only on the audioTrack state
     }, [audioTrack, participant.identity]);
 
 
     return (
         <div className="bg-gray-700 rounded p-1 relative w-full aspect-video overflow-hidden shadow-md">
             {/* Video element */}
-            <video ref={videoRef} autoPlay={true} playsInline={true} className="w-full h-full object-cover" />
-            {/* Audio element */}
-            <audio ref={audioRef} autoPlay={true} />
+            <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+            {/* Audio element - often kept muted if audio output handled differently, but required for attach */}
+            <audio ref={audioRef} autoPlay />
             {/* Identity Tag */}
             <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 py-0.5 rounded">
                 {participant.identity}
@@ -102,6 +124,7 @@ const Participant: React.FC<ParticipantProps> = ({ participant }) => {
             {!videoTrack && (
                 <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
                     <UserIcon className="h-1/3 w-1/3 text-gray-500" />
+                     {/* Optional: Add audio status indicator here */}
                 </div>
             )}
         </div>
@@ -118,65 +141,104 @@ interface VideoCallUIProps {
 
 const VideoCallUI: React.FC<VideoCallUIProps> = ({ token, roomName, onDisconnect }) => {
     const [room, setRoom] = useState<Room | null>(null);
-    const [participants, setParticipants] = useState<RemoteParticipant[]>([]);
+    const [participants, setParticipants] = useState<Map<string, RemoteParticipant>>(new Map()); // Use Map for easier updates
     const [isConnecting, setIsConnecting] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isVideoEnabled, setIsVideoEnabled] = useState(true);
     const [isAudioEnabled, setIsAudioEnabled] = useState(true);
 
-    // **FIX:** Ref should point to the DIV container for the local video
     const localVideoContainerRef = useRef<HTMLDivElement>(null);
 
-    // Cleanup function
+    // --- Stable Disconnect Function ---
+    // Memoized function to clean up and disconnect from the room
     const cleanupAndDisconnect = useCallback(() => {
-        if (room) {
-            room.localParticipant.tracks.forEach(publication => {
-                const track = publication.track;
-                // **FIX:** Check if track exists and is a media track before stopping/detaching
-                if (track) {
-                    if (track.kind === 'audio' || track.kind === 'video') {
-                        // stop() exists on LocalAudioTrack and LocalVideoTrack
-                        track.stop();
-                        // detach() also exists on media tracks
+        // Use a function form of setRoom to access the latest state if needed,
+        // although the 'room' variable captured by useCallback should be sufficient
+        // if dependencies are correct.
+        setRoom(currentRoom => {
+            if (currentRoom) {
+                console.log(`Disconnecting from room: ${currentRoom.name}`);
+                currentRoom.localParticipant.tracks.forEach(publication => {
+                    const track = publication.track;
+                    if (track && (track.kind === 'audio' || track.kind === 'video')) {
+                        if (typeof track.stop === 'function') track.stop();
                         track.detach().forEach((element: HTMLElement) => element.remove());
                     }
-                }
-            });
-            room.disconnect();
-            setRoom(null);
-            setParticipants([]);
-        }
-        onDisconnect();
-    }, [room, onDisconnect]);
+                });
+                currentRoom.disconnect();
+            }
+            return null; // Set room state to null
+        });
+        setParticipants(new Map()); // Reset participants
+        onDisconnect(); // Notify parent component
+   }, [onDisconnect]);
 
-    // Effect to connect
+    // --- Effect to Connect to Room ---
     useEffect(() => {
-        // Ensure cleanup function reference is stable if needed, though defined outside is fine
-        const localCleanupAndDisconnect = cleanupAndDisconnect;
+        if (!token || !roomName) {
+             setError("Missing connection details (token or room name).");
+             setIsConnecting(false);
+             return;
+        }
 
         setIsConnecting(true);
         setError(null);
+        let connectedRoomInstance: Room | null = null; // Local variable for cleanup reference
 
-        const connectOptions: ConnectOptions = {
-            name: roomName,
-            audio: true,
-            video: { width: 640 }
+        const connectOptions: ConnectOptions = { name: roomName, audio: true, video: { width: 640 } };
+
+        // --- Define Event Handlers INSIDE useEffect ---
+        // These functions will be specific to this particular effect run
+        // and will be correctly referenced in the cleanup function.
+        const handleParticipantConnected = (participant: RemoteParticipant) => {
+            console.log(`Participant connected: ${participant.identity} (SID: ${participant.sid})`);
+            setParticipants(prevParticipants => new Map(prevParticipants).set(participant.sid, participant));
         };
 
-        let roomReference: Room | null = null; // Local reference for cleanup race condition
+        const handleParticipantDisconnected = (participant: RemoteParticipant) => {
+            console.log(`Participant disconnected: ${participant.identity} (SID: ${participant.sid})`);
+            setParticipants(prevParticipants => {
+                const newParticipants = new Map(prevParticipants);
+                newParticipants.delete(participant.sid);
+                return newParticipants;
+            });
+        };
+
+        const handleRoomDisconnected = (room: Room, error?: TwilioError | Error) => {
+            console.warn(`Disconnected from room: ${room.name}`, error || '(No specific error)');
+             if (error) {
+                 let friendlyMessage = `Disconnected: ${error.message}`;
+                 if ('code' in error) {
+                     switch(error.code) {
+                         case 53118: friendlyMessage = "Could not access camera/microphone. Please check browser permissions."; break;
+                         case 20104: friendlyMessage = "Your connection token has expired or is invalid. Please try rejoining."; break;
+                         case 53000: case 53001: case 53002: friendlyMessage = "Connection lost. Please check your network and try again."; break;
+                         case 53405: friendlyMessage = "Could not establish media connection. Check network/firewall."; break;
+                     }
+                 }
+                 setError(friendlyMessage);
+             } else {
+                 setError('Disconnected from call.');
+             }
+             // Call the memoized cleanup function
+             cleanupAndDisconnect();
+        };
+        // --- End Event Handler Definitions ---
+
 
         TwilioVideo.connect(token, connectOptions).then(
-            (connectedRoom) => {
-                roomReference = connectedRoom; // Store reference
-                console.log(`Successfully joined a Room: ${connectedRoom.name}`);
-                setRoom(connectedRoom); // Update state
+            (roomInstance) => {
+                connectedRoomInstance = roomInstance; // Assign to local variable
+                console.log(`Successfully joined Room: ${connectedRoomInstance.name} (SID: ${connectedRoomInstance.sid})`);
+                setRoom(connectedRoomInstance); // Update state
                 setIsConnecting(false);
 
-                // Attach local video track
+                // Attach Local Video Track
                 if (localVideoContainerRef.current) {
                     localVideoContainerRef.current.innerHTML = '';
-                    connectedRoom.localParticipant.tracks.forEach(publication => {
-                        if (publication.track?.kind === 'video') {
+                    roomInstance.localParticipant.videoTracks.forEach(publication => {
+                        // **FIX 1:** Removed .isSubscribed check for local tracks
+                        if (publication.track) {
                             const videoElement = publication.track.attach();
                             videoElement.style.width = '100%';
                             videoElement.style.height = '100%';
@@ -187,127 +249,150 @@ const VideoCallUI: React.FC<VideoCallUIProps> = ({ token, roomName, onDisconnect
                     });
                 }
 
-                // --- Event Listeners ---
+                // Register listeners using the handlers defined above
+                roomInstance.on('participantConnected', handleParticipantConnected);
+                roomInstance.on('participantDisconnected', handleParticipantDisconnected);
+                roomInstance.on('disconnected', handleRoomDisconnected);
 
-                // Handle existing participants before setting up listeners for new ones
-                const initialParticipants = Array.from(connectedRoom.participants.values());
-                setParticipants(initialParticipants);
-
-                // **DEFINE THE LISTENER FUNCTIONS**
-                const handleParticipantConnected = (participant: RemoteParticipant) => {
-                    console.log(`Participant connected: ${participant.identity}`);
-                    setParticipants(prevParticipants => {
-                        if (!prevParticipants.some(p => p.sid === participant.sid)) {
-                            return [...prevParticipants, participant];
-                        }
-                        return prevParticipants;
-                    });
-                };
-
-                const handleParticipantDisconnected = (participant: RemoteParticipant) => {
-                    console.log(`Participant disconnected: ${participant.identity}`);
-                    setParticipants(prevParticipants =>
-                        prevParticipants.filter(p => p.sid !== participant.sid)
-                    );
-                };
-
-                // Use TwilioError type if available from import
-                const handleRoomDisconnected = (room: Room, error?: TwilioError | Error) => {
-                    console.warn('Disconnected from room:', room.name, error);
-                    setError(error ? `Disconnected: ${error.message}` : 'Disconnected from call.');
-                    // Call the main cleanup function passed via props or defined with useCallback
-                    localCleanupAndDisconnect();
-                };
-
-                // **ATTACH THE LISTENERS (Replace Comments!)**
-                connectedRoom.on('participantConnected', handleParticipantConnected);
-                connectedRoom.on('participantDisconnected', handleParticipantDisconnected);
-                connectedRoom.on('disconnected', handleRoomDisconnected);
-
-                 // Store detach functions for cleanup
-                 const detachListeners = () => {
-                     connectedRoom.off('participantConnected', handleParticipantConnected);
-                     connectedRoom.off('participantDisconnected', handleParticipantDisconnected);
-                     connectedRoom.off('disconnected', handleRoomDisconnected);
-                 };
-                 // Assign to room reference for potential use in cleanup if state update is slow
-                 (roomReference as any)._detachListeners = detachListeners;
-
+                // Handle participants already in the room
+                roomInstance.participants.forEach(handleParticipantConnected);
 
             },
-            (connectionError) => {
-                console.error(`Failed to connect: ${connectionError.message}`);
-                setError(`Failed to connect: ${connectionError.message}`);
-                setIsConnecting(false);
-                onDisconnect(); // Call disconnect callback on connection failure
-            }
-        );
-
-        // Cleanup function for the useEffect hook
-        return () => {
-            console.log("Running useEffect cleanup for video connection");
-             // Use the local reference 'roomReference' which is captured at connection time
-             // This avoids issues if the 'room' state update hasn't completed yet when cleanup runs.
-             const roomToDisconnect = roomReference;
-             if (roomToDisconnect) {
-                  // Detach listeners if stored
-                  if (typeof (roomToDisconnect as any)._detachListeners === 'function') {
-                     (roomToDisconnect as any)._detachListeners();
+            (connectionError: TwilioError | Error) => {
+                 console.error(`Failed to connect to room ${roomName}:`, connectionError);
+                 let friendlyMessage = `Failed to connect: ${connectionError.message}`;
+                 if ('code' in connectionError) {
+                     switch(connectionError.code) {
+                         case 53118: friendlyMessage = "Connection failed: Could not access camera/microphone. Please check browser permissions."; break;
+                         case 20101: case 20104: friendlyMessage = "Connection failed: Invalid or expired access token."; break;
+                     }
                  }
-                 // Ensure disconnect runs using the captured reference
-                 localCleanupAndDisconnect(); // Call the main cleanup/disconnect logic
+                 setError(friendlyMessage);
+                 setIsConnecting(false);
+                 onDisconnect();
              }
-         };
-    // Dependencies - ensure stable functions are used where possible
-    }, [token, roomName, onDisconnect, cleanupAndDisconnect]);
+         );
 
-    // --- Media Controls (No changes needed here, logic is sound) ---
-    const toggleVideo = useCallback(() => { /* ... */ }, [room, isVideoEnabled]);
-    const toggleAudio = useCallback(() => { /* ... */ }, [room, isAudioEnabled]);
-    // --- End Media Controls ---
+        // --- useEffect Cleanup Function ---
+        return () => {
+            console.log("Running VideoCallUI connection useEffect cleanup");
+            // Use the local variable that holds the room instance from this effect run
+            const roomToClean = connectedRoomInstance;
+            if (roomToClean) {
+                console.log(`Cleaning up listeners and disconnecting from room: ${roomToClean.name}`);
+                // **FIX 2:** Remove listeners using the correct function references captured in this scope
+                roomToClean.off('participantConnected', handleParticipantConnected);
+                roomToClean.off('participantDisconnected', handleParticipantDisconnected);
+                roomToClean.off('disconnected', handleRoomDisconnected);
+
+                // Call the memoized cleanup function which handles tracks and disconnect
+                cleanupAndDisconnect();
+            } else {
+                console.log("Cleanup called but no room instance was available from this effect run.");
+            }
+        };
+    // Dependencies: Rerun if token/roomName changes. cleanupAndDisconnect is stable.
+    }, [token, roomName, cleanupAndDisconnect]); 
 
 
-    // --- Render Logic (Mostly the same, update local video ref) ---
-    if (isConnecting) { /* ... */ }
-    if (error) { /* ... */ }
+     // --- Media Control Callbacks (Memoized) ---
+     const toggleVideo = useCallback(() => {
+         if (!room) return;
+         const videoTrack = Array.from(room.localParticipant.videoTracks.values())[0]?.track;
+         if (videoTrack && typeof videoTrack.isEnabled === 'boolean' && typeof videoTrack.enable === 'function' && typeof videoTrack.disable === 'function') {
+             if (videoTrack.isEnabled) {
+                 videoTrack.disable();
+                 setIsVideoEnabled(false);
+             } else {
+                 videoTrack.enable();
+                 setIsVideoEnabled(true);
+             }
+         } else {
+             console.warn("Could not find local video track to toggle.");
+         }
+     }, [room]);
+
+     const toggleAudio = useCallback(() => {
+         if (!room) return;
+         const audioTrack = Array.from(room.localParticipant.audioTracks.values())[0]?.track;
+          if (audioTrack && typeof audioTrack.isEnabled === 'boolean' && typeof audioTrack.enable === 'function' && typeof audioTrack.disable === 'function') {
+             if (audioTrack.isEnabled) {
+                 audioTrack.disable();
+                 setIsAudioEnabled(false);
+             } else {
+                 audioTrack.enable();
+                 setIsAudioEnabled(true);
+             }
+         } else {
+              console.warn("Could not find local audio track to toggle.");
+         }
+     }, [room]);
+     // --- End Media Controls ---
+
+
+    // --- Render Logic ---
+    if (isConnecting) {
+         return <div className="flex justify-center items-center h-screen"><p>Connecting to video call...</p></div>;
+    }
+
+    if (error) { // Show error overlay or message
+         return (
+             <div className="flex flex-col justify-center items-center h-screen bg-gray-900 text-white p-4">
+                 <p className="text-red-400 text-center mb-4">Error: {error}</p>
+                 {/* Allow manual disconnect/close even on error */}
+                 <button onClick={cleanupAndDisconnect} className="btn-primary bg-red-600 hover:bg-red-700">
+                     Close Call
+                 </button>
+            </div>
+         );
+    }
+
+    // Render the call UI if connected
+    const remoteParticipantsArray = Array.from(participants.values());
 
     return (
         <div className="flex flex-col h-screen bg-gray-900 text-white p-4">
-            <div className="flex-grow grid grid-cols-1 md:grid-cols-2 gap-4 items-center justify-center">
-                {/* Local Participant Video Container */}
-                <div ref={localVideoContainerRef} className="bg-black rounded relative w-full aspect-video overflow-hidden shadow-md">
-                    {/* Video track attached here by useEffect */}
-                    <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 py-0.5 rounded">
-                        You ({room?.localParticipant?.identity}) {!isAudioEnabled && '(Mic Muted)'} {!isVideoEnabled && '(Cam Off)'}
-                    </div>
-                </div>
+            {/* Dynamic Grid Layout */}
+             <div className={`flex-grow grid gap-2 items-center justify-center ${remoteParticipantsArray.length === 0 ? 'grid-cols-1' : (remoteParticipantsArray.length === 1 ? 'grid-cols-2' : 'grid-cols-2 grid-rows-2')} `}>
+                {/* Local Participant */}
+                 <div ref={localVideoContainerRef} className="bg-black rounded relative w-full aspect-video overflow-hidden shadow-md">
+                     <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 py-0.5 rounded">
+                         You ({room?.localParticipant?.identity}) {!isAudioEnabled && '(Mic Muted)'} {!isVideoEnabled && '(Cam Off)'}
+                     </div>
+                      {!isVideoEnabled && (
+                         <div className="absolute inset-0 flex items-center justify-center bg-gray-800 bg-opacity-75">
+                             <VideoCameraSlashIcon className="h-1/4 w-1/4 text-gray-500" />
+                         </div>
+                     )}
+                 </div>
 
-                {/* Remote Participants */}
-                {participants.map(participant => (
-                    <Participant key={participant.sid} participant={participant} />
-                ))}
-                {participants.length === 0 && ( /* Placeholder */
-                    <div className="bg-gray-800 rounded w-full aspect-video flex items-center justify-center text-muted flex-col shadow-md">
-                        <UserIcon className='h-16 w-16 mb-2' />
-                        <p>Waiting for others to join...</p>
-                    </div>
-                )}
+                 {/* Remote Participants */}
+                 {remoteParticipantsArray.map(participant => (
+                     <Participant key={participant.sid} participant={participant} />
+                 ))}
+
+                 {/* Placeholder */}
+                 {remoteParticipantsArray.length === 0 && !isConnecting && (
+                     <div className="bg-gray-800 rounded w-full aspect-video flex items-center justify-center text-muted flex-col shadow-md">
+                         <UserIcon className='h-16 w-16 mb-2' />
+                         <p>Waiting for others to join...</p>
+                     </div>
+                 )}
             </div>
 
-            {/* Controls (No changes needed) */}
-            <div className="flex-shrink-0 flex justify-center items-center space-x-4 py-4 mt-4 bg-gray-800 rounded-lg">
-                {/* ... buttons ... */}
-                <button onClick={toggleAudio} title={isAudioEnabled ? "Mute Mic" : "Unmute Mic"} className={`p-3 rounded-full ${isAudioEnabled ? 'bg-gray-600 hover:bg-gray-500' : 'bg-red-600 hover:bg-red-500'}`}>
-                    <MicrophoneIcon className={`h-6 w-6 ${isAudioEnabled ? 'text-white' : 'text-gray-300'}`} />
-                </button>
-                <button onClick={toggleVideo} title={isVideoEnabled ? "Stop Camera" : "Start Camera"} className={`p-3 rounded-full ${isVideoEnabled ? 'bg-gray-600 hover:bg-gray-500' : 'bg-red-600 hover:bg-red-500'}`}>
-                    {isVideoEnabled ? <VideoCameraIcon className="h-6 w-6 text-white" /> : <VideoCameraSlashIcon className="h-6 w-6 text-gray-300" />}
-                </button>
-                <button onClick={cleanupAndDisconnect} title="End Call" className="p-3 rounded-full bg-red-600 hover:bg-red-700">
-                    <PhoneXMarkIcon className="h-6 w-6 text-white" />
-                </button>
-            </div>
-        </div>
+            {/* Controls */}
+             <div className="flex-shrink-0 flex justify-center items-center space-x-4 py-4 mt-4 bg-gray-800 rounded-lg shadow-md">
+                 <button onClick={toggleAudio} title={isAudioEnabled ? "Mute Mic" : "Unmute Mic"} className={`p-3 rounded-full transition-colors ${isAudioEnabled ? 'bg-gray-600 hover:bg-gray-500' : 'bg-red-600 hover:bg-red-500'}`}>
+                     <MicrophoneIcon className={`h-6 w-6 ${isAudioEnabled ? 'text-white' : 'text-gray-300'}`} />
+                 </button>
+                 <button onClick={toggleVideo} title={isVideoEnabled ? "Stop Camera" : "Start Camera"} className={`p-3 rounded-full transition-colors ${isVideoEnabled ? 'bg-gray-600 hover:bg-gray-500' : 'bg-red-600 hover:bg-red-500'}`}>
+                     {isVideoEnabled ? <VideoCameraIcon className="h-6 w-6 text-white" /> : <VideoCameraSlashIcon className="h-6 w-6 text-gray-300" />}
+                 </button>
+                 <button onClick={cleanupAndDisconnect} title="End Call" className="p-3 rounded-full bg-red-600 hover:bg-red-700">
+                     <PhoneXMarkIcon className="h-6 w-6 text-white" />
+                 </button>
+             </div>
+         </div>
     );
 };
 
