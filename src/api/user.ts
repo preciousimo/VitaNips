@@ -22,6 +22,7 @@ export type UserProfileUpdatePayload = Partial<{
   notify_appointment_reminder_email?: boolean;
   notify_appointment_reminder_sms?: boolean;
   notify_refill_reminder_email?: boolean;
+  notify_appointment_reminder_push?: boolean;
 }>;
 
 

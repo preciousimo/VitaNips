@@ -2,13 +2,39 @@
 import axiosInstance from './axiosInstance';
 import axios from 'axios';
 import { PaginatedResponse } from '../types/common';
-import { Notification, UnreadNotificationCount } from '../types/notifications'; // Import types
+import { Notification, UnreadNotificationCount } from '../types/notifications';
+
+export type DeviceType = 'web' | 'ios' | 'android';
+
+export interface DeviceRegistrationPayload {
+    registration_id: string; // The FCM token or APNS token
+    type: DeviceType; // Type of the device
+}
+
+/**
+ * Registers the user's device token with the backend.
+ */
+export const registerDevice = async (payload: DeviceRegistrationPayload): Promise<{ detail: string }> => {
+    try {
+        const response = await axiosInstance.post<{ detail: string }>(
+            '/notifications/devices/register/',
+            payload
+        );
+        return response.data;
+    } catch (error: any) {
+        console.error('Failed to register device:', error);
+        // Throw a more specific error message if possible
+        const errorMsg = axios.isAxiosError(error) && error.response?.data?.error
+            ? error.response.data.error
+            : "Could not register device with server.";
+        throw new Error(errorMsg);
+    }
+};
 
 // Define parameter types for fetching notifications
 interface GetNotificationsParams {
     page?: number;
     unread?: boolean;
-    // Add other filters if needed
 }
 
 /**

@@ -1,9 +1,10 @@
 // src/context/AuthContext.tsx
 import React, {createContext, useState, useContext, useEffect, ReactNode, useCallback, } from 'react';
-import { jwtDecode } from 'jwt-decode'; // Ensure you installed jwt-decode
+import { jwtDecode } from 'jwt-decode';
 import { User } from '../types/user';
 import { DecodedToken } from '../types/auth';
-import axiosInstance from '../api/axiosInstance'; // Assuming you have user profile endpoint
+import axiosInstance from '../api/axiosInstance';
+import { initializePushNotifications } from '../utils/pushNotifications';
 
 interface AuthContextType {
     isAuthenticated: boolean;
@@ -35,13 +36,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, []);
 
     const fetchUserProfile = useCallback(async (token: string) => {
-        if (!token) return;
+        if (!token) { setIsLoading(false); return; }
+
+        // Reset user state before fetching
+        setUser(null);
+        setIsAuthenticated(false);
 
         try {
             const decoded = jwtDecode<DecodedToken>(token);
             if (decoded.exp * 1000 < Date.now()) {
                 console.log("Token expired on fetchUserProfile");
                 logout();
+                setIsLoading(false);
                 return;
             }
 
@@ -51,6 +57,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
             setUser(response.data);
             setIsAuthenticated(true);
+
+            if (response.data) {
+                initializePushNotifications();
+            }
+
         } catch (error) {
             console.error('Failed to fetch user profile or token invalid:', error);
             logout();
@@ -65,7 +76,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setAccessToken(access);
         setRefreshToken(refresh);
         setIsAuthenticated(true);
-        // fetchUserProfile will be triggered by useEffect
     };
 
     useEffect(() => {

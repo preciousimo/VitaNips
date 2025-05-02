@@ -1,11 +1,11 @@
 // src/features/user/components/ProfileEditForm.tsx
 import React, { useState, useEffect, FormEvent } from 'react';
 import { User } from '../../../types/user';
-import { UserProfileUpdatePayload } from '../../../api/user'; // Import the payload type
+import { UserProfileUpdatePayload } from '../../../api/user';
 
 interface ProfileEditFormProps {
     initialData: User | null;
-    onSubmit: (payload: UserProfileUpdatePayload) => Promise<User | void>; // Return updated user or void
+    onSubmit: (payload: UserProfileUpdatePayload) => Promise<User | void>;
     onCancel: () => void;
     isSubmitting: boolean;
 }
@@ -44,7 +44,7 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
     }, [initialData]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-        const { name, value, type } = e.target as HTMLInputElement; // Cast to access 'checked'
+        const { name, value, type } = e.target as HTMLInputElement;
 
         let processedValue: string | number | boolean | null = value;
 
@@ -171,33 +171,58 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
             <h4 className="md:col-span-2 text-md font-semibold text-gray-700">Notification Preferences</h4>
 
             <div className="md:col-span-2 space-y-2">
+                {/* Email Reminder Toggle */}
                 <div className="flex items-center">
                     <input
                         type="checkbox"
                         id="notify_appointment_reminder_email"
-                        name="notify_appointment_reminder_email" // Must match User model field name
+                        name="notify_appointment_reminder_email"
                         checked={formData.notify_appointment_reminder_email ?? false}
-                        onChange={handleChange} // Ensure handleChange handles checkboxes
-                        className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
-                    />
-                    <label htmlFor="notify_appointment_reminder_email" className="ml-2 block text-sm text-gray-900">
-                        Receive Appointment Reminders via Email
-                    </label>
-                </div>
-                <div className="flex items-center">
-                    <input
-                        type="checkbox"
-                        id="notify_refill_reminder_email"
-                        name="notify_refill_reminder_email"
-                        checked={formData.notify_refill_reminder_email ?? false}
                         onChange={handleChange}
                         className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
                     />
-                    <label htmlFor="notify_refill_reminder_email" className="ml-2 block text-sm text-gray-900">
-                        Receive Medication Refill Reminders via Email
+                    <label htmlFor="notify_appointment_reminder_email" className="ml-2 block text-sm text-gray-900">
+                        Reminders via Email
                     </label>
                 </div>
-                {/* Add toggles for SMS/Push if implementing */}
+
+                {/* SMS Reminder Toggle (Ensure field name matches User model) */}
+                <div className="flex items-center">
+                    <input
+                        type="checkbox"
+                        id="notify_appointment_reminder_sms"
+                        name="notify_appointment_reminder_sms"
+                        checked={formData.notify_appointment_reminder_sms ?? false}
+                        onChange={handleChange}
+                        className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
+                    />
+                    <label htmlFor="notify_appointment_reminder_sms" className="ml-2 block text-sm text-gray-900">
+                        Reminders via SMS
+                    </label>
+                </div>
+
+                {/* --- ADDED: Push Reminder Toggle --- */}
+                <div className="flex items-center">
+                    <input
+                        type="checkbox"
+                        id="notify_appointment_reminder_push"
+                        name="notify_appointment_reminder_push" // Matches User model field
+                        checked={formData.notify_appointment_reminder_push ?? false} // Use ?? false for default unchecked
+                        onChange={handleChange}
+                        className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
+                    />
+                    <label htmlFor="notify_appointment_reminder_push" className="ml-2 block text-sm text-gray-900">
+                        Reminders via Push Notification (Browser/App)
+                    </label>
+                </div>
+                {/* --- END ADDED --- */}
+
+                {/* Other preference toggles... */}
+                <div className="flex items-center">
+                    <input type="checkbox" id="notify_refill_reminder_email" name="notify_refill_reminder_email" checked={formData.notify_refill_reminder_email ?? false} onChange={handleChange} className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary" />
+                    <label htmlFor="notify_refill_reminder_email" className="ml-2 block text-sm text-gray-900">Receive Medication Refill Reminders via Email</label>
+                </div>
+
             </div>
 
             {/* Action Buttons */}
