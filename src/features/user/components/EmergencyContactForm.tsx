@@ -34,6 +34,7 @@ const EmergencyContactForm: React.FC<EmergencyContactFormProps> = ({
         } else {
             setFormData({ name: '', relationship: '', phone_number: '', email: null });
         }
+        setError(null);
     }, [initialData]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

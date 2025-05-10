@@ -43,6 +43,7 @@ const VaccinationForm: React.FC<VaccinationFormProps> = ({
                 next_dose_date: null, administered_at: null, batch_number: null, notes: null,
             });
         }
+        setError(null);
     }, [initialData]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {

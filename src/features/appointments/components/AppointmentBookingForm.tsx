@@ -73,6 +73,7 @@ const AppointmentBookingForm: React.FC<AppointmentBookingFormProps> = ({
             setAvailableSlots([]);
             setSelectedTime('');
         }
+        setError(null);
     }, [selectedDate, availability]);
 
     const calculateEndTime = (startTime: string, durationMinutes = 30): string => {
