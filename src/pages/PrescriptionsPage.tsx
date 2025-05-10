@@ -2,38 +2,27 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getUserPrescriptions } from '../api/prescriptions';
 import { Prescription } from '../types/prescriptions';
-// Assuming PaginatedResponse is defined
-// import { PaginatedResponse } from '../types/common';
 import PrescriptionListItem from '../features/prescriptions/components/PrescriptionListItem';
 import PrescriptionDetailView from '../features/prescriptions/components/PrescriptionDetailView';
 
 const PrescriptionsPage: React.FC = () => {
-    // State for results of the *current* page (or all loaded if fetching all pages)
     const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
-    // State for pagination (optional for this UI, but good to track)
     const [nextPageUrl, setNextPageUrl] = useState<string | null>(null);
     const [totalCount, setTotalCount] = useState<number>(0);
-    // Initial loading and error state
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
-    // Accordion state
     const [selectedPrescriptionId, setSelectedPrescriptionId] = useState<number | null>(null);
 
-    // NOTE: This page doesn't currently implement "Load More".
-    // It will only show the first page of prescriptions fetched.
-    // To show all, you'd need to implement page fetching loop or add pagination controls.
     const loadPrescriptions = useCallback(async () => {
         setIsLoading(true);
         setError(null);
-        setPrescriptions([]); // Reset
+        setPrescriptions([]);
         setNextPageUrl(null);
         setTotalCount(0);
-        setSelectedPrescriptionId(null); // Close accordion
+        setSelectedPrescriptionId(null);
         try {
-            // Fetch first page
-            const response = await getUserPrescriptions(); // Add params if needed
+            const response = await getUserPrescriptions();
             if (response && Array.isArray(response.results)) {
-                 // Sort newest first
                  setPrescriptions(response.results.sort((a, b) =>
                      new Date(b.date_prescribed).getTime() - new Date(a.date_prescribed).getTime()
                  ));
@@ -61,7 +50,6 @@ const PrescriptionsPage: React.FC = () => {
         setSelectedPrescriptionId(prevId => (prevId === id ? null : id));
     };
 
-    // Find the full prescription object only if an ID is selected
     const selectedPrescription = prescriptions.find(p => p.id === selectedPrescriptionId);
 
     return (
@@ -74,7 +62,6 @@ const PrescriptionsPage: React.FC = () => {
                 <p className="text-red-600 text-center py-4 bg-red-50 rounded">{error}</p>
             ) : (
                  <>
-                    {/* Optionally display count */}
                     {totalCount > 0 && (
                         <p className="text-sm text-muted mb-4">Displaying {prescriptions.length} of {totalCount} prescriptions.</p>
                     )}
@@ -101,9 +88,6 @@ const PrescriptionsPage: React.FC = () => {
                              <p className="text-gray-600">You do not have any prescriptions recorded.</p>
                         </div>
                     )}
-
-                    {/* Placeholder for potential pagination controls if needed later */}
-                    {/* {nextPageUrl && <div className="mt-6 text-center"> Add Load More or Page Buttons </div>} */}
                  </>
             )}
         </div>

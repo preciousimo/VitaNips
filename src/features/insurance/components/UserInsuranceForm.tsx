@@ -17,7 +17,7 @@ const UserInsuranceForm: React.FC<UserInsuranceFormProps> = ({
     isSubmitting
 }) => {
     const [formData, setFormData] = useState<Partial<UserInsurancePayload>>({
-        plan: undefined, // Plan ID
+        plan: undefined,
         policy_number: '',
         group_number: null,
         member_id: '',
@@ -29,7 +29,6 @@ const UserInsuranceForm: React.FC<UserInsuranceFormProps> = ({
     const [loadingPlans, setLoadingPlans] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
-    // Fetch available plans for the dropdown
     useEffect(() => {
         setLoadingPlans(true);
         getAvailablePlans()
@@ -50,11 +49,10 @@ const UserInsuranceForm: React.FC<UserInsuranceFormProps> = ({
             .finally(() => setLoadingPlans(false));
     }, []);
 
-    // Pre-fill form if editing
     useEffect(() => {
         if (initialData) {
             setFormData({
-                plan: initialData.plan.id, // Use plan ID
+                plan: initialData.plan.id,
                 policy_number: initialData.policy_number || '',
                 group_number: initialData.group_number || null,
                 member_id: initialData.member_id || '',
@@ -63,7 +61,6 @@ const UserInsuranceForm: React.FC<UserInsuranceFormProps> = ({
                 is_primary: initialData.is_primary || false,
             });
         } else {
-             // Reset form for adding
              setFormData({
                 plan: undefined, policy_number: '', group_number: null, member_id: '',
                 start_date: '', end_date: null, is_primary: false,
@@ -95,7 +92,6 @@ const UserInsuranceForm: React.FC<UserInsuranceFormProps> = ({
              return;
         }
 
-        // Assert formData.plan is number because we checked it
         const payload: UserInsurancePayload = {
             plan: formData.plan as number,
             policy_number: formData.policy_number,
@@ -121,7 +117,6 @@ const UserInsuranceForm: React.FC<UserInsuranceFormProps> = ({
             </h3>
             {error && <p className="text-red-600 text-sm">{error}</p>}
 
-             {/* Form Fields */}
              <div className="grid grid-cols-1 gap-4">
                  <div>
                     <label htmlFor="plan" className="block text-sm font-medium text-gray-700">Insurance Plan *</label>
@@ -165,13 +160,8 @@ const UserInsuranceForm: React.FC<UserInsuranceFormProps> = ({
                     <input type="checkbox" name="is_primary" id="is_primary" checked={formData.is_primary ?? false} onChange={handleChange} className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary" />
                     <label htmlFor="is_primary" className="ml-2 block text-sm text-gray-900">Set as Primary Plan</label>
                 </div>
-                 {/* TODO: Add File input for card images - requires different handling */}
-                 {/* <div><label>Card Front:</label><input type="file" name="card_front" /></div> */}
-                 {/* <div><label>Card Back:</label><input type="file" name="card_back" /></div> */}
              </div>
 
-
-            {/* Action Buttons */}
             <div className="flex justify-end space-x-3 pt-4 border-t mt-4">
                 <button type="button" onClick={onCancel} className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                     Cancel

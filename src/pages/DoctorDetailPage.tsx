@@ -3,7 +3,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeftIcon, StarIcon, CheckBadgeIcon, LanguageIcon, BanknotesIcon, CalendarDaysIcon, AcademicCapIcon } from '@heroicons/react/24/solid';
 
-// Import necessary API functions and types
 import { getDoctorById, getDoctorReviews, getDoctorAvailability, PostReviewPayload, postDoctorReview } from '../api/doctors';
 import { Doctor, DoctorReview, DoctorAvailability } from '../types/doctors';
 import { Appointment } from '../types/appointments';
@@ -15,11 +14,8 @@ import AppointmentBookingForm from '../features/appointments/components/Appointm
 import Modal from '../components/common/Modal';
 import { useAuth } from '../contexts/AuthContext';
 
-// Placeholder components
 const LoadingSpinner: React.FC = () => <p className="text-muted">Loading...</p>;
 const ErrorMessage: React.FC<{ message: string }> = ({ message }) => <p className="text-red-600">{message}</p>;
-
-// Review Form Component
 interface ReviewFormProps {
     doctorId: number;
     onSubmitSuccess: () => void;
@@ -105,7 +101,6 @@ const DoctorDetailPage: React.FC = () => {
     const [doctor, setDoctor] = useState<Doctor | null>(null);
     const [availability, setAvailability] = useState<DoctorAvailability[]>([]);
 
-    // State for Reviews
     const [reviews, setReviews] = useState<DoctorReview[]>([]);
     const [reviewsNextPageUrl, setReviewsNextPageUrl] = useState<string | null>(null);
     const [reviewsTotalCount, setReviewsTotalCount] = useState<number>(0);
@@ -120,7 +115,6 @@ const DoctorDetailPage: React.FC = () => {
 
     const placeholderImage = '/default-doctor-avatar.png';
 
-    // FIXED: Removed doctor and availability from dependencies to prevent infinite loop
     const loadDoctorData = useCallback(async (refreshReviews: boolean = false) => {
         if (!doctorId) {
             setError("Doctor ID not found in URL.");
@@ -149,7 +143,6 @@ const DoctorDetailPage: React.FC = () => {
                 throw new Error("Invalid Doctor ID format.");
             }
 
-            // Use Promise.allSettled to handle partial failures gracefully
             const results = await Promise.allSettled([
                 (!doctor || !refreshReviews) ? getDoctorById(id) : Promise.resolve(doctor),
                 getDoctorReviews(id),
@@ -158,7 +151,6 @@ const DoctorDetailPage: React.FC = () => {
                     Promise.resolve({ results: availability, next: null, previous: null, count: availability.length }),
             ]);
 
-            // Process Doctor Details
             const docResult = results[0];
             if (docResult.status === 'fulfilled') {
                 setDoctor(docResult.value as Doctor);
@@ -167,7 +159,6 @@ const DoctorDetailPage: React.FC = () => {
                 throw new Error(docResult.reason?.message || "Failed to load doctor details.");
             }
 
-            // Process Reviews
             const reviewResult = results[1];
             if (reviewResult.status === 'fulfilled') {
                 const reviewResponse = reviewResult.value as PaginatedResponse<DoctorReview>;
@@ -186,7 +177,6 @@ const DoctorDetailPage: React.FC = () => {
                 setReviews([]);
             }
 
-            // Process Availability
             const availResult = results[2];
             if (availResult.status === 'fulfilled') {
                 const availResponse = availResult.value as PaginatedResponse<DoctorAvailability>;
@@ -212,14 +202,11 @@ const DoctorDetailPage: React.FC = () => {
             setIsLoading(false);
             setIsLoadingReviews(false);
         }
-    }, [doctorId]); // FIXED: Removed doctor and availability from dependencies
-
-    // Initial load effect
+    }, [doctorId]);
     useEffect(() => {
         loadDoctorData();
     }, [loadDoctorData]);
 
-    // Function to load more reviews
     const loadMoreReviews = async () => {
         if (!reviewsNextPageUrl || isLoadingMoreReviews) return;
 
@@ -244,7 +231,6 @@ const DoctorDetailPage: React.FC = () => {
         }
     };
 
-    // Callback for ReviewForm success
     const handleReviewSubmitSuccess = () => {
         loadDoctorData(true);
     };
@@ -263,7 +249,6 @@ const DoctorDetailPage: React.FC = () => {
         setBookingSuccess(`Appointment booked successfully for ${newAppointment.date} at ${formatTime(newAppointment.start_time)}!`);
     };
 
-    // Helper function
     const formatTime = (timeStr: string): string => {
         if (!timeStr) return '';
         try {
@@ -274,7 +259,6 @@ const DoctorDetailPage: React.FC = () => {
         } catch { return timeStr; }
     };
     
-    // Loading State
     if (isLoading) {
         return (
             <div className="flex justify-center items-center h-64">
@@ -283,7 +267,6 @@ const DoctorDetailPage: React.FC = () => {
         );
     }
 
-    // Error State
     if (error && !doctor) {
         return (
             <div className="text-center py-10 bg-red-50 text-red-700 p-4 rounded-md max-w-2xl mx-auto">
@@ -295,7 +278,6 @@ const DoctorDetailPage: React.FC = () => {
         );
     }
 
-    // No Doctor Found State
     if (!doctor) {
         return (
             <div className="text-center py-10">
@@ -307,7 +289,6 @@ const DoctorDetailPage: React.FC = () => {
         );
     }
 
-    // Success State (Render Profile)
     const displayedRating = doctor.average_rating > 0 ? doctor.average_rating.toFixed(1) : 'No ratings';
 
     return (
@@ -318,10 +299,8 @@ const DoctorDetailPage: React.FC = () => {
                 Back to Doctors List
             </Link>
 
-            {/* Display general page error if it occurred but doctor data loaded */}
             {error && <ErrorMessage message={error} />}
 
-            {/* Booking Success Message */}
             {bookingSuccess && (
                 <div className="mb-4 p-3 bg-green-50 text-green-700 border border-green-200 rounded-md text-sm">
                     {bookingSuccess} Check your <Link to="/appointments" className="font-medium underline hover:text-green-800">Appointments page</Link> for details.
@@ -373,7 +352,6 @@ const DoctorDetailPage: React.FC = () => {
                      </div>
                 </div>
 
-                {/* Details Section */}
                 <div className="p-6 border-t border-gray-200">
                     <div className="mb-6">
                          <h3 className="text-lg font-semibold text-gray-800 mb-2">About Dr. {doctor.last_name}</h3>
@@ -395,7 +373,6 @@ const DoctorDetailPage: React.FC = () => {
                         </div>
                      </div>
 
-                    {/* Availability */}
                     <div className="mb-6 border-t pt-4">
                         <AvailabilityDisplay availability={availability} />
                         {availability.length === 0 && !isLoading && (
@@ -403,7 +380,6 @@ const DoctorDetailPage: React.FC = () => {
                         )}
                     </div>
 
-                    {/* Reviews Section */}
                     <div className="border-t pt-4">
                         <h3 className="text-lg font-semibold text-gray-800 mb-3">Patient Reviews ({reviewsTotalCount})</h3>
                         {isLoadingReviews && <LoadingSpinner />}
@@ -442,7 +418,6 @@ const DoctorDetailPage: React.FC = () => {
                     </div>
                 </div>
             </div>
-            {/* Booking Modal */}
              <Modal isOpen={showBookingModal} onClose={handleCloseBookingModal} title={`Book Appointment with ${doctor.full_name}`}>
                  <AppointmentBookingForm
                     doctorId={doctor.id}

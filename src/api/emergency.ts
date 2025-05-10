@@ -2,16 +2,14 @@
 import axios from 'axios';
 import axiosInstance from './axiosInstance';
 import { PaginatedResponse } from '../types/common';
-// Define EmergencyService type based on your emergency/serializers.py
 export interface EmergencyService {
     id: number;
     name: string;
-    service_type: string; // Consider using specific literals: 'hospital' | 'ambulance' | ...
+    service_type: string;
     address: string;
     phone_number: string;
     latitude: number;
     longitude: number;
-    // Add other fields from serializer
     is_24_hours: boolean;
     has_emergency_room?: boolean;
     provides_ambulance?: boolean;
@@ -22,16 +20,13 @@ interface GetEmergencyServicesParams {
   lat?: number;
   lon?: number;
   radius?: number;
-  service_type?: string; // Filter by type
+  service_type?: string;
 }
 
-/**
- * Fetches emergency services, handling pagination and location filtering.
- */
 export const getEmergencyServices = async (
     paramsOrUrl: GetEmergencyServicesParams | string | null = null
 ): Promise<PaginatedResponse<EmergencyService>> => {
-    const endpoint = '/emergency/services/'; // Matches emergency/urls.py
+    const endpoint = '/emergency/services/';
     try {
         let response;
         if (typeof paramsOrUrl === 'string') {
@@ -54,24 +49,18 @@ interface SOSTriggerPayload {
     message?: string | null;
 }
 
-/**
- * Triggers the SOS alert process on the backend.
- */
-export const triggerSOS = async (payload: SOSTriggerPayload): Promise<{ status: string }> => { // Expects {status: "..."} on 202
+export const triggerSOS = async (payload: SOSTriggerPayload): Promise<{ status: string }> => {
     try {
         const response = await axiosInstance.post<{ status: string }>(
-            '/emergency/trigger_sos/', // Matches emergency/urls.py
+            '/emergency/trigger_sos/',
             payload
         );
-        return response.data; // Should contain { status: "SOS signal received..." }
+        return response.data;
     } catch (error) {
         console.error('Failed to trigger SOS:', error);
-        // Attempt to extract backend error message
         if (axios.isAxiosError(error) && error.response?.data?.error) {
             throw new Error(error.response.data.error);
         }
-        throw error; // Re-throw original or generic error
+        throw error;
     }
 };
-
-// ... other emergency API functions (contacts, alerts) ...

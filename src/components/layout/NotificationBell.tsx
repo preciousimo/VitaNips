@@ -11,7 +11,7 @@ import { Notification } from '../../types/notifications';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
-const POLLING_INTERVAL_MS = 60000; // 60 seconds
+const POLLING_INTERVAL_MS = 60000;
 
 const NotificationBell: React.FC = () => {
     const { isAuthenticated } = useAuth();

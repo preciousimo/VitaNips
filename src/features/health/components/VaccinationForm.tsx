@@ -3,10 +3,10 @@ import React, { useState, useEffect, FormEvent } from 'react';
 import { Vaccination, VaccinationPayload } from '../../../types/health';
 
 interface VaccinationFormProps {
-    initialData?: Vaccination | null; // Pass data for editing, null for adding
-    onSubmit: (payload: VaccinationPayload, id?: number) => Promise<void>; // Handles API call
-    onCancel: () => void; // To close the form/modal
-    isSubmitting: boolean; // To disable button during API call
+    initialData?: Vaccination | null;
+    onSubmit: (payload: VaccinationPayload, id?: number) => Promise<void>;
+    onCancel: () => void;
+    isSubmitting: boolean;
 }
 
 const VaccinationForm: React.FC<VaccinationFormProps> = ({
@@ -28,10 +28,8 @@ const VaccinationForm: React.FC<VaccinationFormProps> = ({
 
     useEffect(() => {
         if (initialData) {
-            // Pre-fill form for editing, ensure correct types/formats
             setFormData({
                 vaccine_name: initialData.vaccine_name || '',
-                // Input type 'date' expects YYYY-MM-DD
                 date_administered: initialData.date_administered ? initialData.date_administered.split('T')[0] : '',
                 dose_number: initialData.dose_number || 1,
                 next_dose_date: initialData.next_dose_date ? initialData.next_dose_date.split('T')[0] : null,
@@ -40,7 +38,6 @@ const VaccinationForm: React.FC<VaccinationFormProps> = ({
                 notes: initialData.notes || null,
             });
         } else {
-            // Reset form for adding
              setFormData({
                 vaccine_name: '', date_administered: '', dose_number: 1,
                 next_dose_date: null, administered_at: null, batch_number: null, notes: null,
@@ -51,10 +48,9 @@ const VaccinationForm: React.FC<VaccinationFormProps> = ({
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
 
-         // Handle null values correctly for optional fields
          let processedValue: string | number | null = value;
          if (type === 'number') {
-            processedValue = value ? parseInt(value, 10) : 1; // Default dose to 1 if empty
+            processedValue = value ? parseInt(value, 10) : 1;
          } else if ((name === 'next_dose_date' || name === 'administered_at' || name === 'batch_number' || name === 'notes') && value === '') {
             processedValue = null;
          }
@@ -69,14 +65,12 @@ const VaccinationForm: React.FC<VaccinationFormProps> = ({
         e.preventDefault();
         setError(null);
 
-         // Basic validation
         if (!formData.vaccine_name || !formData.date_administered || formData.dose_number < 1) {
             setError("Vaccine Name, Date Administered, and Dose Number (>=1) are required.");
             return;
         }
 
         try {
-             // Clean up payload: ensure optional fields are null if empty string
              const payload: VaccinationPayload = {
                 ...formData,
                 next_dose_date: formData.next_dose_date || null,
@@ -92,14 +86,12 @@ const VaccinationForm: React.FC<VaccinationFormProps> = ({
     };
 
     return (
-        // This form can be placed inside a Modal component
         <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg shadow-lg">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">
                 {initialData ? 'Edit Vaccination Record' : 'Add New Vaccination Record'}
             </h3>
             {error && <p className="text-red-600 text-sm">{error}</p>}
 
-            {/* Form Fields */}
              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label htmlFor="vaccine_name" className="block text-sm font-medium text-gray-700">Vaccine Name *</label>
@@ -131,8 +123,6 @@ const VaccinationForm: React.FC<VaccinationFormProps> = ({
                 </div>
              </div>
 
-
-            {/* Action Buttons */}
             <div className="flex justify-end space-x-3 pt-4 border-t mt-4">
                 <button type="button" onClick={onCancel} className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                     Cancel

@@ -16,26 +16,19 @@ const MedicalDocumentUploadForm: React.FC<MedicalDocumentUploadFormProps> = ({
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [description, setDescription] = useState<string>('');
     const [documentType, setDocumentType] = useState<string>('');
-    // Optional: Add state for linking to an appointment ID if needed
-    // const [appointmentId, setAppointmentId] = useState<number | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files.length > 0) {
-            // Basic validation (optional: add size/type checks here)
             const file = event.target.files[0];
-            if (file.size > 10 * 1024 * 1024) { // Example: 10MB limit
+            if (file.size > 10 * 1024 * 1024) {
                  setError("File is too large. Maximum size is 10MB.");
                  setSelectedFile(null);
-                 event.target.value = ''; // Clear the input
+                 event.target.value = '';
                  return;
             }
-            // Add allowed types check if needed
-            // const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
-            // if (!allowedTypes.includes(file.type)) { ... }
-
             setSelectedFile(file);
-            setError(null); // Clear previous errors
+            setError(null);
         } else {
             setSelectedFile(null);
         }
@@ -53,15 +46,12 @@ const MedicalDocumentUploadForm: React.FC<MedicalDocumentUploadFormProps> = ({
         const payload: MedicalDocumentUploadPayload = {
             description: description || null,
             document_type: documentType || null,
-            // appointment: appointmentId // Pass if implementing appointment linking
         };
 
         try {
             await onSubmit(payload, selectedFile);
-            // Reset form on successful submission (handled by parent closing modal)
         } catch (err: any) {
             console.error('Upload submission error:', err);
-             // Try to get specific errors from backend response
              const backendErrors = err.response?.data;
              if (typeof backendErrors === 'object' && backendErrors !== null) {
                  const messages = Object.entries(backendErrors)
@@ -88,8 +78,6 @@ const MedicalDocumentUploadForm: React.FC<MedicalDocumentUploadFormProps> = ({
                     required
                     onChange={handleFileChange}
                     className="input-field file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary-light file:text-primary-dark hover:file:bg-primary/20"
-                    // Optional: Add accept attribute for specific file types
-                    // accept=".pdf,.jpg,.jpeg,.png"
                 />
                  {selectedFile && <p className='text-xs text-muted mt-1'>Selected: {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)</p>}
             </div>
@@ -119,11 +107,7 @@ const MedicalDocumentUploadForm: React.FC<MedicalDocumentUploadFormProps> = ({
                     placeholder="e.g., Lab Result, Scan, Report, Referral"
                 />
             </div>
-
-            {/* Optional: Input for Appointment ID */}
-            {/* <div> ... input for appointmentId ... </div> */}
-
-            {/* Action Buttons */}
+            
             <div className="flex justify-end space-x-3 pt-4 border-t mt-4">
                 <button type="button" onClick={onCancel} className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
                     Cancel

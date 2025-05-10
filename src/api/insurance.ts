@@ -1,17 +1,15 @@
 // src/api/insurance.ts
 import axiosInstance from './axiosInstance';
 import { UserInsurance, UserInsurancePayload, InsurancePlan } from '../types/insurance';
-import { PaginatedResponse } from '../types/common'; // Import common type
+import { PaginatedResponse } from '../types/common';
 
 type InsuranceListParams = { page?: number; is_primary?: boolean };
 type PlanListParams = { page?: number; provider?: number };
 
-/**
- * Fetches the logged-in user's insurance records, handling pagination.
- */
+
 export const getUserInsurances = async (
     paramsOrUrl: InsuranceListParams | string | null = null
-): Promise<PaginatedResponse<UserInsurance>> => { // <-- Updated return type
+): Promise<PaginatedResponse<UserInsurance>> => {
     const endpoint = '/insurance/user-insurance/';
     try {
         let response;
@@ -29,14 +27,9 @@ export const getUserInsurances = async (
     }
 };
 
-/**
- * Fetches a list of all available (active) insurance plans.
- * NOTE: Assuming this list MIGHT be long and COULD be paginated by DRF defaults.
- * If it's guaranteed to be short and unpaginated, revert to Promise<InsurancePlan[]>.
- */
 export const getAvailablePlans = async (
     paramsOrUrl: PlanListParams | string | null = null
-): Promise<PaginatedResponse<InsurancePlan>> => { // <-- Updated return type (assuming pagination)
+): Promise<PaginatedResponse<InsurancePlan>> => {
     const endpoint = '/insurance/plans/';
     try {
         let response;
@@ -45,7 +38,6 @@ export const getAvailablePlans = async (
             const pathWithQuery = url.pathname + url.search;
             response = await axiosInstance.get<PaginatedResponse<InsurancePlan>>(pathWithQuery);
         } else {
-            // Ensure backend filters for active=True if needed, or add param here
             response = await axiosInstance.get<PaginatedResponse<InsurancePlan>>(endpoint, { params: paramsOrUrl });
         }
         return response.data;
@@ -55,11 +47,6 @@ export const getAvailablePlans = async (
     }
 };
 
-// --- Functions for single items or actions remain the same ---
-
-/**
- * Adds a new insurance record for the user.
- */
 export const addUserInsurance = async (payload: UserInsurancePayload): Promise<UserInsurance> => {
     try {
         const response = await axiosInstance.post<UserInsurance>('/insurance/user-insurance/', payload);
@@ -70,9 +57,6 @@ export const addUserInsurance = async (payload: UserInsurancePayload): Promise<U
     }
 };
 
-/**
- * Updates an existing user insurance record.
- */
 export const updateUserInsurance = async (id: number, payload: Partial<UserInsurancePayload>): Promise<UserInsurance> => {
     try {
         const response = await axiosInstance.patch<UserInsurance>(`/insurance/user-insurance/${id}/`, payload);
@@ -83,9 +67,6 @@ export const updateUserInsurance = async (id: number, payload: Partial<UserInsur
     }
 };
 
-/**
- * Deletes a user insurance record.
- */
 export const deleteUserInsurance = async (id: number): Promise<void> => {
     try {
         await axiosInstance.delete(`/insurance/user-insurance/${id}/`);
@@ -94,5 +75,3 @@ export const deleteUserInsurance = async (id: number): Promise<void> => {
         throw error;
     }
 };
-
-// Add API functions for Claims and Documents later (will likely need pagination too)

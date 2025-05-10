@@ -1,7 +1,7 @@
 // src/features/prescriptions/components/PrescriptionListItem.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { CalendarDaysIcon, ChevronRightIcon } from '@heroicons/react/24/outline'; // Assuming UserDoctorIcon exists or use a different one
+import { CalendarDaysIcon, ChevronRightIcon, UserIcon } from '@heroicons/react/24/outline';
 import { Prescription } from '../../../types/prescriptions';
 
 interface PrescriptionListItemProps {
@@ -33,15 +33,13 @@ const PrescriptionListItem: React.FC<PrescriptionListItemProps> = ({ prescriptio
                             <CalendarDaysIcon className="h-4 w-4 mr-1.5" />
                             <span>Prescribed on: {formatDate(prescription.date_prescribed)}</span>
                         </div>
-                         {/* Link to Doctor Profile */}
                         <Link
                             to={`/doctors/${prescription.doctor}`}
-                            onClick={(e) => e.stopPropagation()} // Prevent button click when clicking link
+                            onClick={(e) => e.stopPropagation()}
                             className="text-md font-semibold text-primary hover:underline mb-1 inline-flex items-center"
                         >
-                            {/* Add UserDoctorIcon or similar if you have one */}
-                            {/* <UserIcon className="h-5 w-5 mr-1.5 text-gray-600"/> */}
-                            Prescribing Doctor ID: {prescription.doctor} {/* Replace with name if fetched */}
+                            <UserIcon className="h-5 w-5 mr-1.5 text-gray-600"/>
+                            Prescribing Doctor ID: {prescription.doctor}
                         </Link>
                         <p className="text-sm text-gray-700 line-clamp-1">
                             <span className="font-medium">Diagnosis:</span> {prescription.diagnosis || 'Not specified'}

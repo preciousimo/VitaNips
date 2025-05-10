@@ -5,14 +5,13 @@ import {
     getUserMedicalDocuments,
     uploadMedicalDocument,
     deleteMedicalDocument
-} from '../api/health'; // Adjust path if needed
+} from '../api/health';
 import { MedicalDocument, MedicalDocumentUploadPayload } from '../types/health';
 import MedicalDocumentListItem from '../features/health/components/MedicalDocumentListItem';
 import MedicalDocumentUploadForm from '../features/health/components/MedicalDocumentUploadForm';
 import Modal from '../components/common/Modal';
 
 const MedicalDocumentsPage: React.FC = () => {
-    // State for list, pagination, loading, error
     const [documents, setDocuments] = useState<MedicalDocument[]>([]);
     const [nextPageUrl, setNextPageUrl] = useState<string | null>(null);
     const [totalCount, setTotalCount] = useState<number>(0);
@@ -20,14 +19,11 @@ const MedicalDocumentsPage: React.FC = () => {
     const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
 
-    // State for upload modal & form
     const [showUploadModal, setShowUploadModal] = useState<boolean>(false);
     const [isUploading, setIsUploading] = useState<boolean>(false);
 
-    // State for deleting
     const [deletingId, setDeletingId] = useState<number | null>(null);
 
-    // Function to load initial documents
     const loadInitialDocuments = useCallback(async () => {
         setIsLoading(true);
         setError(null);
@@ -35,10 +31,9 @@ const MedicalDocumentsPage: React.FC = () => {
         setNextPageUrl(null);
         setTotalCount(0);
         try {
-            const response = await getUserMedicalDocuments(); // Fetch first page
+            const response = await getUserMedicalDocuments();
 
             if (response && Array.isArray(response.results)) {
-                 // Sort by upload date, newest first
                  response.results.sort((a, b) => new Date(b.uploaded_at).getTime() - new Date(a.uploaded_at).getTime());
                 setDocuments(response.results);
                 setNextPageUrl(response.next);
@@ -57,7 +52,6 @@ const MedicalDocumentsPage: React.FC = () => {
         }
     }, []);
 
-    // Function to load more documents
     const loadMoreDocuments = async () => {
         if (!nextPageUrl || isLoadingMore) return;
         setIsLoadingMore(true);
@@ -66,7 +60,6 @@ const MedicalDocumentsPage: React.FC = () => {
             const response = await getUserMedicalDocuments(nextPageUrl);
 
             if (response && Array.isArray(response.results)) {
-                // Append new results and re-sort
                 setDocuments(prev =>
                     [...prev, ...response.results].sort((a, b) => new Date(b.uploaded_at).getTime() - new Date(a.uploaded_at).getTime())
                 );
@@ -88,7 +81,6 @@ const MedicalDocumentsPage: React.FC = () => {
         loadInitialDocuments();
     }, [loadInitialDocuments]);
 
-    // --- Upload Handling ---
     const handleOpenUploadModal = () => {
         setShowUploadModal(true);
     };
@@ -100,18 +92,15 @@ const MedicalDocumentsPage: React.FC = () => {
         try {
             await uploadMedicalDocument(payload, file);
             setShowUploadModal(false);
-            await loadInitialDocuments(); // Reload list from first page after upload
+            await loadInitialDocuments();
         } catch (err) {
              console.error("Upload failed:", err);
-             // Re-throw error to be displayed in the form component
              throw err;
         } finally {
              setIsUploading(false);
         }
     };
-    // --- End Upload Handling ---
 
-    // --- Delete Handling ---
     const handleDelete = async (id: number) => {
         if (deletingId === id || !window.confirm("Are you sure you want to delete this document? This action cannot be undone.")) {
              return;
@@ -120,11 +109,7 @@ const MedicalDocumentsPage: React.FC = () => {
          setError(null);
          try {
              await deleteMedicalDocument(id);
-             // Reload list after delete (or remove locally for faster UI)
-             // Option 1: Remove locally
-             // setDocuments(prev => prev.filter(doc => doc.id !== id));
-             // setTotalCount(prev => prev - 1);
-             // Option 2: Reload from server
+            
              await loadInitialDocuments();
          } catch (err: any) {
              setError(err.message || "Failed to delete document.");
@@ -133,12 +118,9 @@ const MedicalDocumentsPage: React.FC = () => {
              setDeletingId(null);
          }
      };
-    // --- End Delete Handling ---
-
 
     return (
         <div className="max-w-4xl mx-auto">
-            {/* Header and Add Button */}
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-3xl font-bold text-gray-800">Medical Documents</h1>
                 <button
@@ -150,7 +132,6 @@ const MedicalDocumentsPage: React.FC = () => {
                 </button>
             </div>
 
-             {/* Upload Modal */}
              <Modal isOpen={showUploadModal} onClose={handleCloseUploadModal} title="">
                  <MedicalDocumentUploadForm
                     onSubmit={handleUploadSubmit}
@@ -159,8 +140,6 @@ const MedicalDocumentsPage: React.FC = () => {
                  />
              </Modal>
 
-
-            {/* List Area */}
             <div>
                 {isLoading ? (
                     <p className="text-muted text-center py-4">Loading documents...</p>
@@ -191,7 +170,6 @@ const MedicalDocumentsPage: React.FC = () => {
                             )
                         )}
 
-                         {/* Load More Button */}
                         {nextPageUrl && (
                             <div className="mt-8 text-center">
                                 <button

@@ -7,7 +7,6 @@ interface ReviewCardProps {
     review: DoctorReview;
 }
 
-// Helper function to render star ratings
 const renderStars = (rating: number) => {
     const stars = [];
     for (let i = 1; i <= 5; i++) {
@@ -29,7 +28,6 @@ const ReviewCard: React.FC<ReviewCardProps> = ({ review }) => {
     return (
         <div className="border-t border-gray-200 py-4">
             <div className="flex items-center justify-between mb-2">
-                {/* Ideally, fetch/show user name instead of ID */}
                 <span className="font-semibold text-sm text-gray-700">User {review.user}</span>
                 {renderStars(review.rating)}
             </div>

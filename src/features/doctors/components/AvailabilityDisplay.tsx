@@ -16,7 +16,6 @@ const dayMap: { [key: number]: string } = {
     6: 'Sunday',
 };
 
-// Function to format time (HH:MM:SS -> HH:MM AM/PM)
 const formatTime = (timeStr: string): string => {
     if (!timeStr) return '';
     const [hours, minutes] = timeStr.split(':');
@@ -32,7 +31,6 @@ const AvailabilityDisplay: React.FC<AvailabilityDisplayProps> = ({ availability 
         return <p className="text-muted text-sm">No availability information provided.</p>;
     }
 
-    // Group availability by day
     const groupedAvailability: { [key: string]: { start: string; end: string }[] } = {};
     availability.forEach(slot => {
         if (slot.is_available) {
@@ -44,7 +42,6 @@ const AvailabilityDisplay: React.FC<AvailabilityDisplayProps> = ({ availability 
         }
     });
 
-    // Sort days based on standard week order
     const sortedDays = Object.keys(groupedAvailability).sort((a, b) => {
         const dayA = Object.keys(dayMap).find(key => dayMap[parseInt(key)] === a);
         const dayB = Object.keys(dayMap).find(key => dayMap[parseInt(key)] === b);

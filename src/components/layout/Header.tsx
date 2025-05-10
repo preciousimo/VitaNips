@@ -11,7 +11,7 @@ const Header: React.FC = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/login'); // Redirect to login after logout
+    navigate('/login');
   };
 
   return (
@@ -24,11 +24,9 @@ const Header: React.FC = () => {
              <span className="text-xl font-bold text-primary">VitaNips</span>
           </Link>
 
-          {/* Navigation / User Menu */}
           <div className="flex items-center space-x-2 sm:space-x-4">
             {isAuthenticated ? (
               <>
-                {/* Show links based on role? Example: */}
                 {!user?.is_pharmacy_staff && (
                     <>
                          <Link to="/doctors" className="text-gray-600 hover:text-primary px-3 py-2 rounded-md text-sm font-medium hidden sm:block">Doctors</Link>
@@ -39,11 +37,8 @@ const Header: React.FC = () => {
                      <Link to="/portal/dashboard" className="text-gray-600 hover:text-primary px-3 py-2 rounded-md text-sm font-medium hidden sm:block">Portal Dashboard</Link>
                  )}
 
-                 {/* Common elements for all logged-in users */}
-                 <NotificationBell /> {/* <-- INTEGRATE BELL */}
+                 <NotificationBell />
 
-                 {/* Profile Dropdown/Links */}
-                 {/* Consider making this a dropdown later */}
                  <Link to="/profile" title="Profile & Settings" className="text-muted hover:text-primary p-1 sm:p-2">
                     {user?.profile_picture ? (
                        <img src={user.profile_picture} alt="Profile" className="h-7 w-7 rounded-full object-cover" />

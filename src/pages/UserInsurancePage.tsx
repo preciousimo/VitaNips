@@ -3,33 +3,25 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { PlusIcon } from '@heroicons/react/24/solid';
 import { getUserInsurances, addUserInsurance, updateUserInsurance, deleteUserInsurance } from '../api/insurance';
 import { UserInsurance, UserInsurancePayload } from '../types/insurance';
-// Assuming PaginatedResponse is defined
-// import { PaginatedResponse } from '../types/common';
 import UserInsuranceCard from '../features/insurance/components/UserInsuranceCard';
 import UserInsuranceForm from '../features/insurance/components/UserInsuranceForm';
 import Modal from '../components/common/Modal';
 
 const UserInsurancePage: React.FC = () => {
-    // State for accumulated results
     const [insurances, setInsurances] = useState<UserInsurance[]>([]);
-     // State for pagination
     const [nextPageUrl, setNextPageUrl] = useState<string | null>(null);
     const [totalCount, setTotalCount] = useState<number>(0);
     const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
-    // Initial loading and error state
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
-    // Form/Modal state
     const [showFormModal, setShowFormModal] = useState<boolean>(false);
     const [editingInsurance, setEditingInsurance] = useState<UserInsurance | null>(null);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
     const sortInsurances = (data: UserInsurance[]) => {
-         // Sort primary first, then by provider name
          return data.sort((a, b) => {
             if (a.is_primary && !b.is_primary) return -1;
             if (!a.is_primary && b.is_primary) return 1;
-            // Handle potential null provider names gracefully
             const nameA = a.plan?.provider?.name || '';
             const nameB = b.plan?.provider?.name || '';
             return nameA.localeCompare(nameB);
@@ -39,12 +31,11 @@ const UserInsurancePage: React.FC = () => {
     const loadInitialInsurances = useCallback(async () => {
         setIsLoading(true);
         setError(null);
-        setInsurances([]); // Reset
+        setInsurances([]);
         setNextPageUrl(null);
         setTotalCount(0);
         try {
-            // Fetch first page
-            const response = await getUserInsurances(); // Add params if needed
+            const response = await getUserInsurances();
             if (response && Array.isArray(response.results)) {
                 setInsurances(sortInsurances(response.results));
                 setNextPageUrl(response.next);
@@ -61,17 +52,15 @@ const UserInsurancePage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, []); // sortInsurances is stable
+    }, []);
 
      const loadMoreInsurances = async () => {
         if (!nextPageUrl || isLoadingMore) return;
         setIsLoadingMore(true);
         setError(null);
         try {
-            // Fetch next page
             const response = await getUserInsurances(nextPageUrl);
             if (response && Array.isArray(response.results)) {
-                 // Append and re-sort
                  setInsurances(prev => sortInsurances([...prev, ...response.results]));
                  setNextPageUrl(response.next);
             } else {
@@ -91,7 +80,6 @@ const UserInsurancePage: React.FC = () => {
         loadInitialInsurances();
     }, [loadInitialInsurances]);
 
-    // --- Form Handling (no changes needed here from original) ---
     const handleAddClick = () => { /* ... */ };
     const handleEditClick = (insurance: UserInsurance) => { /* ... */ };
     const handleFormCancel = () => { /* ... */ };
@@ -105,11 +93,10 @@ const UserInsurancePage: React.FC = () => {
              }
              setShowFormModal(false);
              setEditingInsurance(null);
-             // Reload first page after add/edit
              await loadInitialInsurances();
          } catch (err: any) {
              console.error("Failed to save insurance:", err);
-             throw err; // Let form handle displaying
+             throw err;
          } finally {
               setIsSubmitting(false);
          }
@@ -121,18 +108,15 @@ const UserInsurancePage: React.FC = () => {
          setError(null);
          try {
              await deleteUserInsurance(id);
-             // Reload first page after delete
              await loadInitialInsurances();
          } catch (err: any) {
              setError(err.message || "Failed to remove insurance plan.");
              console.error(err);
          }
      };
-    // --- End Form Handling ---
 
     return (
         <div className="max-w-4xl mx-auto">
-            {/* Header and Add Button */}
             <div className="flex justify-between items-center mb-6">
                  <h1 className="text-3xl font-bold text-gray-800">Your Insurance Plans</h1>
                  <button onClick={handleAddClick} className="btn-primary inline-flex items-center px-4 py-2">
@@ -140,12 +124,10 @@ const UserInsurancePage: React.FC = () => {
                  </button>
             </div>
 
-            {/* Modal for Add/Edit Form */}
             <Modal isOpen={showFormModal} onClose={handleFormCancel} title={editingInsurance ? 'Edit Insurance Plan' : 'Add Insurance Plan'}>
                   <UserInsuranceForm initialData={editingInsurance} onSubmit={handleFormSubmit} onCancel={handleFormCancel} isSubmitting={isSubmitting}/>
             </Modal>
 
-             {/* List Area */}
              <div>
                  {isLoading ? (
                      <p className="text-muted text-center py-4">Loading your insurance plans...</p>
@@ -177,7 +159,6 @@ const UserInsurancePage: React.FC = () => {
                              </div>
                          )}
 
-                        {/* Load More Button */}
                         {nextPageUrl && (
                             <div className="mt-8 text-center">
                                 <button

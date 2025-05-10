@@ -13,7 +13,6 @@ const EmergencyContactListItem: React.FC<EmergencyContactListItemProps> = ({ con
     return (
          <li className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow duration-150 mb-3">
             <div className="flex justify-between items-start">
-                {/* Contact Info */}
                 <div className="flex items-center space-x-3">
                      <UserCircleIcon className="h-8 w-8 text-gray-400 flex-shrink-0"/>
                      <div>
@@ -33,7 +32,6 @@ const EmergencyContactListItem: React.FC<EmergencyContactListItemProps> = ({ con
                         </div>
                     </div>
                 </div>
-                 {/* Action Buttons */}
                 <div className="flex space-x-1 flex-shrink-0 ml-4">
                     <button onClick={() => onEdit(contact)} className="text-blue-600 hover:text-blue-800 p-1" title="Edit">
                         <PencilSquareIcon className="h-5 w-5" />
