@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { updateUserProfile, UserProfileUpdatePayload } from '../api/user';
 import ProfileEditForm from '../features/user/components/ProfileEditForm';
 import { User } from '../types/user';
+import { Link } from 'react-router-dom';
 
 const ProfilePage: React.FC = () => {
   const { user, fetchUserProfile } = useAuth();
@@ -116,20 +117,7 @@ const ProfilePage: React.FC = () => {
                     </div>
                  </div>
 
-                  {(user?.emergency_contact_name || user?.emergency_contact_phone) ? (
-                     <div className="pb-4">
-                        <h3 className="text-lg font-semibold text-gray-700 mb-3">Primary Emergency Contact</h3>
-                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                            <p><strong>Name:</strong> {displayField(user?.emergency_contact_name)}</p>
-                            <p><strong>Relationship:</strong> {displayField(user?.emergency_contact_relationship)}</p>
-                            <p><strong>Phone:</strong> {displayField(user?.emergency_contact_phone)}</p>
-                        </div>
-                    </div>
-                  ) : (
-                     <div className="text-sm text-muted">
-                         No primary emergency contact saved here. You can manage your contacts in the <a href="/emergency-contacts" className="text-primary hover:underline">Emergency Contacts</a> section.
-                     </div>
-                  )}
+                 <Link to="/emergency-contacts">Emergency Contacts section</Link>."
 
             </div>
       )}
