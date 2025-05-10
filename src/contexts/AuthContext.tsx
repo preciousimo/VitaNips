@@ -92,9 +92,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             (response) => response,
             async (error) => {
                 const originalRequest = error.config;
-                if (error.response?.status === 401 && !originalRequest._retry) {
-                    console.error('Token expired or invalid, logging out.');
+                if (error.response?.status === 401 && !originalRequest._isRetryAttempt && logout) {
+                    originalRequest._isRetryAttempt = true;
+                    console.warn('Global 401 detected by interceptor. Logging out.');
                     logout();
+                    if (window.location.pathname !== '/login') {
+                        window.location.href = '/login?sessionExpired=true';
+                    }
                 }
                 return Promise.reject(error);
             }
