@@ -4,6 +4,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { getPharmacyOrderDetail, updatePharmacyOrder } from '../../api/pharmacy';
 import { MedicationOrder, MedicationOrderUpdatePayload } from '../../types/pharmacy';
+import axios from 'axios';
 
 const PharmacyOrderDetailPage: React.FC = () => {
     const { orderId } = useParams<{ orderId: string }>();
@@ -41,21 +42,37 @@ const PharmacyOrderDetailPage: React.FC = () => {
     }, [fetchOrder]);
 
     const handleStatusUpdate = async (newStatus: MedicationOrder['status']) => {
-         if (!order) return;
-         setIsUpdating(true);
-         setUpdateError(null);
-         const payload: Partial<MedicationOrderUpdatePayload> = { status: newStatus };
-         try {
-             const updatedOrder = await updatePharmacyOrder(order.id, payload);
-             setOrder(updatedOrder);
-         } catch (err: any) {
-             const backendErrors = err.response?.data;
-             const message = backendErrors?.detail || backendErrors?.status?.[0] || err.message || "Failed to update status";
-             setUpdateError(message);
-             console.error("Update Error:", err.response?.data || err);
-         } finally {
+        if (!order) return;
+        setIsUpdating(true);
+        setUpdateError(null);
+        const payload: Partial<MedicationOrderUpdatePayload> = { status: newStatus };
+        try {
+            const updatedOrder = await updatePharmacyOrder(order.id, payload);
+            setOrder(updatedOrder);
+        } catch (err: any) {
+            let message = "Failed to update order status. Please try again.";
+            if (axios.isAxiosError(err) && err.response?.data) {
+                const backendError = err.response.data;
+                if (backendError.detail) {
+                    message = backendError.detail;
+                } else if (backendError.status && Array.isArray(backendError.status) && backendError.status.length > 0) {
+                    message = `Status: ${backendError.status.join(', ')}`;
+                } else if (typeof backendError === 'string') {
+                    message = backendError;
+                } else {
+                    const errorMessages = Object.values(backendError).flat();
+                    if (errorMessages.length > 0) {
+                        message = errorMessages.join(' ');
+                    }
+                }
+            } else if (err.message) {
+                message = err.message;
+            }
+            setUpdateError(message);
+            console.error("Order Update Error:", err.response?.data || err);
+        } finally {
             setIsUpdating(false);
-         }
+        }
     };
 
     if (isLoading) {
@@ -72,7 +89,7 @@ const PharmacyOrderDetailPage: React.FC = () => {
 
     return (
         <div>
-             <Link to="/portal/orders" className="inline-flex items-center text-primary hover:underline mb-4">
+            <Link to="/portal/orders" className="inline-flex items-center text-primary hover:underline mb-4">
                 <ArrowLeftIcon className="h-4 w-4 mr-1" /> Back to Orders
             </Link>
             <h1 className="text-2xl font-bold text-gray-800 mb-4">Order Details #{order.id}</h1>
@@ -101,29 +118,29 @@ const PharmacyOrderDetailPage: React.FC = () => {
                             </li>
                         ))}
                     </ul>
-                     <p className='mt-2 font-medium'>Total: {order.total_amount ? `$${order.total_amount}` : 'Pending Calculation'}</p>
+                    <p className='mt-2 font-medium'>Total: {order.total_amount ? `$${order.total_amount}` : 'Pending Calculation'}</p>
                 </div>
 
-                 <div>
+                <div>
                     <h3 className="font-semibold border-t pt-3 mt-3">Notes</h3>
                     <p className='text-sm'>{order.notes || <span className='italic text-muted'>No notes</span>}</p>
                 </div>
 
-                 <div className='border-t pt-4 mt-4'>
-                     <h3 className="font-semibold mb-2">Update Status</h3>
-                     <div className='flex gap-2'>
-                         {order.status === 'pending' && (
-                             <button onClick={() => handleStatusUpdate('processing')} disabled={isUpdating} className='btn-primary py-1 px-3 text-sm bg-blue-600 hover:bg-blue-700 disabled:opacity-50'>Mark as Processing</button>
-                         )}
-                          {order.status === 'processing' && (
-                             <button onClick={() => handleStatusUpdate('ready')} disabled={isUpdating} className='btn-primary py-1 px-3 text-sm bg-green-600 hover:bg-green-700 disabled:opacity-50'>Mark as Ready</button>
-                         )}
-                         {(order.status === 'pending' || order.status === 'processing') && (
-                             <button onClick={() => handleStatusUpdate('cancelled')} disabled={isUpdating} className='px-3 py-1 border border-red-500 text-red-600 rounded text-sm hover:bg-red-50 disabled:opacity-50'>Cancel Order</button>
-                         )}
-                     </div>
+                <div className='border-t pt-4 mt-4'>
+                    <h3 className="font-semibold mb-2">Update Status</h3>
+                    <div className='flex gap-2'>
+                        {order.status === 'pending' && (
+                            <button onClick={() => handleStatusUpdate('processing')} disabled={isUpdating} className='btn-primary py-1 px-3 text-sm bg-blue-600 hover:bg-blue-700 disabled:opacity-50'>Mark as Processing</button>
+                        )}
+                        {order.status === 'processing' && (
+                            <button onClick={() => handleStatusUpdate('ready')} disabled={isUpdating} className='btn-primary py-1 px-3 text-sm bg-green-600 hover:bg-green-700 disabled:opacity-50'>Mark as Ready</button>
+                        )}
+                        {(order.status === 'pending' || order.status === 'processing') && (
+                            <button onClick={() => handleStatusUpdate('cancelled')} disabled={isUpdating} className='px-3 py-1 border border-red-500 text-red-600 rounded text-sm hover:bg-red-50 disabled:opacity-50'>Cancel Order</button>
+                        )}
+                    </div>
 
-                 </div>
+                </div>
 
             </div>
         </div>
