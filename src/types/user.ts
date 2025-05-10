@@ -37,11 +37,22 @@ export interface EmergencyContact {
     name: string;
     relationship: string;
     phone_number: string;
-    email: string | null;
+    alternative_phone?: string | null;
+    email?: string | null;
+    address?: string | null;
     is_primary: boolean;
-    notes: string | null;
+    notes?: string | null;
     created_at: string;
     updated_at: string;
 }
 
-export type EmergencyContactPayload = Omit<EmergencyContact, 'id' | 'user' | 'created_at' | 'updated_at'>;
+export type EmergencyContactPayload = {
+    name: string;
+    relationship: string;
+    phone_number: string;
+    alternative_phone?: string | null;
+    email?: string | null;
+    address?: string | null;
+    is_primary?: boolean;
+    notes?: string | null;
+};
