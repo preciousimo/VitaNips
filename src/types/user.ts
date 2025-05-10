@@ -16,10 +16,6 @@ export interface User {
     weight?: number | null;
     height?: number | null;
 
-    emergency_contact_name?: string | null;
-    emergency_contact_relationship?: string | null;
-    emergency_contact_phone?: string | null;
-
     is_pharmacy_staff?: boolean;
     works_at_pharmacy?: number | null;
 

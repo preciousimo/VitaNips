@@ -33,9 +33,6 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
                 chronic_conditions: initialData.chronic_conditions || null,
                 weight: initialData.weight || null,
                 height: initialData.height || null,
-                emergency_contact_name: initialData.emergency_contact_name || null,
-                emergency_contact_relationship: initialData.emergency_contact_relationship || null,
-                emergency_contact_phone: initialData.emergency_contact_phone || null,
             });
         }
     }, [initialData]);
@@ -48,7 +45,7 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
         if (type === 'checkbox') {
             processedValue = (e.target as HTMLInputElement).checked;
         }
-        else if (value === '' && ['phone_number', 'date_of_birth', 'blood_group', 'allergies', 'chronic_conditions', 'weight', 'height', 'emergency_contact_name', 'emergency_contact_relationship', 'emergency_contact_phone'].includes(name)) {
+        else if (value === '' && ['phone_number', 'date_of_birth', 'blood_group', 'allergies', 'chronic_conditions', 'weight', 'height'].includes(name)) {
             processedValue = null;
         } else if ((type === 'number') && name !== 'height' && name !== 'weight') {
             processedValue = value ? parseFloat(value) : null;
@@ -134,21 +131,6 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
                 <div>
                     <label htmlFor="height" className="block text-sm font-medium text-gray-700">Height (cm)</label>
                     <input type="number" step="0.1" name="height" id="height" value={formData.height ?? ''} onChange={handleChange} className="input-field" placeholder="e.g., 175.0" />
-                </div>
-
-                <hr className="md:col-span-2 my-2" />
-                <h4 className="md:col-span-2 text-md font-semibold text-gray-700">Primary Emergency Contact</h4>
-                <div>
-                    <label htmlFor="emergency_contact_name" className="block text-sm font-medium text-gray-700">Contact Name</label>
-                    <input type="text" name="emergency_contact_name" id="emergency_contact_name" value={formData.emergency_contact_name ?? ''} onChange={handleChange} className="input-field" />
-                </div>
-                <div>
-                    <label htmlFor="emergency_contact_phone" className="block text-sm font-medium text-gray-700">Contact Phone</label>
-                    <input type="tel" name="emergency_contact_phone" id="emergency_contact_phone" value={formData.emergency_contact_phone ?? ''} onChange={handleChange} className="input-field" />
-                </div>
-                <div className="md:col-span-2">
-                    <label htmlFor="emergency_contact_relationship" className="block text-sm font-medium text-gray-700">Relationship</label>
-                    <input type="text" name="emergency_contact_relationship" id="emergency_contact_relationship" value={formData.emergency_contact_relationship ?? ''} onChange={handleChange} className="input-field" />
                 </div>
 
             </div>
