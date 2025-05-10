@@ -66,6 +66,7 @@ const UserInsuranceForm: React.FC<UserInsuranceFormProps> = ({
                 start_date: '', end_date: null, is_primary: false,
             });
         }
+        setError(null);
     }, [initialData]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
