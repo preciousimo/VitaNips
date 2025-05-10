@@ -1,4 +1,6 @@
 // src/types/user.ts
+import { UserInsurance } from './insurance';
+import { Vaccination } from './health';
 
 export interface User {
     id: number;
@@ -22,6 +24,11 @@ export interface User {
     notify_appointment_reminder_email?: boolean;
     notify_appointment_reminder_sms?: boolean;
     notify_refill_reminder_email?: boolean;
+    notify_appointment_reminder_push?: boolean;
+
+    insurance_details?: UserInsurance[];
+    emergency_contacts?: EmergencyContact[];
+    vaccinations?: Vaccination[];
 }
 
 export interface EmergencyContact {
@@ -31,6 +38,8 @@ export interface EmergencyContact {
     relationship: string;
     phone_number: string;
     email: string | null;
+    is_primary: boolean;
+    notes: string | null;
     created_at: string;
     updated_at: string;
 }
