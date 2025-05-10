@@ -1,5 +1,4 @@
 // src/features/telehealth/components/VideoCallUI.tsx
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import TwilioVideo, {
     Room, LocalTrack, RemoteParticipant, RemoteTrack, LocalVideoTrack,
@@ -129,21 +128,33 @@ const VideoCallUI: React.FC<VideoCallUIProps> = ({ token, roomName, onDisconnect
     const cleanupAndDisconnect = useCallback(() => {
         setRoom(currentRoom => {
             if (currentRoom) {
-                console.log(`Disconnecting from room: ${currentRoom.name}`);
+                console.log(`Initiating cleanup and disconnect from room: ${currentRoom.name}`);
+    
                 currentRoom.localParticipant.tracks.forEach(publication => {
                     const track = publication.track;
-                    if (track && (track.kind === 'audio' || track.kind === 'video')) {
-                        if (typeof track.stop === 'function') track.stop();
-                        track.detach().forEach((element: HTMLElement) => element.remove());
+                    if (track) {
+                        if (typeof track.stop === 'function') {
+                            track.stop();
+                            console.log(`Stopped local track: ${track.kind} ${track.name || track.id}`);
+                        }
+                        const elements = track.detach();
+                        elements.forEach(element => {
+                            element.remove();
+                            console.log(`Detached and removed element for local track: ${track.kind}`);
+                        });
                     }
                 });
+    
                 currentRoom.disconnect();
+                console.log(`Disconnected from room: ${currentRoom.name}`);
+            } else {
+                console.log("cleanupAndDisconnect called but no current room.");
             }
             return null;
         });
         setParticipants(new Map());
         onDisconnect();
-   }, [onDisconnect]);
+    }, [onDisconnect]);
 
     useEffect(() => {
         if (!token || !roomName) {
@@ -246,6 +257,7 @@ const VideoCallUI: React.FC<VideoCallUIProps> = ({ token, roomName, onDisconnect
                 cleanupAndDisconnect();
             } else {
                 console.log("Cleanup called but no room instance was available from this effect run.");
+                onDisconnect();
             }
         };
     }, [token, roomName, cleanupAndDisconnect]); 
