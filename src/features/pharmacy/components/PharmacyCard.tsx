@@ -11,8 +11,6 @@ interface PharmacyCardProps {
 const PharmacyCard: React.FC<PharmacyCardProps> = ({ pharmacy }) => {
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 ease-in-out flex flex-col">
-      {/* Placeholder for an image or map snippet later */}
-      {/* <div className="h-32 bg-gray-200"></div> */}
       <div className="p-5 flex flex-col flex-grow">
         <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center">
           <BuildingStorefrontIcon className="h-5 w-5 mr-2 text-primary" />
@@ -44,14 +42,12 @@ const PharmacyCard: React.FC<PharmacyCardProps> = ({ pharmacy }) => {
           )}
         </div>
 
-        {/* Link to a future Pharmacy Detail Page or Map View */}
         <Link
-          // to={`/pharmacy/${pharmacy.id}`} // Example route
-          to="#" // Placeholder for now
+          to={`/pharmacy/${pharmacy.id}`}
           className="mt-auto block w-full text-center bg-primary-light text-primary-dark font-semibold py-2 px-4 rounded hover:bg-primary hover:text-white transition duration-150 ease-in-out text-sm"
-          onClick={(e) => e.preventDefault()} // Prevent navigation for now
+          onClick={(e) => e.preventDefault()}
         >
-          View Details / Map {/* Adjust text as needed */}
+          View Details / Map
         </Link>
       </div>
     </div>

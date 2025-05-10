@@ -5,11 +5,10 @@ import { MedicalDocument } from '../../../types/health';
 
 interface MedicalDocumentListItemProps {
     document: MedicalDocument;
-    onDelete: (id: number) => void; // Function to trigger delete
-    isDeleting?: boolean; // Optional flag if delete takes time
+    onDelete: (id: number) => void;
+    isDeleting?: boolean;
 }
 
-// Helper to format date
 const formatDate = (dateStr: string | null) => {
     if (!dateStr) return 'N/A';
     try {
@@ -19,14 +18,12 @@ const formatDate = (dateStr: string | null) => {
     } catch { return 'Invalid Date'; }
 };
 
-
 const MedicalDocumentListItem: React.FC<MedicalDocumentListItemProps> = ({ document, onDelete, isDeleting }) => {
 
     const handleViewDownload = () => {
         if (document.file_url) {
             window.open(document.file_url, '_blank', 'noopener,noreferrer');
         } else {
-            // Handle case where URL is missing (e.g., show error)
             alert("Document URL is not available.");
         }
     };
@@ -34,7 +31,6 @@ const MedicalDocumentListItem: React.FC<MedicalDocumentListItemProps> = ({ docum
     return (
          <li className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow duration-150 mb-3">
             <div className="flex justify-between items-start space-x-3">
-                {/* Icon and Info */}
                 <div className="flex items-start space-x-3 flex-grow min-w-0">
                     <DocumentIcon className="h-8 w-8 text-primary flex-shrink-0 mt-1" />
                     <div className="flex-grow min-w-0">
@@ -46,13 +42,10 @@ const MedicalDocumentListItem: React.FC<MedicalDocumentListItemProps> = ({ docum
                         </p>
                         <p className="text-xs text-muted mt-1">
                            Type: {document.document_type || 'N/A'} | Uploaded: {formatDate(document.uploaded_at)}
-                           {/* Optional: Show uploader if needed */}
-                           {/* | By: User {document.uploaded_by} */}
                         </p>
                     </div>
                 </div>
 
-                {/* Actions */}
                 <div className="flex space-x-1 flex-shrink-0 items-center pt-1">
                     <button
                         onClick={handleViewDownload}

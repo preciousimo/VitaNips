@@ -1,7 +1,7 @@
 // src/api/pharmacy.ts
 import axiosInstance from './axiosInstance';
 import { Pharmacy, Medication, MedicationOrder, MedicationOrderUpdatePayload } from '../types/pharmacy';
-import { PaginatedResponse } from '../types/common'; // Import common type
+import { PaginatedResponse } from '../types/common';
 
 interface GetPharmaciesParams {
     search?: string;
@@ -18,9 +18,6 @@ interface GetMedicationsParams {
     page?: number;
 }
 
-/**
- * Fetches a list of pharmacies, handling pagination.
- */
 export const getPharmacies = async (
     paramsOrUrl: GetPharmaciesParams | string | null = null
 ): Promise<PaginatedResponse<Pharmacy>> => {
@@ -41,9 +38,6 @@ export const getPharmacies = async (
     }
 };
 
-/**
- * Fetches details for a single pharmacy (if needed later).
- */
 export const getPharmacyById = async (pharmacyId: number): Promise<Pharmacy> => {
     try {
         const response = await axiosInstance.get<Pharmacy>(`/pharmacy/${pharmacyId}/`);
@@ -54,13 +48,9 @@ export const getPharmacyById = async (pharmacyId: number): Promise<Pharmacy> => 
     }
 };
 
-/**
- * Fetches a list of all medications, handling pagination.
- * (Assuming this list could be long)
- */
 export const getMedications = async (
     paramsOrUrl: GetMedicationsParams | string | null = null
-): Promise<PaginatedResponse<Medication>> => { // <-- Updated return type
+): Promise<PaginatedResponse<Medication>> => {
     const endpoint = '/pharmacy/medications/';
     try {
         let response;
@@ -78,9 +68,6 @@ export const getMedications = async (
     }
 };
 
-/**
- * Fetches details for a single medication (if needed later).
- */
 export const getMedicationById = async (medicationId: number): Promise<Medication> => {
     try {
         const response = await axiosInstance.get<Medication>(`/pharmacy/medications/${medicationId}/`);
@@ -91,22 +78,16 @@ export const getMedicationById = async (medicationId: number): Promise<Medicatio
     }
 };
 
-// Define parameter types for pharmacy order list
 interface GetPharmacyOrdersParams {
     page?: number;
-    status?: string; // Filter by status
-    ordering?: string; // e.g., '-order_date'
+    status?: string;
+    ordering?: string;
     is_delivery?: boolean;
-    // Add other filters as needed
   }
-  
-  /**
-   * Fetches medication orders for the logged-in pharmacy staff's pharmacy.
-   */
+
   export const getPharmacyOrders = async (
       paramsOrUrl: GetPharmacyOrdersParams | string | null = null
   ): Promise<PaginatedResponse<MedicationOrder>> => {
-      // Ensure this URL matches your backend pharmacy portal endpoint
       const endpoint = '/pharmacy/portal/orders/';
       try {
           let response;
@@ -117,10 +98,8 @@ interface GetPharmacyOrdersParams {
           } else {
               response = await axiosInstance.get<PaginatedResponse<MedicationOrder>>(endpoint, { params: paramsOrUrl });
           }
-          // Add client-side check as fallback (backend should ideally return correct structure)
           if (!response.data || !Array.isArray(response.data.results)) {
                console.warn("Invalid paginated structure received for pharmacy orders:", response.data);
-               // Return a default structure to prevent frontend crashes
                return { count: 0, next: null, previous: null, results: [] };
           }
           return response.data;
@@ -129,13 +108,9 @@ interface GetPharmacyOrdersParams {
           throw error;
       }
   };
-  
-  /**
-   * Fetches details for a single medication order for the pharmacy portal.
-   */
+
   export const getPharmacyOrderDetail = async (orderId: number): Promise<MedicationOrder> => {
       try {
-          // Ensure this URL matches your backend pharmacy portal endpoint
           const response = await axiosInstance.get<MedicationOrder>(`/pharmacy/portal/orders/${orderId}/`);
           return response.data;
       } catch (error) {
@@ -143,16 +118,12 @@ interface GetPharmacyOrdersParams {
           throw error;
       }
   };
-  
-  /**
-   * Updates a medication order (e.g., status, notes) by pharmacy staff.
-   */
+
   export const updatePharmacyOrder = async (
       orderId: number,
-      payload: Partial<MedicationOrderUpdatePayload> // Use Partial as we might only update status
+      payload: Partial<MedicationOrderUpdatePayload>
   ): Promise<MedicationOrder> => {
       try {
-          // Ensure this URL matches your backend pharmacy portal endpoint
           const response = await axiosInstance.patch<MedicationOrder>(
               `/pharmacy/portal/orders/${orderId}/`,
               payload
@@ -160,7 +131,6 @@ interface GetPharmacyOrdersParams {
           return response.data;
       } catch (error) {
           console.error(`Failed to update pharmacy order ${orderId}:`, error);
-           // TODO: Extract specific validation errors from error.response.data
           throw error;
       }
   };

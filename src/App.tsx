@@ -6,15 +6,13 @@ import { Toaster } from 'react-hot-toast';
 import SOSButton from './features/emergency/components/SOSButton';
 import { useAuth } from './contexts/AuthContext';
 
-// Inner component to access auth context
 const AppContent: React.FC = () => {
   const { isAuthenticated } = useAuth();
   return (
       <>
          <AppRouter />
-         {/* Show SOS button only when logged in */}
          {isAuthenticated && <SOSButton />}
-          <Toaster position="top-center" reverseOrder={false} /> {/* For toast notifications */}
+          <Toaster position="top-center" reverseOrder={false} />
       </>
   );
 }

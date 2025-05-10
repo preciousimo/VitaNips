@@ -1,10 +1,8 @@
 // src/pages/pharmacy/PharmacyOrderListPage.tsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { getPharmacyOrders } from '../../api/pharmacy'; // Adjust import path
+import { getPharmacyOrders } from '../../api/pharmacy';
 import { MedicationOrder } from '../../types/pharmacy';
-import PharmacyOrderListItem from '../../features/pharmacy_portal/components/PharmacyOrderListItem'; // Adjust import path
-// import LoadingSpinner from '../../components/common/LoadingSpinner';
-// import ErrorMessage from '../../components/common/ErrorMessage';
+import PharmacyOrderListItem from '../../features/pharmacy_portal/components/PharmacyOrderListItem';
 
 const ORDER_STATUS_CHOICES = [
     'pending', 'processing', 'ready', 'delivering', 'completed', 'cancelled'
@@ -18,10 +16,8 @@ const PharmacyOrderListPage: React.FC = () => {
     const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Filtering State
-    const [statusFilter, setStatusFilter] = useState<string>(''); // Empty string for 'all'
+    const [statusFilter, setStatusFilter] = useState<string>('');
 
-    // Fetch Initial Orders Function
     const loadInitialOrders = useCallback(async (currentStatusFilter: string) => {
         setIsLoading(true);
         setError(null);
@@ -37,7 +33,7 @@ const PharmacyOrderListPage: React.FC = () => {
         try {
             const response = await getPharmacyOrders(params);
              if (response && Array.isArray(response.results)) {
-                setOrders(response.results); // Backend default sort is likely fine initially
+                setOrders(response.results);
                 setNextPageUrl(response.next);
                 setTotalCount(response.count);
              } else {
@@ -52,9 +48,8 @@ const PharmacyOrderListPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, []); // Depends only on getPharmacyOrders
+    }, []);
 
-    // Load More Function
     const loadMoreOrders = async () => {
          if (!nextPageUrl || isLoadingMore) return;
         setIsLoadingMore(true);
@@ -77,8 +72,6 @@ const PharmacyOrderListPage: React.FC = () => {
         }
     };
 
-
-    // Effect for initial load and filter changes
     useEffect(() => {
         loadInitialOrders(statusFilter);
     }, [loadInitialOrders, statusFilter]);
@@ -91,7 +84,6 @@ const PharmacyOrderListPage: React.FC = () => {
         <div>
             <h1 className="text-3xl font-bold text-gray-800 mb-6">Pharmacy Orders</h1>
 
-            {/* Filter Controls */}
             <div className="mb-4 bg-white p-3 rounded shadow-sm">
                 <label htmlFor="statusFilter" className="mr-2 text-sm font-medium text-gray-700">Filter by Status:</label>
                 <select
@@ -108,12 +100,11 @@ const PharmacyOrderListPage: React.FC = () => {
                 </select>
             </div>
 
-            {/* Order List Area */}
             <div>
                 {isLoading ? (
-                    <p className="text-muted text-center py-10">Loading orders...</p> /* Replace with spinner */
+                    <p className="text-muted text-center py-10">Loading orders...</p>
                 ) : error && orders.length === 0 ? (
-                    <p className="text-red-600 text-center py-10">{error}</p> /* Replace with ErrorMessage */
+                    <p className="text-red-600 text-center py-10">{error}</p>
                 ) : (
                     <>
                          {error && orders.length > 0 && <p className="text-red-600 text-center py-2">{error}</p>}
@@ -131,7 +122,6 @@ const PharmacyOrderListPage: React.FC = () => {
                              )
                          )}
 
-                         {/* Load More Button */}
                         {nextPageUrl && (
                             <div className="mt-8 text-center">
                                 <button

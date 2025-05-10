@@ -16,7 +16,6 @@ export interface Pharmacy {
     updated_at: string;
 }
 
-// Local definition of Medication
 export interface Medication {
     id: number;
     name: string;
@@ -33,12 +32,11 @@ export interface Medication {
     updated_at: string;
 }
 
-// MedicationOrderItem uses the locally defined Medication type
 export interface MedicationOrderItem {
     id: number;
     order: number;
     prescription_item: number | null;
-    medication?: Medication | null; // This correctly refers to the interface above
+    medication?: Medication | null;
     medication_name: string;
     dosage: string;
     quantity: number;
@@ -46,11 +44,10 @@ export interface MedicationOrderItem {
     total_price: string | null;
 }
 
-// MedicationOrder uses MedicationOrderItem
 export interface MedicationOrder {
     id: number;
     user: number;
-    pharmacy: number; // Or nested Pharmacy type
+    pharmacy: number;
     prescription: number | null;
     status: 'pending' | 'processing' | 'ready' | 'delivering' | 'completed' | 'cancelled';
     is_delivery: boolean;
@@ -62,12 +59,9 @@ export interface MedicationOrder {
     items: MedicationOrderItem[];
 }
 
-// --- NEW Payload Type ---
-// Based on PharmacyOrderUpdateSerializer fields
 export interface MedicationOrderUpdatePayload {
   status?: 'pending' | 'processing' | 'ready' | 'delivering' | 'completed' | 'cancelled';
   notes?: string | null;
-  pickup_or_delivery_date?: string | null; // ISO datetime string or null
-  total_amount?: string | null; // If pharmacy sets this
-  // Add fields for updating item prices if done via the order endpoint
+  pickup_or_delivery_date?: string | null;
+  total_amount?: string | null;
 }

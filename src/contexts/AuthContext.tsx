@@ -23,7 +23,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [refreshToken, setRefreshToken] = useState<string | null>(localStorage.getItem('refreshToken'));
     const [user, setUser] = useState<User | null>(null);
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-    const [isLoading, setIsLoading] = useState<boolean>(true); // Start loading
+    const [isLoading, setIsLoading] = useState<boolean>(true);
 
     const logout = useCallback(() => {
         localStorage.removeItem('accessToken');
@@ -32,13 +32,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setRefreshToken(null);
         setUser(null);
         setIsAuthenticated(false);
-        // Optionally: navigate('/login');
     }, []);
 
     const fetchUserProfile = useCallback(async (token: string) => {
         if (!token) { setIsLoading(false); return; }
 
-        // Reset user state before fetching
         setUser(null);
         setIsAuthenticated(false);
 

@@ -6,12 +6,9 @@ import { MedicationOrder } from '../types/pharmacy';
 
 type PrescriptionListParams = { page?: number; ordering?: string };
 
-/**
- * Fetches prescriptions for the logged-in user, handling pagination.
- */
 export const getUserPrescriptions = async (
      paramsOrUrl: PrescriptionListParams | string | null = null
-): Promise<PaginatedResponse<Prescription>> => { // <-- Updated return type
+): Promise<PaginatedResponse<Prescription>> => {
     const endpoint = '/doctors/prescriptions/';
     try {
          let response;
@@ -29,12 +26,8 @@ export const getUserPrescriptions = async (
     }
 };
 
-/**
- * Fetches details for a single prescription.
- */
 export const getPrescriptionDetails = async (id: number): Promise<Prescription> => {
     try {
-        // Detail views typically aren't paginated
         const response = await axiosInstance.get<Prescription>(`/doctors/prescriptions/${id}/`);
         return response.data;
     } catch (error) {
@@ -43,22 +36,18 @@ export const getPrescriptionDetails = async (id: number): Promise<Prescription> 
     }
 };
 
-/**
- * Creates a MedicationOrder from a Prescription for a specific Pharmacy.
- */
 export const createOrderFromPrescription = async (
     prescriptionId: number,
     pharmacyId: number
-): Promise<MedicationOrder> => { // Returns the created order
+): Promise<MedicationOrder> => {
     try {
         const response = await axiosInstance.post<MedicationOrder>(
-            `/doctors/prescriptions/${prescriptionId}/create_order/`, // Matches backend URL
-            { pharmacy_id: pharmacyId } // Send pharmacy_id in request body
+            `/doctors/prescriptions/${prescriptionId}/create_order/`,
+            { pharmacy_id: pharmacyId }
         );
         return response.data;
     } catch (error) {
         console.error(`Failed to create order for prescription ${prescriptionId}:`, error);
-        // TODO: Extract specific validation errors from error.response.data if possible
         throw error;
     }
 };

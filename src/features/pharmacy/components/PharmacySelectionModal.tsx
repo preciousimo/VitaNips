@@ -1,7 +1,7 @@
 // src/features/pharmacy/components/PharmacySelectionModal.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { Pharmacy } from '../../../types/pharmacy';
-import { getPharmacies } from '../../../api/pharmacy'; // Ensure pagination is handled
+import { getPharmacies } from '../../../api/pharmacy';
 import Modal from '../../../components/common/Modal';
 
 interface PharmacySelectionModalProps {
@@ -22,15 +22,12 @@ const PharmacySelectionModal: React.FC<PharmacySelectionModalProps> = ({
     const [selectedPharmacyId, setSelectedPharmacyId] = useState<number | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    // Basic pagination state if needed (or load all for modal?)
     const [nextPageUrl, setNextPageUrl] = useState<string | null>(null);
 
-
-    // Debounce search
     useEffect(() => {
         const handler = setTimeout(() => {
-            fetchPharmacies(searchTerm, true); // Fetch on search term change (reset list)
-        }, 500); // Debounce for 500ms
+            fetchPharmacies(searchTerm, true);
+        }, 500);
 
         return () => {
             clearTimeout(handler);
@@ -47,23 +44,22 @@ const PharmacySelectionModal: React.FC<PharmacySelectionModalProps> = ({
 
         try {
             const params = { search: term };
-            const response = await getPharmacies(params); // Fetch first page matching search
+            const response = await getPharmacies(params);
             if (response && Array.isArray(response.results)) {
                 setPharmacies(reset ? response.results : prev => [...prev, ...response.results]);
                 setNextPageUrl(response.next);
             } else {
-                 setPharmacies(reset ? [] : pharmacies); // Keep existing if reset is false and response is bad
+                 setPharmacies(reset ? [] : pharmacies);
             }
         } catch (err: any) {
             setError(err.message || "Failed to load pharmacies.");
         } finally {
             setIsLoading(false);
         }
-    }, [pharmacies]); // Include pharmacies if concatenating
+    }, [pharmacies]);
 
      const loadMore = async () => {
         if (!nextPageUrl || isLoading) return;
-         // Basic load more, could enhance fetchPharmacies to handle URL directly
          try {
              const response = await getPharmacies(nextPageUrl);
               if (response && Array.isArray(response.results)) {
@@ -73,7 +69,6 @@ const PharmacySelectionModal: React.FC<PharmacySelectionModalProps> = ({
          } catch(err) { /* handle error */ }
      }
 
-
     const handleSelect = (pharmacyId: number) => {
         setSelectedPharmacyId(pharmacyId);
     };
@@ -81,14 +76,13 @@ const PharmacySelectionModal: React.FC<PharmacySelectionModalProps> = ({
     const handleConfirm = () => {
         if (selectedPharmacyId !== null) {
             onPharmacySelect(selectedPharmacyId);
-            onClose(); // Close modal after selection
+            onClose();
         }
     };
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={title}>
             <div className="space-y-4">
-                {/* Search Input */}
                 <input
                     type="text"
                     placeholder="Search pharmacies by name or address..."
@@ -99,7 +93,6 @@ const PharmacySelectionModal: React.FC<PharmacySelectionModalProps> = ({
 
                 {error && <p className="text-red-600 text-sm">{error}</p>}
 
-                {/* List of Pharmacies */}
                 <div className="max-h-60 overflow-y-auto border rounded p-2 space-y-2">
                     {isLoading && pharmacies.length === 0 && <p className='text-muted text-sm text-center'>Loading...</p>}
                     {!isLoading && pharmacies.length === 0 && <p className='text-muted text-sm text-center'>No pharmacies found.</p>}
@@ -114,14 +107,11 @@ const PharmacySelectionModal: React.FC<PharmacySelectionModalProps> = ({
                             <p className="text-xs text-muted">{pharmacy.address}</p>
                         </div>
                     ))}
-                    {/* Basic Load More inside scrollable div */}
                     {nextPageUrl && !isLoading && (
                          <button onClick={loadMore} className='text-blue-600 text-sm w-full text-center py-1 hover:underline'>Load More</button>
                      )}
                 </div>
 
-
-                {/* Action Buttons */}
                 <div className="flex justify-end space-x-3 pt-4 border-t">
                     <button type="button" onClick={onClose} className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
                         Cancel

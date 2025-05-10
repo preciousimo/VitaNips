@@ -6,13 +6,10 @@ import { Appointment } from '../../../types/appointments';
 
 interface AppointmentListItemProps {
     appointment: Appointment;
-    // Pass doctor details if available/fetched separately
-    // doctor?: Doctor | null;
-    onCancel: (id: number) => void; // Function to trigger cancellation
-    isCancelling?: boolean; // Optional flag for loading state during cancel
+    onCancel: (id: number) => void;
+    isCancelling?: boolean;
 }
 
-// Helper function to format time (HH:MM:SS -> HH:MM AM/PM) - Reuse if available globally
 const formatTime = (timeStr: string): string => {
     if (!timeStr) return '';
     const [hours, minutes] = timeStr.split(':');
@@ -23,7 +20,6 @@ const formatTime = (timeStr: string): string => {
     return `${formattedHour}:${minute < 10 ? '0' + minute : minute} ${ampm}`;
 };
 
-// Helper function to format date
 const formatDate = (dateStr: string | null) => {
     if (!dateStr) return 'N/A';
     try {
@@ -31,7 +27,6 @@ const formatDate = (dateStr: string | null) => {
     } catch { return 'Invalid Date'; }
 };
 
-// Status styling helper
 const getStatusInfo = (status: Appointment['status']): { text: string; color: string; icon: React.ElementType } => {
     switch (status) {
         case 'scheduled': return { text: 'Scheduled', color: 'text-blue-600', icon: InformationCircleIcon };
@@ -51,7 +46,6 @@ const AppointmentListItem: React.FC<AppointmentListItemProps> = ({ appointment, 
         <li className="bg-white rounded-lg shadow hover:shadow-md transition-shadow duration-150 mb-3">
             <Link to={`/appointments/${appointment.id}`} className="block p-4 group">
             <div className="flex flex-col sm:flex-row justify-between sm:items-start">
-                {/* Details */}
                 <div className="flex-grow mb-3 sm:mb-0 sm:mr-4">
                     <div className="flex items-center text-sm text-gray-500 mb-1">
                         <CalendarIcon className="h-4 w-4 mr-1.5" />
@@ -60,9 +54,7 @@ const AppointmentListItem: React.FC<AppointmentListItemProps> = ({ appointment, 
                         <ClockIcon className="h-4 w-4 mr-1.5" />
                         <span>{formatTime(appointment.start_time)} - {formatTime(appointment.end_time)}</span>
                     </div>
-                     {/* Link to Doctor Profile - requires Doctor ID */}
                      <p className="text-lg font-semibold text-primary group-hover:underline mb-1 inline-block">
-                        {/* Ideally display doctor name here */}
                         Doctor ID: {appointment.doctor}
 +                    </p>
                     <p className="text-sm text-gray-600 mb-2">
@@ -78,14 +70,13 @@ const AppointmentListItem: React.FC<AppointmentListItemProps> = ({ appointment, 
                      </div>
                 </div>
 
-                {/* Status & Actions */}
                 <div className="flex flex-col items-end space-y-2 flex-shrink-0">
                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor} bg-gray-100`}>
                         <StatusIcon className={`h-3 w-3 mr-1 ${statusColor}`} />
                          {statusText}
                      </span>
 
-                    {isUpcoming && ( // Only show cancel for upcoming appointments
+                    {isUpcoming && (
                         <button
                             onClick={() => onCancel(appointment.id)}
                             disabled={isCancelling}
@@ -94,7 +85,6 @@ const AppointmentListItem: React.FC<AppointmentListItemProps> = ({ appointment, 
                             {isCancelling ? 'Cancelling...' : 'Cancel Appointment'}
                         </button>
                     )}
-                     {/* Add link/button for "View Details" or "Join Call" (for virtual) later */}
                 </div>
             </div>
             </Link>

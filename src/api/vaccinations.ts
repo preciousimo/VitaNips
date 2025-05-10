@@ -1,16 +1,13 @@
 // src/api/vaccinations.ts
 import axiosInstance from './axiosInstance';
 import { Vaccination, VaccinationPayload } from '../types/health';
-import { PaginatedResponse } from '../types/common'; // Import common type
+import { PaginatedResponse } from '../types/common';
 
 type VaccinationListParams = { page?: number; ordering?: string };
 
-/**
- * Fetches vaccinations for the logged-in user, handling pagination.
- */
 export const getUserVaccinations = async (
     paramsOrUrl: VaccinationListParams | string | null = null
-): Promise<PaginatedResponse<Vaccination>> => { // <-- Updated return type
+): Promise<PaginatedResponse<Vaccination>> => {
     const endpoint = '/users/vaccinations/';
     try {
         let response;
@@ -28,11 +25,6 @@ export const getUserVaccinations = async (
     }
 };
 
-// --- Functions for single items or actions remain the same ---
-
-/**
- * Adds a new vaccination record for the logged-in user.
- */
 export const addVaccination = async (payload: VaccinationPayload): Promise<Vaccination> => {
     try {
         const response = await axiosInstance.post<Vaccination>('/users/vaccinations/', payload);
@@ -43,9 +35,6 @@ export const addVaccination = async (payload: VaccinationPayload): Promise<Vacci
     }
 };
 
-/**
- * Updates an existing vaccination record.
- */
 export const updateVaccination = async (id: number, payload: Partial<VaccinationPayload>): Promise<Vaccination> => {
     try {
         const response = await axiosInstance.patch<Vaccination>(`/users/vaccinations/${id}/`, payload);
@@ -56,9 +45,6 @@ export const updateVaccination = async (id: number, payload: Partial<Vaccination
     }
 };
 
-/**
- * Deletes a vaccination record.
- */
 export const deleteVaccination = async (id: number): Promise<void> => {
     try {
         await axiosInstance.delete(`/users/vaccinations/${id}/`);

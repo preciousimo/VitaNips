@@ -5,15 +5,14 @@ import { Vaccination } from '../../../types/health';
 
 interface VaccinationListItemProps {
     vaccination: Vaccination;
-    onEdit: (vaccination: Vaccination) => void; // Function to trigger edit mode
-    onDelete: (id: number) => void; // Function to trigger delete
+    onEdit: (vaccination: Vaccination) => void;
+    onDelete: (id: number) => void;
 }
 
 const formatDate = (dateStr: string | null) => {
     if (!dateStr) return 'N/A';
     try {
-         // Assuming YYYY-MM-DD input
-        return new Date(dateStr + 'T00:00:00Z').toLocaleDateString('en-CA'); // Use UTC to avoid timezone issues, en-CA often gives YYYY-MM-DD
+        return new Date(dateStr + 'T00:00:00Z').toLocaleDateString('en-CA');
     } catch {
         return 'Invalid Date';
     }

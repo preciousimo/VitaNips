@@ -1,15 +1,12 @@
 // src/pages/ProfilePage.tsx
 import React, { useState, useCallback } from 'react';
 import { PencilIcon } from '@heroicons/react/24/solid';
-import { useAuth } from '../contexts/AuthContext'; // To get user and update if needed
+import { useAuth } from '../contexts/AuthContext';
 import { updateUserProfile, UserProfileUpdatePayload } from '../api/user';
 import ProfileEditForm from '../features/user/components/ProfileEditForm';
-import { User } from '../types/user'; // Use the updated User type
+import { User } from '../types/user';
 
 const ProfilePage: React.FC = () => {
-  // Get user state and the function to fetch profile from AuthContext
-  // Note: We might need to add fetchUserProfile capability to the context value if not already exposed
-  // For now, we'll update the user state directly in the context after successful save.
   const { user, fetchUserProfile } = useAuth();
 
   const [isEditing, setIsEditing] = useState<boolean>(false);
@@ -21,11 +18,10 @@ const ProfilePage: React.FC = () => {
 
   const handleCancelEdit = () => {
     setIsEditing(false);
-    setError(null); // Clear errors on cancel
+    setError(null);
     setSuccess(null);
   };
 
-  // Function to handle the actual profile update API call
   const handleProfileUpdate = async (payload: UserProfileUpdatePayload): Promise<User | void> => {
     setIsSubmitting(true);
     setError(null);
@@ -33,31 +29,22 @@ const ProfilePage: React.FC = () => {
     try {
         const updatedUser = await updateUserProfile(payload);
         if (fetchUserProfile) {
-            // Refetch profile to ensure context has latest data
-            await fetchUserProfile(localStorage.getItem('accessToken') || ''); // Re-fetch user profile
+            await fetchUserProfile(localStorage.getItem('accessToken') || '');
          } else {
-             // Fallback or warning if fetchUserProfile wasn't exposed - shouldn't happen with previous fix
              console.warn("AuthContext does not provide fetchUserProfile. Cannot refresh user state automatically.");
-             // Optionally, you could try a page reload as a last resort, but it's poor UX.
-             // window.location.reload();
          }
 
         setSuccess("Profile updated successfully!");
-        setIsEditing(false); // Exit edit mode on success
-        // return updatedUser; // This might be stale if you only refetch
-
+        setIsEditing(false);
     } catch (err: any) {
         console.error("Update failed:", err);
-        // Let the form component handle displaying specific field errors
-        // But maybe set a general error here if needed
         setError("Failed to update profile. Check form for details.");
-        throw err; // Re-throw so the form's catch block also runs
+        throw err;
     } finally {
         setIsSubmitting(false);
     }
   };
 
-  // Helper to display profile data or placeholder
   const displayField = (value: string | number | null | undefined, placeholder = 'Not set') => {
       return value || <span className="text-muted italic">{placeholder}</span>;
   }
@@ -83,7 +70,6 @@ const ProfilePage: React.FC = () => {
         )}
       </div>
 
-       {/* Display Success Message */}
        {success && !isEditing && (
           <div className="mb-4 p-3 bg-green-50 text-green-700 border border-green-200 rounded-md text-sm">
               {success}
@@ -92,7 +78,6 @@ const ProfilePage: React.FC = () => {
 
 
       {isEditing ? (
-            // ----- Edit Mode -----
             <div className="bg-white p-6 rounded-lg shadow-md">
                  <ProfileEditForm
                     initialData={user}
@@ -102,9 +87,7 @@ const ProfilePage: React.FC = () => {
                 />
             </div>
       ) : (
-            // ----- View Mode -----
             <div className="bg-white p-6 rounded-lg shadow-md space-y-6">
-                 {/* Basic Info Section */}
                 <div className="pb-4 border-b">
                      <h3 className="text-lg font-semibold text-gray-700 mb-3">Basic Information</h3>
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -116,7 +99,6 @@ const ProfilePage: React.FC = () => {
                     </div>
                 </div>
 
-                 {/* Health Information Section */}
                  <div className="pb-4 border-b">
                      <h3 className="text-lg font-semibold text-gray-700 mb-3">Health Information</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -134,8 +116,6 @@ const ProfilePage: React.FC = () => {
                     </div>
                  </div>
 
-                  {/* Primary Emergency Contact Section */}
-                  {/* Display only if data exists, or provide link to manage contacts */}
                   {(user?.emergency_contact_name || user?.emergency_contact_phone) ? (
                      <div className="pb-4">
                         <h3 className="text-lg font-semibold text-gray-700 mb-3">Primary Emergency Contact</h3>

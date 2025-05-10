@@ -3,8 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getTwilioToken, TwilioTokenResponse } from '../api/appointments';
 import VideoCallUI from '../features/telehealth/components/VideoCallUI';
-// import LoadingSpinner from '../../components/common/LoadingSpinner';
-// import ErrorMessage from '../../components/common/ErrorMessage';
 
 const VideoCallPage: React.FC = () => {
     const { appointmentId } = useParams<{ appointmentId: string }>();
@@ -38,8 +36,7 @@ const VideoCallPage: React.FC = () => {
 
     const handleDisconnect = () => {
         console.log("Video call disconnected/ended.");
-        // Navigate back to appointment list or detail page after disconnect
-        navigate('/appointments'); // Or maybe back to appointment detail
+        navigate('/appointments');
     };
 
     if (isLoading) {
@@ -56,12 +53,10 @@ const VideoCallPage: React.FC = () => {
     }
 
     if (!tokenInfo) {
-         return <div className="flex justify-center items-center h-screen"><p>Could not initialize video call.</p></div>; // Should be caught by error state generally
+         return <div className="flex justify-center items-center h-screen"><p>Could not initialize video call.</p></div>;
     }
 
-
     return (
-        // Render the Video UI component, passing token and room name
         <VideoCallUI
             token={tokenInfo.token}
             roomName={tokenInfo.roomName}

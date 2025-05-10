@@ -10,7 +10,6 @@ interface ProfileEditFormProps {
     isSubmitting: boolean;
 }
 
-// Example blood groups - tailor as needed
 const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
 const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
@@ -24,7 +23,6 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
 
     useEffect(() => {
         if (initialData) {
-            // Pre-fill form with editable fields
             setFormData({
                 first_name: initialData.first_name || '',
                 last_name: initialData.last_name || '',
@@ -35,7 +33,6 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
                 chronic_conditions: initialData.chronic_conditions || null,
                 weight: initialData.weight || null,
                 height: initialData.height || null,
-                // Include emergency contacts if editable here
                 emergency_contact_name: initialData.emergency_contact_name || null,
                 emergency_contact_relationship: initialData.emergency_contact_relationship || null,
                 emergency_contact_phone: initialData.emergency_contact_phone || null,
@@ -48,20 +45,16 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
 
         let processedValue: string | number | boolean | null = value;
 
-        // Handle checkboxes
         if (type === 'checkbox') {
             processedValue = (e.target as HTMLInputElement).checked;
         }
-        // Handle empty strings for optional fields -> null
         else if (value === '' && ['phone_number', 'date_of_birth', 'blood_group', 'allergies', 'chronic_conditions', 'weight', 'height', 'emergency_contact_name', 'emergency_contact_relationship', 'emergency_contact_phone'].includes(name)) {
             processedValue = null;
         } else if ((type === 'number') && name !== 'height' && name !== 'weight') {
-            // Regular number input (if any others added)
             processedValue = value ? parseFloat(value) : null;
         } else if (name === 'height' || name === 'weight') {
-            // Allow decimals for weight/height, store as number or null
             processedValue = value ? parseFloat(value) : null;
-            if (isNaN(processedValue as number)) processedValue = null; // Handle NaN if input is invalid text
+            if (isNaN(processedValue as number)) processedValue = null;
         }
 
         setFormData(prev => ({ ...prev, [name]: processedValue }));
@@ -71,13 +64,11 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
         e.preventDefault();
         setError(null);
 
-        // Basic validation
         if (!formData.first_name || !formData.last_name) {
             setError("First Name and Last Name are required.");
             return;
         }
 
-        // Ensure weight/height are numbers or null
         const payload: UserProfileUpdatePayload = {
             ...formData,
             weight: formData.weight ? Number(formData.weight) : null,
@@ -89,7 +80,6 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
             await onSubmit(payload);
         } catch (err: any) {
             console.error("Profile update error:", err);
-            // Extract backend validation errors if possible
             const errorData = err.response?.data;
             if (typeof errorData === 'object' && errorData !== null) {
                 const messages = Object.entries(errorData).map(([key, value]) => `${key}: ${(value as string[]).join(', ')}`);
@@ -105,7 +95,6 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
             {error && <p className="text-red-600 text-sm bg-red-50 p-3 rounded-md">{error}</p>}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Basic Info */}
                 <div>
                     <label htmlFor="first_name" className="block text-sm font-medium text-gray-700">First Name *</label>
                     <input type="text" name="first_name" id="first_name" required value={formData.first_name ?? ''} onChange={handleChange} className="input-field" />
@@ -123,7 +112,6 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
                     <input type="date" name="date_of_birth" id="date_of_birth" value={formData.date_of_birth ?? ''} onChange={handleChange} className="input-field" />
                 </div>
 
-                {/* Health Info */}
                 <div>
                     <label htmlFor="blood_group" className="block text-sm font-medium text-gray-700">Blood Group</label>
                     <select name="blood_group" id="blood_group" value={formData.blood_group ?? ''} onChange={handleChange} className="input-field">
@@ -148,10 +136,8 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
                     <input type="number" step="0.1" name="height" id="height" value={formData.height ?? ''} onChange={handleChange} className="input-field" placeholder="e.g., 175.0" />
                 </div>
 
-                {/* Optional: Primary Emergency Contact Fields */}
                 <hr className="md:col-span-2 my-2" />
                 <h4 className="md:col-span-2 text-md font-semibold text-gray-700">Primary Emergency Contact</h4>
-                {/* (Only include if these fields are meant to be edited directly on User, not just via EmergencyContacts page) */}
                 <div>
                     <label htmlFor="emergency_contact_name" className="block text-sm font-medium text-gray-700">Contact Name</label>
                     <input type="text" name="emergency_contact_name" id="emergency_contact_name" value={formData.emergency_contact_name ?? ''} onChange={handleChange} className="input-field" />
@@ -171,7 +157,6 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
             <h4 className="md:col-span-2 text-md font-semibold text-gray-700">Notification Preferences</h4>
 
             <div className="md:col-span-2 space-y-2">
-                {/* Email Reminder Toggle */}
                 <div className="flex items-center">
                     <input
                         type="checkbox"
@@ -186,7 +171,6 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
                     </label>
                 </div>
 
-                {/* SMS Reminder Toggle (Ensure field name matches User model) */}
                 <div className="flex items-center">
                     <input
                         type="checkbox"
@@ -201,13 +185,12 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
                     </label>
                 </div>
 
-                {/* --- ADDED: Push Reminder Toggle --- */}
                 <div className="flex items-center">
                     <input
                         type="checkbox"
                         id="notify_appointment_reminder_push"
-                        name="notify_appointment_reminder_push" // Matches User model field
-                        checked={formData.notify_appointment_reminder_push ?? false} // Use ?? false for default unchecked
+                        name="notify_appointment_reminder_push"
+                        checked={formData.notify_appointment_reminder_push ?? false}
                         onChange={handleChange}
                         className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
                     />
@@ -215,9 +198,7 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
                         Reminders via Push Notification (Browser/App)
                     </label>
                 </div>
-                {/* --- END ADDED --- */}
 
-                {/* Other preference toggles... */}
                 <div className="flex items-center">
                     <input type="checkbox" id="notify_refill_reminder_email" name="notify_refill_reminder_email" checked={formData.notify_refill_reminder_email ?? false} onChange={handleChange} className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary" />
                     <label htmlFor="notify_refill_reminder_email" className="ml-2 block text-sm text-gray-900">Receive Medication Refill Reminders via Email</label>
@@ -225,7 +206,6 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
 
             </div>
 
-            {/* Action Buttons */}
             <div className="flex justify-end space-x-3 pt-5 border-t">
                 <button type="button" onClick={onCancel} className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
                     Cancel

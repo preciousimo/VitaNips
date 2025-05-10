@@ -13,11 +13,11 @@ export interface Prescription {
     id: number;
     appointment: number;
     user: number;
-    doctor: number; // Doctor ID
-    date_prescribed: string; // YYYY-MM-DD
+    doctor: number;
+    date_prescribed: string;
     diagnosis: string;
     notes: string | null;
-    items: PrescriptionItem[]; // Nested items
+    items: PrescriptionItem[];
     created_at: string;
     updated_at: string;
 }

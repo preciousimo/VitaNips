@@ -19,7 +19,7 @@ const formatDate = (dateStr: string | null) => {
 const UserInsuranceCard: React.FC<UserInsuranceCardProps> = ({ insurance, onEdit, onDelete }) => {
     const provider = insurance.plan.provider;
     const plan = insurance.plan;
-    const placeholderLogo = '/default-provider-logo.png'; // Add a default logo in public folder
+    const placeholderLogo = '/default-provider-logo.png';
 
     return (
         <div className={`bg-white rounded-lg shadow hover:shadow-lg transition-shadow duration-150 border-l-4 ${insurance.is_primary ? 'border-primary' : 'border-gray-300'}`}>
@@ -67,13 +67,11 @@ const UserInsuranceCard: React.FC<UserInsuranceCardProps> = ({ insurance, onEdit
                     </div>
                 </div>
 
-                {/* Placeholder/Link for Card Images */}
                 {(insurance.insurance_card_front || insurance.insurance_card_back) && (
                      <div className="border-t pt-2 mt-2">
                          <button className="text-sm text-blue-600 hover:underline inline-flex items-center">
                             <IdentificationIcon className="h-4 w-4 mr-1" /> View Card Images
                          </button>
-                         {/* Add logic to show images in a modal later */}
                      </div>
                 )}
             </div>

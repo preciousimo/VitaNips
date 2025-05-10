@@ -4,11 +4,10 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import TwilioVideo, {
     Room, LocalTrack, RemoteParticipant, RemoteTrack, LocalVideoTrack,
     LocalAudioTrack, RemoteVideoTrack, RemoteAudioTrack, ConnectOptions,
-    TwilioError // Import TwilioError
+    TwilioError
 } from 'twilio-video';
 import { MicrophoneIcon, VideoCameraIcon, VideoCameraSlashIcon, PhoneXMarkIcon, UserIcon } from '@heroicons/react/24/solid';
 
-// --- Participant Component (Refined Cleanup) ---
 interface ParticipantProps {
     participant: RemoteParticipant;
 }
@@ -19,7 +18,6 @@ const Participant: React.FC<ParticipantProps> = ({ participant }) => {
     const [videoTrack, setVideoTrack] = useState<RemoteVideoTrack | null>(null);
     const [audioTrack, setAudioTrack] = useState<RemoteAudioTrack | null>(null);
 
-    // Effect to handle track subscription and initial attachment
     useEffect(() => {
         const trackSubscribed = (track: RemoteTrack) => {
              console.log(`Track subscribed for ${participant.identity}: ${track.kind} (${track.sid})`);
@@ -39,31 +37,24 @@ const Participant: React.FC<ParticipantProps> = ({ participant }) => {
             }
         };
 
-        // Handle existing tracks
         participant.tracks.forEach(publication => {
             if (publication.isSubscribed && publication.track) {
                 trackSubscribed(publication.track);
             }
         });
 
-        // Attach listeners
         participant.on('trackSubscribed', trackSubscribed);
         participant.on('trackUnsubscribed', trackUnsubscribed);
 
-        // Cleanup listeners on component unmount or participant change
         return () => {
             console.log(`Cleaning up listeners for participant ${participant.identity}`);
             participant.off('trackSubscribed', trackSubscribed);
             participant.off('trackUnsubscribed', trackUnsubscribed);
-            // Setting state to null will trigger the track detach effects below
             setVideoTrack(null);
             setAudioTrack(null);
         };
-        // Rerun if participant identity changes (shouldn't happen often, but safe)
-    }, [participant, videoTrack?.sid, audioTrack?.sid]); // Add track SIDs to deps? Maybe just participant is enough.
+    }, [participant, videoTrack?.sid, audioTrack?.sid]);
 
-
-    // Effect to handle VIDEO attachment/detachment
     useEffect(() => {
         const track = videoTrack;
         const element = videoRef.current;
@@ -72,26 +63,21 @@ const Participant: React.FC<ParticipantProps> = ({ participant }) => {
             track.attach(element);
             return () => {
                 console.log(`Detaching video track ${track.sid} from element for ${participant.identity}`);
-                 // Ensure track still exists and has detach method before calling
                  if (track?.detach) {
                     track.detach(element);
                  } else {
-                    // If track is gone, try removing children as fallback (less ideal)
                     while (element.firstChild) {
                          element.removeChild(element.firstChild);
                     }
                  }
             };
         } else if (element) {
-             // Explicitly clear content if track becomes null and element exists
              while (element.firstChild) {
                  element.removeChild(element.firstChild);
              }
         }
-        // Depend only on the videoTrack state
     }, [videoTrack, participant.identity]);
 
-    // Effect to handle AUDIO attachment/detachment
     useEffect(() => {
         const track = audioTrack;
         const element = audioRef.current;
@@ -100,38 +86,29 @@ const Participant: React.FC<ParticipantProps> = ({ participant }) => {
             track.attach(element);
             return () => {
                 console.log(`Detaching audio track ${track.sid} from element for ${participant.identity}`);
-                 if (track?.detach) { // Check method exists
+                 if (track?.detach) {
                      track.detach(element);
                  }
             };
         }
-        // Audio doesn't need visual cleanup like video
-         // Depend only on the audioTrack state
     }, [audioTrack, participant.identity]);
 
 
     return (
         <div className="bg-gray-700 rounded p-1 relative w-full aspect-video overflow-hidden shadow-md">
-            {/* Video element */}
             <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
-            {/* Audio element - often kept muted if audio output handled differently, but required for attach */}
             <audio ref={audioRef} autoPlay />
-            {/* Identity Tag */}
             <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 py-0.5 rounded">
                 {participant.identity}
             </div>
-            {/* Placeholder if no video track */}
             {!videoTrack && (
                 <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
                     <UserIcon className="h-1/3 w-1/3 text-gray-500" />
-                     {/* Optional: Add audio status indicator here */}
                 </div>
             )}
         </div>
     );
 };
-// --- End Participant Component ---
-
 
 interface VideoCallUIProps {
     token: string;
@@ -141,7 +118,7 @@ interface VideoCallUIProps {
 
 const VideoCallUI: React.FC<VideoCallUIProps> = ({ token, roomName, onDisconnect }) => {
     const [room, setRoom] = useState<Room | null>(null);
-    const [participants, setParticipants] = useState<Map<string, RemoteParticipant>>(new Map()); // Use Map for easier updates
+    const [participants, setParticipants] = useState<Map<string, RemoteParticipant>>(new Map());
     const [isConnecting, setIsConnecting] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isVideoEnabled, setIsVideoEnabled] = useState(true);
@@ -149,12 +126,7 @@ const VideoCallUI: React.FC<VideoCallUIProps> = ({ token, roomName, onDisconnect
 
     const localVideoContainerRef = useRef<HTMLDivElement>(null);
 
-    // --- Stable Disconnect Function ---
-    // Memoized function to clean up and disconnect from the room
     const cleanupAndDisconnect = useCallback(() => {
-        // Use a function form of setRoom to access the latest state if needed,
-        // although the 'room' variable captured by useCallback should be sufficient
-        // if dependencies are correct.
         setRoom(currentRoom => {
             if (currentRoom) {
                 console.log(`Disconnecting from room: ${currentRoom.name}`);
@@ -167,13 +139,12 @@ const VideoCallUI: React.FC<VideoCallUIProps> = ({ token, roomName, onDisconnect
                 });
                 currentRoom.disconnect();
             }
-            return null; // Set room state to null
+            return null;
         });
-        setParticipants(new Map()); // Reset participants
-        onDisconnect(); // Notify parent component
+        setParticipants(new Map());
+        onDisconnect();
    }, [onDisconnect]);
 
-    // --- Effect to Connect to Room ---
     useEffect(() => {
         if (!token || !roomName) {
              setError("Missing connection details (token or room name).");
@@ -183,13 +154,10 @@ const VideoCallUI: React.FC<VideoCallUIProps> = ({ token, roomName, onDisconnect
 
         setIsConnecting(true);
         setError(null);
-        let connectedRoomInstance: Room | null = null; // Local variable for cleanup reference
+        let connectedRoomInstance: Room | null = null;
 
         const connectOptions: ConnectOptions = { name: roomName, audio: true, video: { width: 640 } };
 
-        // --- Define Event Handlers INSIDE useEffect ---
-        // These functions will be specific to this particular effect run
-        // and will be correctly referenced in the cleanup function.
         const handleParticipantConnected = (participant: RemoteParticipant) => {
             console.log(`Participant connected: ${participant.identity} (SID: ${participant.sid})`);
             setParticipants(prevParticipants => new Map(prevParticipants).set(participant.sid, participant));
@@ -220,24 +188,19 @@ const VideoCallUI: React.FC<VideoCallUIProps> = ({ token, roomName, onDisconnect
              } else {
                  setError('Disconnected from call.');
              }
-             // Call the memoized cleanup function
              cleanupAndDisconnect();
         };
-        // --- End Event Handler Definitions ---
-
 
         TwilioVideo.connect(token, connectOptions).then(
             (roomInstance) => {
-                connectedRoomInstance = roomInstance; // Assign to local variable
+                connectedRoomInstance = roomInstance;
                 console.log(`Successfully joined Room: ${connectedRoomInstance.name} (SID: ${connectedRoomInstance.sid})`);
-                setRoom(connectedRoomInstance); // Update state
+                setRoom(connectedRoomInstance);
                 setIsConnecting(false);
 
-                // Attach Local Video Track
                 if (localVideoContainerRef.current) {
                     localVideoContainerRef.current.innerHTML = '';
                     roomInstance.localParticipant.videoTracks.forEach(publication => {
-                        // **FIX 1:** Removed .isSubscribed check for local tracks
                         if (publication.track) {
                             const videoElement = publication.track.attach();
                             videoElement.style.width = '100%';
@@ -249,12 +212,10 @@ const VideoCallUI: React.FC<VideoCallUIProps> = ({ token, roomName, onDisconnect
                     });
                 }
 
-                // Register listeners using the handlers defined above
                 roomInstance.on('participantConnected', handleParticipantConnected);
                 roomInstance.on('participantDisconnected', handleParticipantDisconnected);
                 roomInstance.on('disconnected', handleRoomDisconnected);
 
-                // Handle participants already in the room
                 roomInstance.participants.forEach(handleParticipantConnected);
 
             },
@@ -273,29 +234,23 @@ const VideoCallUI: React.FC<VideoCallUIProps> = ({ token, roomName, onDisconnect
              }
          );
 
-        // --- useEffect Cleanup Function ---
         return () => {
             console.log("Running VideoCallUI connection useEffect cleanup");
-            // Use the local variable that holds the room instance from this effect run
             const roomToClean = connectedRoomInstance;
             if (roomToClean) {
                 console.log(`Cleaning up listeners and disconnecting from room: ${roomToClean.name}`);
-                // **FIX 2:** Remove listeners using the correct function references captured in this scope
                 roomToClean.off('participantConnected', handleParticipantConnected);
                 roomToClean.off('participantDisconnected', handleParticipantDisconnected);
                 roomToClean.off('disconnected', handleRoomDisconnected);
 
-                // Call the memoized cleanup function which handles tracks and disconnect
                 cleanupAndDisconnect();
             } else {
                 console.log("Cleanup called but no room instance was available from this effect run.");
             }
         };
-    // Dependencies: Rerun if token/roomName changes. cleanupAndDisconnect is stable.
     }, [token, roomName, cleanupAndDisconnect]); 
 
 
-     // --- Media Control Callbacks (Memoized) ---
      const toggleVideo = useCallback(() => {
          if (!room) return;
          const videoTrack = Array.from(room.localParticipant.videoTracks.values())[0]?.track;
@@ -327,19 +282,15 @@ const VideoCallUI: React.FC<VideoCallUIProps> = ({ token, roomName, onDisconnect
               console.warn("Could not find local audio track to toggle.");
          }
      }, [room]);
-     // --- End Media Controls ---
 
-
-    // --- Render Logic ---
     if (isConnecting) {
          return <div className="flex justify-center items-center h-screen"><p>Connecting to video call...</p></div>;
     }
 
-    if (error) { // Show error overlay or message
+    if (error) {
          return (
              <div className="flex flex-col justify-center items-center h-screen bg-gray-900 text-white p-4">
                  <p className="text-red-400 text-center mb-4">Error: {error}</p>
-                 {/* Allow manual disconnect/close even on error */}
                  <button onClick={cleanupAndDisconnect} className="btn-primary bg-red-600 hover:bg-red-700">
                      Close Call
                  </button>
@@ -347,14 +298,11 @@ const VideoCallUI: React.FC<VideoCallUIProps> = ({ token, roomName, onDisconnect
          );
     }
 
-    // Render the call UI if connected
     const remoteParticipantsArray = Array.from(participants.values());
 
     return (
         <div className="flex flex-col h-screen bg-gray-900 text-white p-4">
-            {/* Dynamic Grid Layout */}
              <div className={`flex-grow grid gap-2 items-center justify-center ${remoteParticipantsArray.length === 0 ? 'grid-cols-1' : (remoteParticipantsArray.length === 1 ? 'grid-cols-2' : 'grid-cols-2 grid-rows-2')} `}>
-                {/* Local Participant */}
                  <div ref={localVideoContainerRef} className="bg-black rounded relative w-full aspect-video overflow-hidden shadow-md">
                      <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 py-0.5 rounded">
                          You ({room?.localParticipant?.identity}) {!isAudioEnabled && '(Mic Muted)'} {!isVideoEnabled && '(Cam Off)'}
@@ -366,12 +314,10 @@ const VideoCallUI: React.FC<VideoCallUIProps> = ({ token, roomName, onDisconnect
                      )}
                  </div>
 
-                 {/* Remote Participants */}
                  {remoteParticipantsArray.map(participant => (
                      <Participant key={participant.sid} participant={participant} />
                  ))}
 
-                 {/* Placeholder */}
                  {remoteParticipantsArray.length === 0 && !isConnecting && (
                      <div className="bg-gray-800 rounded w-full aspect-video flex items-center justify-center text-muted flex-col shadow-md">
                          <UserIcon className='h-16 w-16 mb-2' />
@@ -380,7 +326,6 @@ const VideoCallUI: React.FC<VideoCallUIProps> = ({ token, roomName, onDisconnect
                  )}
             </div>
 
-            {/* Controls */}
              <div className="flex-shrink-0 flex justify-center items-center space-x-4 py-4 mt-4 bg-gray-800 rounded-lg shadow-md">
                  <button onClick={toggleAudio} title={isAudioEnabled ? "Mute Mic" : "Unmute Mic"} className={`p-3 rounded-full transition-colors ${isAudioEnabled ? 'bg-gray-600 hover:bg-gray-500' : 'bg-red-600 hover:bg-red-500'}`}>
                      <MicrophoneIcon className={`h-6 w-6 ${isAudioEnabled ? 'text-white' : 'text-gray-300'}`} />

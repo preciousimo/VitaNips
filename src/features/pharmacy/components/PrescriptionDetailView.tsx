@@ -1,10 +1,10 @@
 // src/features/prescriptions/components/PrescriptionDetailView.tsx
-import React, { useState } from 'react'; // Added useState
+import React, { useState } from 'react';
 import { Prescription } from '../../../types/prescriptions';
 import { Link } from 'react-router-dom';
-import { ClipboardDocumentListIcon, TagIcon, InformationCircleIcon, ForwardIcon } from '@heroicons/react/24/outline'; // Added ForwardIcon
-import PharmacySelectionModal from '../../pharmacy/components/PharmacySelectionModal'; // Import the modal
-import { createOrderFromPrescription } from '../../../api/prescriptions'; // Import the API function
+import { ClipboardDocumentListIcon, TagIcon, InformationCircleIcon, ForwardIcon } from '@heroicons/react/24/outline';
+import PharmacySelectionModal from '../../pharmacy/components/PharmacySelectionModal';
+import { createOrderFromPrescription } from '../../../api/prescriptions';
 
 interface PrescriptionDetailViewProps {
     prescription: Prescription;
@@ -24,7 +24,7 @@ const PrescriptionDetailView: React.FC<PrescriptionDetailViewProps> = ({ prescri
     };
 
     const handleOpenPharmacyModal = () => {
-        setOrderStatus(null); // Clear previous status
+        setOrderStatus(null);
         setShowPharmacyModal(true);
     };
 
@@ -37,11 +37,8 @@ const PrescriptionDetailView: React.FC<PrescriptionDetailViewProps> = ({ prescri
         setOrderStatus(null);
         try {
             const order = await createOrderFromPrescription(prescription.id, pharmacyId);
-            // Handle success - maybe show a message and the new order ID/status
             setOrderStatus({ success: `Order #${order.id} created successfully with status: ${order.status}.` });
-            // Optionally, navigate to an order page: navigate(`/orders/${order.id}`);
         } catch (error: any) {
-            // Handle error - display message to user
              const backendErrors = error.response?.data;
              if (typeof backendErrors === 'object' && backendErrors !== null) {
                 setOrderStatus({ error: backendErrors.error || backendErrors.warning || "Failed to create order." });
@@ -53,10 +50,8 @@ const PrescriptionDetailView: React.FC<PrescriptionDetailViewProps> = ({ prescri
         }
     };
 
-
     return (
         <>
-             {/* Pharmacy Selection Modal */}
             <PharmacySelectionModal
                 isOpen={showPharmacyModal}
                 onClose={handleClosePharmacyModal}
@@ -64,9 +59,7 @@ const PrescriptionDetailView: React.FC<PrescriptionDetailViewProps> = ({ prescri
                 title={`Select Pharmacy for Prescription #${prescription.id}`}
             />
 
-            {/* Existing Detail View Content */}
             <div className="bg-indigo-50 p-4 border border-indigo-200 rounded-b-lg -mt-3 pt-6 animate-fade-in">
-                {/* Order Status Message Area */}
                  {orderStatus?.success && (
                       <div className="mb-3 p-2 bg-green-100 text-green-700 border border-green-300 rounded text-sm">
                           {orderStatus.success}
@@ -80,7 +73,6 @@ const PrescriptionDetailView: React.FC<PrescriptionDetailViewProps> = ({ prescri
 
 
                 <div className="mb-4">
-                    {/* ... diagnosis, notes, date, appointment link ... */}
                      <h4 className="font-semibold text-gray-800 mb-1">Diagnosis & Notes</h4>
                      <p className="text-sm text-gray-700 mb-1"><span className='font-medium'>Diagnosis:</span> {prescription.diagnosis}</p>
                      {prescription.notes && (
@@ -91,7 +83,6 @@ const PrescriptionDetailView: React.FC<PrescriptionDetailViewProps> = ({ prescri
                 </div>
 
                 <div>
-                    {/* ... medication list ... */}
                     <h4 className="font-semibold text-gray-800 mb-2 flex items-center">
                         <ClipboardDocumentListIcon className="h-5 w-5 mr-2 text-primary"/> Medications Prescribed
                     </h4>
@@ -110,11 +101,10 @@ const PrescriptionDetailView: React.FC<PrescriptionDetailViewProps> = ({ prescri
                      )}
                 </div>
 
-                 {/* "Order from Pharmacy" button */}
                  <div className="mt-4 pt-4 border-t text-right">
                      <button
                         onClick={handleOpenPharmacyModal}
-                        disabled={isOrdering || !!orderStatus?.success} // Disable if ordering or already successful
+                        disabled={isOrdering || !!orderStatus?.success}
                         className="btn-primary text-sm px-3 py-1 inline-flex items-center disabled:opacity-60"
                      >
                         <ForwardIcon className="h-4 w-4 mr-1.5"/>

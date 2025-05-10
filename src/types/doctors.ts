@@ -10,43 +10,40 @@ export interface Doctor {
     first_name: string;
     last_name: string;
     full_name: string;
-    specialties: Specialty[]; // Array of Specialty objects
-    profile_picture: string | null; // URL or null
+    specialties: Specialty[];
+    profile_picture: string | null;
     gender: 'M' | 'F';
     years_of_experience: number;
     education: string;
     bio: string;
     languages_spoken: string;
-    consultation_fee: string | null; // Comes as string from DecimalField
+    consultation_fee: string | null;
     is_available_for_virtual: boolean;
     is_verified: boolean;
-    average_rating: number; // Comes as number
-    created_at: string; // ISO date string
-    updated_at: string; // ISO date string
+    average_rating: number;
+    created_at: string;
+    updated_at: string;
 }
 
 export interface DoctorReview {
     id: number;
-    doctor: number; // Doctor ID
-    user: number; // User ID (or maybe user details if serializer nests them)
-    rating: number; // 1-5
+    doctor: number;
+    user: number;
+    rating: number;
     comment: string | null;
-    created_at: string; // ISO date string
-    updated_at: string; // ISO date string
-    // Add user details if your serializer provides them (e.g., user_email: string)
+    created_at: string;
+    updated_at: string;
 }
 
-// Based on DoctorAvailabilitySerializer
 export interface DoctorAvailability {
     id: number;
-    doctor: number; // Doctor ID
-    day_of_week: number; // 0=Monday, 1=Tuesday, etc.
-    start_time: string; // "HH:MM:SS"
-    end_time: string; // "HH:MM:SS"
+    doctor: number;
+    day_of_week: number;
+    start_time: string;
+    end_time: string;
     is_available: boolean;
 }
 
-// Optional: Type for the API response if it includes pagination
 export interface DoctorListResponse {
     count: number;
     next: string | null;

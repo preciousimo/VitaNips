@@ -1,17 +1,13 @@
 // src/api/emergencyContacts.ts
 import axiosInstance from './axiosInstance';
 import { EmergencyContact, EmergencyContactPayload } from '../types/user';
-import { PaginatedResponse } from '../types/common'; // Import common type
+import { PaginatedResponse } from '../types/common';
 
-// Define specific parameters if needed
 type ContactListParams = { page?: number; ordering?: string };
 
-/**
- * Fetches the logged-in user's emergency contacts, handling pagination.
- */
 export const getUserEmergencyContacts = async (
     paramsOrUrl: ContactListParams | string | null = null
-): Promise<PaginatedResponse<EmergencyContact>> => { // <-- Updated return type
+): Promise<PaginatedResponse<EmergencyContact>> => {
     const endpoint = '/emergency/contacts/';
     try {
         let response;
@@ -29,11 +25,6 @@ export const getUserEmergencyContacts = async (
     }
 };
 
-// --- Functions for single items or actions remain the same ---
-
-/**
- * Adds a new emergency contact for the logged-in user.
- */
 export const addEmergencyContact = async (payload: EmergencyContactPayload): Promise<EmergencyContact> => {
     try {
         const response = await axiosInstance.post<EmergencyContact>('/emergency/contacts/', payload);
@@ -44,9 +35,6 @@ export const addEmergencyContact = async (payload: EmergencyContactPayload): Pro
     }
 };
 
-/**
- * Updates an existing emergency contact.
- */
 export const updateEmergencyContact = async (id: number, payload: Partial<EmergencyContactPayload>): Promise<EmergencyContact> => {
     try {
         const response = await axiosInstance.patch<EmergencyContact>(`/emergency/contacts/${id}/`, payload);
@@ -57,9 +45,6 @@ export const updateEmergencyContact = async (id: number, payload: Partial<Emerge
     }
 };
 
-/**
- * Deletes an emergency contact.
- */
 export const deleteEmergencyContact = async (id: number): Promise<void> => {
     try {
         await axiosInstance.delete(`/emergency/contacts/${id}/`);

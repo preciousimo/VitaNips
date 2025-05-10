@@ -7,10 +7,8 @@ import 'leaflet/dist/leaflet.css';
 import { getPharmacies } from '../api/pharmacy';
 import { getEmergencyServices, EmergencyService } from '../api/emergency';
 import { Pharmacy } from '../types/pharmacy';
-import { PaginatedResponse } from '../types/common'; // <--- IMPORT HERE
+import { PaginatedResponse } from '../types/common';
 
-// Fix leaflet's default icon issue...
-// ... (Icon Fix code remains the same) ...
 import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
 import iconUrl from 'leaflet/dist/images/marker-icon.png';
 import shadowUrl from 'leaflet/dist/images/marker-shadow.png';
@@ -26,11 +24,9 @@ const DefaultIcon = L.icon({
     shadowSize: [41, 41],
 });
 L.Marker.prototype.options.icon = DefaultIcon;
-// --- End Icon Fix ---
 
 type Service = Pharmacy | EmergencyService;
 
-// ... (RecenterMap component remains the same) ...
 const RecenterMap = ({ center }: { center: LatLngExpression }) => {
     const map = useMap();
     useEffect(() => {
@@ -40,8 +36,7 @@ const RecenterMap = ({ center }: { center: LatLngExpression }) => {
 };
 
 const MapLocatorPage: React.FC = () => {
-    // ... (state variables remain the same) ...
-    const [mapCenter, setMapCenter] = useState<LatLngExpression>([7.3776, 3.9470]); // Default: Ibadan
+    const [mapCenter, setMapCenter] = useState<LatLngExpression>([7.3776, 3.9470]);
     const [userLocation, setUserLocation] = useState<LatLngExpression | null>(null);
     const [zoomLevel, setZoomLevel] = useState<number>(13);
     const [radiusKm, setRadiusKm] = useState<number>(5);
@@ -53,7 +48,6 @@ const MapLocatorPage: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const locationFetched = useRef(false);
 
-    // ... (useEffect for getUserLocation remains the same) ...
      useEffect(() => {
         setIsLoadingLocation(true);
         setError(null);
@@ -70,7 +64,7 @@ const MapLocatorPage: React.FC = () => {
             (geoError) => {
                 console.error("Geolocation Error:", geoError);
                 setError(`Geolocation Error: ${geoError.message}. Please enable location services.`);
-                setMapCenter([7.3776, 3.9470]); // Keep default Ibadan
+                setMapCenter([7.3776, 3.9470]);
                 locationFetched.current = true;
                 setIsLoadingLocation(false);
             },
@@ -90,25 +84,20 @@ const MapLocatorPage: React.FC = () => {
         setServices([]);
 
         try {
-            // Define the type explicitly for the promises array
             const fetchPromises: Promise<PaginatedResponse<Service>>[] = [];
 
             const params = { lat, lon, radius: radiusKm };
 
             if (serviceType === 'all' || serviceType === 'pharmacy') {
-                // Cast the promise correctly if needed, though TS should infer it
                 fetchPromises.push(getPharmacies(params) as Promise<PaginatedResponse<Service>>);
             }
             if (serviceType === 'all' || serviceType === 'hospital') {
                 fetchPromises.push(getEmergencyServices({ ...params, service_type: 'hospital' }) as Promise<PaginatedResponse<Service>>);
             }
 
-            // Promise.all resolves to an array of the resolved values
-            // Type assertion helps TypeScript understand the resolved type here
             const responses = await Promise.all(fetchPromises) as PaginatedResponse<Service>[];
 
             let combinedResults: Service[] = [];
-            // Now 'response' inside forEach should be correctly typed
             responses.forEach(response => {
                 if (response && Array.isArray(response.results)) {
                     combinedResults = combinedResults.concat(response.results);
@@ -127,7 +116,7 @@ const MapLocatorPage: React.FC = () => {
         } finally {
             setIsLoadingServices(false);
         }
-    }, [userLocation, mapCenter, radiusKm, serviceType, error]); // Removed error from dependencies as it causes loops
+    }, [userLocation, mapCenter, radiusKm, serviceType, error]);
 
     useEffect(() => {
         if (locationFetched.current) {
@@ -135,12 +124,10 @@ const MapLocatorPage: React.FC = () => {
         }
     }, [fetchServices]);
 
-    // ... (return statement with JSX remains the same) ...
      return (
         <div>
             <h1 className="text-3xl font-bold text-gray-800 mb-4">Nearby Services</h1>
 
-            {/* --- Controls --- */}
             <div className="bg-white p-4 rounded shadow mb-4 flex flex-wrap gap-4 items-center">
                 <div>
                     <label htmlFor="serviceType" className="block text-sm font-medium text-gray-700 mr-2">Service Type:</label>
@@ -154,7 +141,6 @@ const MapLocatorPage: React.FC = () => {
                         <option value="all">All</option>
                         <option value="pharmacy">Pharmacies</option>
                         <option value="hospital">Hospitals</option>
-                        {/* Add other emergency types if relevant */}
                     </select>
                 </div>
                 <div>
@@ -163,7 +149,7 @@ const MapLocatorPage: React.FC = () => {
                         type="number"
                         id="radius"
                         min="1"
-                        max="50" // Example max
+                        max="50"
                         value={radiusKm}
                         onChange={(e) => setRadiusKm(Math.max(1, parseInt(e.target.value) || 1))}
                         className="input-field py-1 w-20"
@@ -176,15 +162,12 @@ const MapLocatorPage: React.FC = () => {
                 {isLoadingLocation && <span className="text-sm text-muted self-end">Getting location...</span>}
             </div>
 
-            {/* Display Error */}
              {error && (
                 <div className="p-3 bg-red-100 text-red-700 rounded mb-4">
                    {error}
                 </div>
              )}
 
-
-            {/* --- Map --- */}
             <div className="h-[60vh] w-full rounded shadow overflow-hidden relative">
                 {(isLoadingServices || isLoadingLocation) && (
                     <div className="absolute inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-10">
@@ -194,7 +177,6 @@ const MapLocatorPage: React.FC = () => {
                     </div>
                 )}
                 <MapContainer center={mapCenter} zoom={zoomLevel} scrollWheelZoom={true} style={{ height: '100%', width: '100%' }}>
-                     {/* Recenter map when user location is found */}
                      {userLocation && <RecenterMap center={userLocation} />}
 
                     <TileLayer
@@ -202,7 +184,6 @@ const MapLocatorPage: React.FC = () => {
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     />
 
-                    {/* User Location Marker & Radius Circle */}
                     {userLocation && (
                         <>
                             <Marker position={userLocation} title="Your Location">
@@ -212,15 +193,12 @@ const MapLocatorPage: React.FC = () => {
                         </>
                     )}
 
-                    {/* Service Markers */}
                     {services.map(service => (
-                         // Ensure service has valid coordinates before rendering marker
                          (typeof service.latitude === 'number' && typeof service.longitude === 'number') && (
                             <Marker key={`${('service_type' in service ? service.service_type : 'pharmacy')}-${service.id}`} position={[service.latitude, service.longitude]}>
                                 <Popup>
                                     <b>{service.name}</b><br />
                                     {service.address}<br/>
-                                    {/* Add more details like phone, type */}
                                     {'service_type' in service && `Type: ${service.service_type}`}<br/>
                                     {service.phone_number && `Phone: ${service.phone_number}`}
                                 </Popup>

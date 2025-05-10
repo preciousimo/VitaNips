@@ -32,7 +32,6 @@ const EmergencyContactForm: React.FC<EmergencyContactFormProps> = ({
                 email: initialData.email || null,
             });
         } else {
-            // Reset form for adding
             setFormData({ name: '', relationship: '', phone_number: '', email: null });
         }
     }, [initialData]);
@@ -54,12 +53,10 @@ const EmergencyContactForm: React.FC<EmergencyContactFormProps> = ({
             setError("Name, Relationship, and Phone Number are required.");
             return;
         }
-         // Optional: Add phone number validation regex
-
         try {
              const payload: EmergencyContactPayload = {
                 ...formData,
-                email: formData.email || null, // Ensure empty string becomes null
+                email: formData.email || null,
              };
             await onSubmit(payload, initialData?.id);
         } catch (err: any) {
@@ -75,7 +72,6 @@ const EmergencyContactForm: React.FC<EmergencyContactFormProps> = ({
             </h3>
             {error && <p className="text-red-600 text-sm">{error}</p>}
 
-             {/* Form Fields */}
             <div className="space-y-3">
                 <div>
                     <label htmlFor="name" className="block text-sm font-medium text-gray-700">Full Name *</label>
@@ -95,7 +91,6 @@ const EmergencyContactForm: React.FC<EmergencyContactFormProps> = ({
                 </div>
              </div>
 
-            {/* Action Buttons */}
             <div className="flex justify-end space-x-3 pt-4 border-t mt-4">
                 <button type="button" onClick={onCancel} className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                     Cancel
