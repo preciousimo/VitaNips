@@ -12,10 +12,9 @@ export const getMedicationReminders = async (
     try {
         let response;
         if (typeof paramsOrUrl === 'string') {
-            // Assuming paramsOrUrl is a full URL (e.g., from pagination links)
-            // Extract path and query for axiosInstance if baseURL is set
             const url = new URL(paramsOrUrl);
-            const pathWithQuery = url.pathname.replace(axiosInstance.defaults.baseURL || '', '') + url.search;
+            // Ensure we use only path + search if axiosInstance.defaults.baseURL is already set
+            const pathWithQuery = (url.pathname + url.search).replace(axiosInstance.defaults.baseURL || '', '');
             response = await axiosInstance.get<PaginatedResponse<MedicationReminder>>(pathWithQuery);
         } else {
             response = await axiosInstance.get<PaginatedResponse<MedicationReminder>>(endpoint, { params: paramsOrUrl });

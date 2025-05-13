@@ -5,14 +5,15 @@ export type ReminderFrequency = 'daily' | 'weekly' | 'monthly' | 'custom';
 
 export interface MedicationReminder {
     id: number;
-    user: number; // Read-only, set by backend
-    medication: Medication; // For display (read-only from serializer)
-    prescription_item: number | null; // FK to PrescriptionItem
+    user: number;
+    medication_display: Medication; // Changed from 'medication' to match refined serializer
+    prescription_item_id: number | null; // Changed from prescription_item to match refined serializer
+    // prescription_item_display: PrescriptionItem | null; // If you add this to serializer for GET
     start_date: string; // YYYY-MM-DD
     end_date: string | null; // YYYY-MM-DD
     time_of_day: string; // HH:MM:SS or HH:MM
     frequency: ReminderFrequency;
-    custom_frequency: string | null; // e.g., "every 3 days", or cron (needs backend parsing)
+    custom_frequency: string | null;
     dosage: string;
     notes: string | null;
     is_active: boolean;
@@ -21,10 +22,8 @@ export interface MedicationReminder {
 }
 
 export interface MedicationReminderPayload {
-    // For MVP, user types medication name. Backend handles finding/creating Medication object.
-    // If backend expects medication_id, this needs to change.
-    medication_name: string; // User types this. Backend resolves to Medication FK.
-    prescription_item_id?: number | null; // Optional: PK for PrescriptionItem
+    medication_name_input: string; // User types this. Backend resolves to Medication FK.
+    prescription_item_id?: number | null;
     start_date: string; // YYYY-MM-DD
     end_date?: string | null; // YYYY-MM-DD
     time_of_day: string; // HH:MM
