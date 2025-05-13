@@ -141,7 +141,12 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
 
       if (type === 'checkbox') {
         processedValue = (e.target as HTMLInputElement).checked;
-      } else if (value === '' && ['phone_number', 'date_of_birth', 'blood_group', 'allergies', 'chronic_conditions'].includes(name)) {
+      } else if (
+        value === '' &&
+        ['phone_number', 'date_of_birth', 'blood_group', 'allergies', 'chronic_conditions'].includes(
+          name
+        )
+      ) {
         processedValue = null;
       } else if (['weight', 'height'].includes(name)) {
         processedValue = value ? parseFloat(value) : null;
