@@ -23,6 +23,11 @@ import PharmacyOrderListPage from '../pages/pharmacy/PharmacyOrderListPage';
 import PharmacyOrderDetailPage from '../pages/pharmacy/PharmacyOrderDetailPage';
 import MedicationRemindersPage from '../pages/MedicationRemindersPage';
 import VideoCallPage from '../pages/VideoCallPage';
+import VitalsLogPage from '../pages/VitalsLogPage';
+import SymptomLogPage from '../pages/SymptomLogPage';
+import FoodLogPage from '../pages/FoodLogPage';
+import ExerciseLogPage from '../pages/ExerciseLogPage';
+import SleepLogPage from '../pages/SleepLogPage';
 
 const LoadingScreen: React.FC = () => (
   <div className="flex justify-center items-center h-screen">
@@ -114,6 +119,11 @@ const AppRouter: React.FC = () => {
           <Route path="/prescriptions" element={<PrescriptionsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/medical-documents" element={<MedicalDocumentsPage />} />
+          <Route path="/health/vitals" element={<VitalsLogPage />} />
+          <Route path="/health/symptoms" element={<SymptomLogPage />} />
+          <Route path="/health/food" element={<FoodLogPage />} />
+          <Route path="/health/exercise" element={<ExerciseLogPage />} />
+          <Route path="/health/sleep" element={<SleepLogPage />} />
           <Route path="/medication-reminders" element={<MedicationRemindersPage />} />
           <Route path="/map-locator" element={<MapLocatorPage />} />
         </Route>
