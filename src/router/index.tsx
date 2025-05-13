@@ -1,6 +1,6 @@
 // src/router/index.tsx
 import React from 'react';
-import {BrowserRouter as Router, Routes, Route, Navigate, Outlet, useLocation} from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import MainLayout from '../components/layout/MainLayout';
 import LoginPage from '../features/auth/pages/LoginPage';
@@ -21,22 +21,23 @@ import MapLocatorPage from '../pages/MapLocatorPage';
 import PharmacyDashboardPage from '../pages/pharmacy/PharmacyDashboardPage';
 import PharmacyOrderListPage from '../pages/pharmacy/PharmacyOrderListPage';
 import PharmacyOrderDetailPage from '../pages/pharmacy/PharmacyOrderDetailPage';
+import MedicationRemindersPage from '../pages/MedicationRemindersPage';
 import VideoCallPage from '../pages/VideoCallPage';
 
 const LoadingScreen: React.FC = () => (
-    <div className="flex justify-center items-center h-screen">
-        <p className="text-xl text-gray-600">Loading...</p>
-    </div>
+  <div className="flex justify-center items-center h-screen">
+    <p className="text-xl text-gray-600">Loading...</p>
+  </div>
 );
 
 const PublicRoute: React.FC = () => {
-    const { isAuthenticated, isLoading } = useAuth();
-    const location = useLocation();
+  const { isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
 
-    if (isLoading) return <LoadingScreen />;
+  if (isLoading) return <LoadingScreen />;
 
-    const from = location.state?.from?.pathname || "/";
-    return isAuthenticated ? <Navigate to={from} replace /> : <Outlet />;
+  const from = location.state?.from?.pathname || "/";
+  return isAuthenticated ? <Navigate to={from} replace /> : <Outlet />;
 };
 
 const ProtectedRoute: React.FC = () => {
@@ -54,9 +55,9 @@ const ProtectedRoute: React.FC = () => {
   }
 
   return (
-      <MainLayout>
-         <Outlet />
-      </MainLayout>
+    <MainLayout>
+      <Outlet />
+    </MainLayout>
   );
 };
 
@@ -74,14 +75,14 @@ const PharmacyRoute: React.FC = () => {
   }
 
   if (!user?.is_pharmacy_staff) {
-      return <Navigate to="/" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return (
-      <MainLayout> 
-         <Outlet />
-      </MainLayout>
-   );
+    <MainLayout>
+      <Outlet />
+    </MainLayout>
+  );
 };
 
 const AppRouter: React.FC = () => {
@@ -94,9 +95,9 @@ const AppRouter: React.FC = () => {
         </Route>
 
         <Route element={<PharmacyRoute />}>
-            <Route path="/portal/dashboard" element={<PharmacyDashboardPage />} />
-            <Route path="/portal/orders" element={<PharmacyOrderListPage />} />
-            <Route path="/portal/orders/:orderId" element={<PharmacyOrderDetailPage />} />
+          <Route path="/portal/dashboard" element={<PharmacyDashboardPage />} />
+          <Route path="/portal/orders" element={<PharmacyOrderListPage />} />
+          <Route path="/portal/orders/:orderId" element={<PharmacyOrderDetailPage />} />
         </Route>
 
         <Route element={<ProtectedRoute />}>
@@ -113,6 +114,7 @@ const AppRouter: React.FC = () => {
           <Route path="/prescriptions" element={<PrescriptionsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/medical-documents" element={<MedicalDocumentsPage />} />
+          <Route path="/medication-reminders" element={<MedicationRemindersPage />} />
           <Route path="/map-locator" element={<MapLocatorPage />} />
         </Route>
 
