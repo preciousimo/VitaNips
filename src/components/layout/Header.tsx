@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { UserIcon, ArrowLeftOnRectangleIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
+import { UserIcon, ArrowLeftOnRectangleIcon, Cog6ToothIcon, BellAlertIcon } from '@heroicons/react/24/outline';
 import NotificationBell from './NotificationBell';
 
 const Header: React.FC = () => {
@@ -29,9 +29,17 @@ const Header: React.FC = () => {
               <>
                 {!user?.is_pharmacy_staff && (
                   <>
+                    <Link to="/appointments" className="text-gray-600 hover:text-primary px-3 py-2 rounded-md text-sm font-medium hidden sm:block">Appointments</Link>
+                    <Link to="/prescriptions" className="text-gray-600 hover:text-primary px-3 py-2 rounded-md text-sm font-medium hidden sm:block">Prescriptions</Link>
+                    <Link
+                      to="/medication-reminders"
+                      className="text-gray-600 hover:text-primary px-3 py-2 rounded-md text-sm font-medium hidden sm:block items-center" // Example styling
+                    >
+                      <BellAlertIcon className="h-5 w-5 inline-block mr-1" />
+                      Reminders
+                    </Link>
                     <Link to="/doctors" className="text-gray-600 hover:text-primary px-3 py-2 rounded-md text-sm font-medium hidden sm:block">Doctors</Link>
                     <Link to="/pharmacies" className="text-gray-600 hover:text-primary px-3 py-2 rounded-md text-sm font-medium hidden sm:block">Pharmacies</Link>
-                    <Link to="/medication-reminders" className="text-gray-600 hover:text-primary px-3 py-2 rounded-md text-sm font-medium hidden sm:block">Reminders</Link>
                   </>
                 )}
                 {user?.is_pharmacy_staff && (
