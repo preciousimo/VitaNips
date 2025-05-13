@@ -8,13 +8,14 @@ import {
     markAllNotificationsRead,
 } from '../../api/notifications';
 import { Notification } from '../../types/notifications';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom'; // Import useLocation
 import { useAuth } from '../../contexts/AuthContext';
 
-const POLLING_INTERVAL_MS = 60000;
+const POLLING_INTERVAL_MS = 60000; // 60 seconds
 
 const NotificationBell: React.FC = () => {
     const { isAuthenticated } = useAuth();
+    const location = useLocation(); // Get current location
     const [unreadCount, setUnreadCount] = useState<number>(0);
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [nextPageUrl, setNextPageUrl] = useState<string | null>(null);
@@ -26,29 +27,39 @@ const NotificationBell: React.FC = () => {
     const dropdownRef = useRef<HTMLDivElement>(null);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
+    // --- MODIFIED fetchCount ---
+    // isLoadingCount is an internal guard, not a dependency that should redefine fetchCount
     const fetchCount = useCallback(async () => {
-        if (!isAuthenticated || isLoadingCount) return;
+        if (!isAuthenticated || isLoadingCount) { // Still use isLoadingCount as an internal guard
+            return;
+        }
         setIsLoadingCount(true);
         try {
             const data = await getUnreadNotificationCount();
             setUnreadCount(data.unread_count);
         } catch (error) {
             console.error("Bell: Failed to fetch count", error);
+            // Optionally set an error state to show in UI if count fetch fails repeatedly
         } finally {
             setIsLoadingCount(false);
         }
-    }, [isAuthenticated, isLoadingCount]);
+    }, [isAuthenticated]); // Removed isLoadingCount from dependencies
 
+    // fetchNotificationsList is mostly fine, depends on isAuthenticated
     const fetchNotificationsList = useCallback(async () => {
         if (!isAuthenticated) return;
         setIsLoadingList(true);
         setListError(null);
-        setNotifications([]);
+        setNotifications([]); // Reset on fresh open/fetch
         setNextPageUrl(null);
         try {
             const response = await getNotifications({ page: 1 });
-            setNotifications(response.results);
-            setNextPageUrl(response.next);
+            if (response && Array.isArray(response.results)) {
+                setNotifications(response.results);
+                setNextPageUrl(response.next);
+            } else {
+                setListError("Failed to load notifications.");
+            }
         } catch (error: any) {
             console.error("Bell: Failed to fetch notifications list", error);
             setListError(error.message || "Could not load notifications.");
@@ -57,48 +68,72 @@ const NotificationBell: React.FC = () => {
         }
     }, [isAuthenticated]);
 
+    // loadMoreNotifications is mostly fine
     const loadMoreNotifications = async () => {
         if (!nextPageUrl || isLoadingMore || !isAuthenticated) return;
         setIsLoadingMore(true);
+        // setListError(null); // Clear previous errors when trying to load more
         try {
             const response = await getNotifications(nextPageUrl);
-            setNotifications(prev => [...prev, ...response.results]);
-            setNextPageUrl(response.next);
+             if (response && Array.isArray(response.results)) {
+                setNotifications(prev => [...prev, ...response.results]);
+                setNextPageUrl(response.next);
+             } else {
+                 // Optionally set error if load more fails
+                 // setListError("Failed to load more notifications.");
+                 setNextPageUrl(null); // Stop trying if structure is bad
+             }
         } catch (error) {
             console.error("Bell: Failed to load more notifications", error);
+            // Optionally set error
+            // setListError("Failed to load more notifications.");
         } finally {
             setIsLoadingMore(false);
         }
     };
 
+    // --- MODIFIED Polling useEffect ---
     useEffect(() => {
         if (isAuthenticated) {
-            fetchCount();
-            intervalRef.current = setInterval(fetchCount, POLLING_INTERVAL_MS);
-            console.log("Notification polling started.");
-        } else {
+            fetchCount(); // Initial fetch when authenticated
+
+            // Clear any existing interval before setting a new one
             if (intervalRef.current) {
                 clearInterval(intervalRef.current);
-                console.log("Notification polling stopped.");
+            }
+
+            intervalRef.current = setInterval(fetchCount, POLLING_INTERVAL_MS);
+            console.log("Notification polling started. Interval ID:", intervalRef.current);
+        } else {
+            // Cleanup if not authenticated
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+                console.log("Notification polling stopped (not authenticated). Interval ID:", intervalRef.current);
+                intervalRef.current = null;
             }
             setUnreadCount(0);
-            setNotifications([]);
-            setIsOpen(false);
+            setNotifications([]); // Clear notifications if user logs out
+            setIsOpen(false); // Close dropdown on logout
         }
+
+        // Cleanup function for when component unmounts or dependencies change
         return () => {
             if (intervalRef.current) {
                 clearInterval(intervalRef.current);
-                console.log("Notification polling stopped on unmount.");
+                console.log("Notification polling interval cleared on unmount/re-effect. Interval ID:", intervalRef.current);
+                intervalRef.current = null;
             }
         };
-    }, [isAuthenticated, fetchCount]);
+    }, [isAuthenticated, fetchCount]); // fetchCount is now more stable
 
+    // Effect to fetch list when dropdown opens
     useEffect(() => {
         if (isOpen && isAuthenticated) {
             fetchNotificationsList();
         }
     }, [isOpen, isAuthenticated, fetchNotificationsList]);
 
+    // Effect to handle clicks outside the dropdown to close it
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -113,51 +148,69 @@ const NotificationBell: React.FC = () => {
         };
     }, [isOpen]);
 
+     // ADDED: Close dropdown on route change
+     useEffect(() => {
+        if (isOpen) {
+            setIsOpen(false);
+        }
+    }, [location]); // Dependency on location object from react-router-dom
+
+
     const handleToggleDropdown = () => {
         setIsOpen(prev => !prev);
     };
 
     const handleMarkRead = async (id: number) => {
+        // Optimistic update
         const notificationIndex = notifications.findIndex(n => n.id === id);
         if (notificationIndex === -1 || !notifications[notificationIndex].unread) return;
 
-        const originalNotifications = [...notifications];
-        const updatedNotifications = originalNotifications.map(n =>
+        const originalNotifications = [...notifications]; // Keep for potential revert
+        const updatedNotifications = notifications.map(n =>
             n.id === id ? { ...n, unread: false } : n
         );
         setNotifications(updatedNotifications);
-        setUnreadCount(prev => Math.max(0, prev - 1));
+        setUnreadCount(prev => Math.max(0, prev - 1)); // Optimistically decrement count
 
         try {
             await markNotificationRead(id);
-            fetchCount();
+            // Optionally, re-fetch count for server truth, though optimistic update is usually fine
+            // await fetchCount(); // If you want to be absolutely sure
         } catch (error) {
             console.error("Failed to mark as read on server", error);
+            // Revert optimistic update on error
             setNotifications(originalNotifications);
-            setUnreadCount(prev => prev + 1);
+            setUnreadCount(prev => prev + 1); // Revert count decrement
         }
     };
 
     const handleMarkAllRead = async () => {
+        if (unreadCount === 0) {
+            setIsOpen(false);
+            return;
+        }
+
         const originalNotifications = [...notifications];
         const originalCount = unreadCount;
 
+        // Optimistic update
         setNotifications(prev => prev.map(n => ({ ...n, unread: false })));
         setUnreadCount(0);
-        setIsOpen(false);
+        // setIsOpen(false); // Keep it open to show they are read
 
         try {
             await markAllNotificationsRead();
-            fetchCount();
+            // fetchCount(); // Fetch actual count from server
         } catch (error) {
             console.error("Failed to mark all as read on server", error);
+            // Revert optimistic update
             setNotifications(originalNotifications);
             setUnreadCount(originalCount);
         }
     };
 
     if (!isAuthenticated) {
-        return null;
+        return null; // Don't render the bell if not authenticated
     }
 
     return (
@@ -179,7 +232,7 @@ const NotificationBell: React.FC = () => {
                 <div className="origin-top-right absolute right-0 mt-2 w-80 sm:w-96 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
                     <div className="px-4 py-2 flex justify-between items-center border-b sticky top-0 bg-white">
                         <h3 className="text-sm font-medium text-gray-900">Notifications</h3>
-                        {unreadCount > 0 && (
+                        {notifications.some(n => n.unread) && ( // Show "Mark all as read" only if there are unread items in the current list
                             <button onClick={handleMarkAllRead} className="text-xs text-blue-600 hover:underline">
                                 Mark all as read
                             </button>
@@ -196,15 +249,23 @@ const NotificationBell: React.FC = () => {
                             notifications.map((n) => (
                                 <div key={n.id} className={`border-b last:border-b-0 ${n.unread ? 'bg-indigo-50' : 'bg-white'}`}>
                                     <Link
-                                        to={n.target_url || '#'}
+                                        to={n.target_url || '#'} // Default to '#' if no target_url
                                         onClick={() => {
-                                            if (n.unread) handleMarkRead(n.id);
-                                            if (!n.target_url) setIsOpen(false);
+                                            if (n.unread) {
+                                                handleMarkRead(n.id);
+                                            }
+                                            // Close dropdown only if not navigating away via target_url
+                                            // If target_url leads to a new route, the dropdown will close due to location change effect
+                                            if (!n.target_url) {
+                                                 setIsOpen(false);
+                                            }
                                         }}
                                         className="block px-4 py-3 hover:bg-gray-100 w-full text-left"
                                         role="button"
+                                        // Prevent navigation if target_url is '#' or empty
+                                        {...( (!n.target_url || n.target_url === '#') && { onClickCapture: (e) => e.preventDefault() } )}
                                     >
-                                        <p className={`text-sm ${n.unread ? 'font-semibold text-gray-800' : 'text-gray-600'}`}>
+                                        <p className={`text-sm ${n.unread ? 'font-semibold text-gray-800' : 'text-gray-600'} break-words`}>
                                             {n.verb}
                                         </p>
                                         <p className="text-xs text-gray-500 mt-1">
@@ -218,7 +279,8 @@ const NotificationBell: React.FC = () => {
                             <div className="text-center border-t py-2">
                                 <button
                                     onClick={loadMoreNotifications}
-                                    className="text-xs text-blue-600 hover:underline"
+                                    disabled={isLoadingMore}
+                                    className="text-xs text-blue-600 hover:underline disabled:opacity-50"
                                 >
                                     {isLoadingMore ? "Loading..." : "Load more"}
                                 </button>
