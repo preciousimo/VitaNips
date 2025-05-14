@@ -102,10 +102,6 @@ const AppRouter: React.FC = () => {
         <Route element={<PublicRoute />}>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="/health-library" element={<HealthLibraryPage />} />
-          <Route path="/health-library/healthy-eating" element={<HealthyEatingTipsPage />} />
-          {/* <Route path="/health-library/understanding-diabetes" element={<UnderstandingDiabetesPage />} /> */}
-          <Route path="/mental-wellness" element={<MentalWellnessResourcesPage />} />
         </Route>
 
         <Route element={<PharmacyRoute />}>
@@ -136,6 +132,10 @@ const AppRouter: React.FC = () => {
           <Route path="/health/sleep" element={<SleepLogPage />} />
           <Route path="/medication-reminders" element={<MedicationRemindersPage />} />
           <Route path="/map-locator" element={<MapLocatorPage />} />
+          <Route path="/health-library" element={<HealthLibraryPage />} />
+          <Route path="/health-library/healthy-eating" element={<HealthyEatingTipsPage />} />
+          {/* <Route path="/health-library/understanding-diabetes" element={<UnderstandingDiabetesPage />} /> */}
+          <Route path="/mental-wellness" element={<MentalWellnessResourcesPage />} />
         </Route>
 
       </Routes>
