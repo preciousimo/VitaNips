@@ -33,6 +33,8 @@ import HealthLibraryPage from '../pages/HealthLibraryPage';
 import HealthyEatingTipsPage from '../pages/articles/HealthyEatingTipsPage';
 // import UnderstandingDiabetesPage from '../pages/articles/UnderstandingDiabetesPage';
 import MentalWellnessResourcesPage from '../pages/MentalWellnessResourcesPage';
+import DoctorPrescriptionWorkspacePage from '../pages/doctor/DoctorPrescriptionWorkspacePage';
+import toast from 'react-hot-toast';
 
 const LoadingScreen: React.FC = () => (
   <div className="flex justify-center items-center h-screen">
@@ -95,6 +97,27 @@ const PharmacyRoute: React.FC = () => {
   );
 };
 
+const DoctorRoute: React.FC = () => {
+  const { user, isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
+
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-screen"><p>Loading Doctor Portal...</p></div>;
+  }
+  if (!isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+  if (!user?.is_doctor) {
+      toast.error("Access Denied: Doctor credentials required.", { duration: 4000 });
+      return <Navigate to="/" replace />;
+  }
+  return (
+      <MainLayout> {/* Using MainLayout for now, can be changed */}
+         <Outlet />
+      </MainLayout>
+   );
+};
+
 const AppRouter: React.FC = () => {
   return (
     <Router>
@@ -108,6 +131,10 @@ const AppRouter: React.FC = () => {
           <Route path="/portal/dashboard" element={<PharmacyDashboardPage />} />
           <Route path="/portal/orders" element={<PharmacyOrderListPage />} />
           <Route path="/portal/orders/:orderId" element={<PharmacyOrderDetailPage />} />
+        </Route>
+
+        <Route element={<DoctorRoute />}>
+          <Route path="/doctor/prescriptions" element={<DoctorPrescriptionWorkspacePage />} />
         </Route>
 
         <Route element={<ProtectedRoute />}>
