@@ -29,6 +29,10 @@ import SymptomLogPage from '../pages/SymptomLogPage';
 import FoodLogPage from '../pages/FoodLogPage';
 import ExerciseLogPage from '../pages/ExerciseLogPage';
 import SleepLogPage from '../pages/SleepLogPage';
+import HealthLibraryPage from '../pages/HealthLibraryPage';
+import HealthyEatingTipsPage from '../pages/articles/HealthyEatingTipsPage';
+// import UnderstandingDiabetesPage from '../pages/articles/UnderstandingDiabetesPage';
+import MentalWellnessResourcesPage from '../pages/MentalWellnessResourcesPage';
 
 const LoadingScreen: React.FC = () => (
   <div className="flex justify-center items-center h-screen">
@@ -98,6 +102,10 @@ const AppRouter: React.FC = () => {
         <Route element={<PublicRoute />}>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/health-library" element={<HealthLibraryPage />} />
+          <Route path="/health-library/healthy-eating" element={<HealthyEatingTipsPage />} />
+          {/* <Route path="/health-library/understanding-diabetes" element={<UnderstandingDiabetesPage />} /> */}
+          <Route path="/mental-wellness" element={<MentalWellnessResourcesPage />} />
         </Route>
 
         <Route element={<PharmacyRoute />}>
