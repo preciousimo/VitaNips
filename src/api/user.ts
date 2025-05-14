@@ -7,8 +7,10 @@ export type UserProfileUpdatePayload = Partial<{
   last_name: string;
   phone_number: string | null;
   date_of_birth: string | null;
+  address: string | null;
   // profile_picture: File | null; // File uploads handled separately
   blood_group: string | null;
+  genotype: string | null;
   allergies: string | null;
   chronic_conditions: string | null;
   weight: number | null;

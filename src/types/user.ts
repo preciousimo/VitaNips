@@ -9,10 +9,12 @@ export interface User {
     first_name: string;
     last_name: string;
     phone_number?: string | null;
+    address?: string | null;
     date_of_birth?: string | null;
     profile_picture?: string | null;
 
     blood_group?: string | null;
+    genotype?: string | null;
     allergies?: string | null;
     chronic_conditions?: string | null;
     weight?: number | null;
