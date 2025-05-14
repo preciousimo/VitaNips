@@ -1,12 +1,13 @@
 // src/pages/DoctorDetailPage.tsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeftIcon, StarIcon, CheckBadgeIcon, LanguageIcon, BanknotesIcon, CalendarDaysIcon, AcademicCapIcon } from '@heroicons/react/24/solid';
+import { ArrowLeftIcon, StarIcon, CheckBadgeIcon, LanguageIcon, BanknotesIcon, CalendarDaysIcon, AcademicCapIcon, UserPlusIcon } from '@heroicons/react/24/solid';
 
 import { getDoctorById, getDoctorReviews, getDoctorAvailability, PostReviewPayload, postDoctorReview } from '../api/doctors';
 import { Doctor, DoctorReview, DoctorAvailability } from '../types/doctors';
-import { Appointment } from '../types/appointments';
+import { Appointment } from '../types/appointments'; // Removed unused AppointmentPayload import
 import { PaginatedResponse } from '../types/common';
+import toast from 'react-hot-toast';
 
 import ReviewCard from '../features/doctors/components/ReviewCard';
 import AvailabilityDisplay from '../features/doctors/components/AvailabilityDisplay';
@@ -14,421 +15,374 @@ import AppointmentBookingForm from '../features/appointments/components/Appointm
 import Modal from '../components/common/Modal';
 import { useAuth } from '../contexts/AuthContext';
 
-const LoadingSpinner: React.FC = () => <p className="text-muted">Loading...</p>;
-const ErrorMessage: React.FC<{ message: string }> = ({ message }) => <p className="text-red-600">{message}</p>;
+const LoadingSpinner: React.FC = () => <div className="text-center py-4"><p className="text-muted">Loading...</p></div>;
+const ErrorMessage: React.FC<{ message: string }> = ({ message }) => <p className="text-red-600 bg-red-50 p-3 rounded-md text-sm">{message}</p>;
+
 interface ReviewFormProps {
-    doctorId: number;
-    onSubmitSuccess: () => void;
+  doctorId: number;
+  onSubmitSuccess: () => void;
 }
 
 const ReviewForm: React.FC<ReviewFormProps> = ({ doctorId, onSubmitSuccess }) => {
-    const [rating, setRating] = useState<number>(0);
-    const [comment, setComment] = useState<string>('');
-    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-    const [formError, setFormError] = useState<string | null>(null);
+  const [rating, setRating] = useState<number>(0);
+  const [comment, setComment] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (rating === 0) {
-            setFormError("Please select a rating.");
-            return;
-        }
-        setIsSubmitting(true);
-        setFormError(null);
-        const payload: PostReviewPayload = { rating, comment };
-        try {
-            await postDoctorReview(doctorId, payload);
-            setRating(0);
-            setComment('');
-            onSubmitSuccess();
-        } catch (err: any) {
-            const apiError = err.response?.data;
-            if (apiError?.non_field_errors) {
-                setFormError(apiError.non_field_errors.join(' '));
-            } else if (apiError?.rating) {
-                setFormError(`Rating: ${apiError.rating.join(' ')}`);
-            } else {
-                setFormError(err.message || "Failed to submit review.");
-            }
-            console.error(err);
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    return (
-        <form onSubmit={handleSubmit} className="mt-4 border-t pt-4 space-y-3">
-            <h4 className="text-md font-semibold text-gray-700">Write a Review</h4>
-            {formError && <ErrorMessage message={formError} />}
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Rating *</label>
-                <div className="flex space-x-1">
-                    {[1, 2, 3, 4, 5].map(star => (
-                        <button
-                            type="button"
-                            key={star}
-                            onClick={() => setRating(star)}
-                            className={`p-1 rounded focus:outline-none focus:ring-2 focus:ring-yellow-400 ${rating >= star ? 'text-yellow-400' : 'text-gray-300 hover:text-gray-400'}`}
-                        >
-                            <StarIcon className="h-6 w-6" />
-                        </button>
-                    ))}
-                </div>
-            </div>
-            <div>
-                <label htmlFor="comment" className="block text-sm font-medium text-gray-700">Comment (Optional)</label>
-                <textarea
-                    id="comment"
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    rows={3}
-                    className="input-field"
-                    placeholder="Share your experience..."
-                />
-            </div>
-            <button type="submit" className="btn-primary text-sm" disabled={isSubmitting}>
-                {isSubmitting ? 'Submitting...' : 'Submit Review'}
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (rating === 0) { setFormError("Please select a rating."); return; }
+    setIsSubmitting(true); setFormError(null);
+    const payload: PostReviewPayload = { rating, comment };
+    try {
+      await postDoctorReview(doctorId, payload);
+      toast.success("Review submitted successfully!");
+      setRating(0); setComment('');
+      onSubmitSuccess(); // This should re-fetch reviews
+    } catch (err: any) {
+      const apiError = err.response?.data;
+      let errMsg = "Failed to submit review.";
+      if (apiError?.non_field_errors) errMsg = apiError.non_field_errors.join(' ');
+      else if (apiError?.rating) errMsg = `Rating: ${apiError.rating.join(' ')}`;
+      else if (apiError?.detail) errMsg = apiError.detail;
+      setFormError(errMsg);
+      toast.error(errMsg);
+    } finally { setIsSubmitting(false); }
+  };
+  
+  return (
+    <form onSubmit={handleSubmit} className="mt-6 border-t pt-6 space-y-4">
+      <h4 className="text-lg font-semibold text-gray-700">Write a Review</h4>
+      {formError && <ErrorMessage message={formError} />}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Your Rating *</label>
+        <div className="flex space-x-1">
+          {[1, 2, 3, 4, 5].map(star => (
+            <button type="button" key={star} onClick={() => setRating(star)}
+              className={`p-1 rounded focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-colors ${rating >= star ? 'text-yellow-400' : 'text-gray-300 hover:text-yellow-300'}`}>
+              <StarIcon className="h-7 w-7" />
             </button>
-        </form>
-    );
+          ))}
+        </div>
+      </div>
+      <div>
+        <label htmlFor="comment" className="block text-sm font-medium text-gray-700">Your Comment (Optional)</label>
+        <textarea id="comment" value={comment} onChange={(e) => setComment(e.target.value)}
+          rows={3} className="input-field mt-1" placeholder="Share your experience..." />
+      </div>
+      <button type="submit" className="btn-primary text-sm py-2 px-4" disabled={isSubmitting || rating === 0}>
+        {isSubmitting ? 'Submitting...' : 'Submit Review'}
+      </button>
+    </form>
+  );
 };
 
+// Interface for location state for follow-up
+interface FollowUpLocationState {
+  isFollowUp?: boolean;
+  originalAppointmentId?: number;
+  prefillReason?: string;
+  openBookingModalDirectly?: boolean;
+}
+
 const DoctorDetailPage: React.FC = () => {
-    const { doctorId } = useParams<{ doctorId: string }>();
-    const navigate = useNavigate();
-    const location = useLocation();
-    const { isAuthenticated } = useAuth();
-    const [doctor, setDoctor] = useState<Doctor | null>(null);
-    const [availability, setAvailability] = useState<DoctorAvailability[]>([]);
+  const { doctorId } = useParams<{ doctorId: string }>();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { isAuthenticated, user } = useAuth();
+  const followUpState = location.state as FollowUpLocationState | null;
 
-    const [reviews, setReviews] = useState<DoctorReview[]>([]);
-    const [reviewsNextPageUrl, setReviewsNextPageUrl] = useState<string | null>(null);
-    const [reviewsTotalCount, setReviewsTotalCount] = useState<number>(0);
-    const [isLoadingMoreReviews, setIsLoadingMoreReviews] = useState<boolean>(false);
-    const [isLoadingReviews, setIsLoadingReviews] = useState<boolean>(true);
-    const [errorReviews, setErrorReviews] = useState<string | null>(null);
+  const [doctor, setDoctor] = useState<Doctor | null>(null);
+  const [availability, setAvailability] = useState<DoctorAvailability[]>([]);
+  const [reviews, setReviews] = useState<DoctorReview[]>([]);
+  const [reviewsNextPageUrl, setReviewsNextPageUrl] = useState<string | null>(null);
+  const [reviewsTotalCount, setReviewsTotalCount] = useState<number>(0);
+  const [isLoadingMoreReviews, setIsLoadingMoreReviews] = useState<boolean>(false);
 
-    const [isLoading, setIsLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
-    const [showBookingModal, setShowBookingModal] = useState<boolean>(false);
-    const [bookingSuccess, setBookingSuccess] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoadingReviews, setIsLoadingReviews] = useState<boolean>(true);
+  const [errorReviews, setErrorReviews] = useState<string | null>(null);
 
-    const placeholderImage = '/default-doctor-avatar.png';
+  const [showBookingModal, setShowBookingModal] = useState<boolean>(false);
 
-    const loadDoctorData = useCallback(async (refreshReviews: boolean = false) => {
-        if (!doctorId) {
-            setError("Doctor ID not found in URL.");
-            setIsLoading(false);
-            setIsLoadingReviews(false);
-            return;
-        }
-        
-        if (!refreshReviews) {
-            setIsLoading(true);
-        }
-        setIsLoadingReviews(true);
-        setError(null);
-        setErrorReviews(null);
-        setBookingSuccess(null);
+  const placeholderImage = '/default-doctor-avatar.png';
 
-        if (refreshReviews) {
-            setReviews([]);
-            setReviewsNextPageUrl(null);
-            setReviewsTotalCount(0);
-        }
+  const followUpHandledRef = useRef(false);
 
-        try {
-            const id = parseInt(doctorId!, 10);
-            if (isNaN(id)) {
-                throw new Error("Invalid Doctor ID format.");
-            }
+  const loadDoctorData = useCallback(async (refreshAll: boolean = false, refreshJustReviews: boolean = false) => {
+    if (!doctorId) { setError("Doctor ID not found."); setIsLoading(false); return; }
+    const id = parseInt(doctorId, 10);
+    if (isNaN(id)) { setError("Invalid Doctor ID."); setIsLoading(false); return; }
 
-            const results = await Promise.allSettled([
-                (!doctor || !refreshReviews) ? getDoctorById(id) : Promise.resolve(doctor),
-                getDoctorReviews(id),
-                (availability.length === 0 || !refreshReviews) ? 
-                    getDoctorAvailability(id) : 
-                    Promise.resolve({ results: availability, next: null, previous: null, count: availability.length }),
-            ]);
-
-            const docResult = results[0];
-            if (docResult.status === 'fulfilled') {
-                setDoctor(docResult.value as Doctor);
-            } else if (!refreshReviews) {
-                console.error("Failed to load doctor details:", docResult.reason);
-                throw new Error(docResult.reason?.message || "Failed to load doctor details.");
-            }
-
-            const reviewResult = results[1];
-            if (reviewResult.status === 'fulfilled') {
-                const reviewResponse = reviewResult.value as PaginatedResponse<DoctorReview>;
-                if (reviewResponse && Array.isArray(reviewResponse.results)) {
-                    setReviews(reviewResponse.results);
-                    setReviewsNextPageUrl(reviewResponse.next);
-                    setReviewsTotalCount(reviewResponse.count);
-                } else {
-                    console.warn("Unexpected review response structure:", reviewResponse);
-                    setErrorReviews("Failed to process reviews.");
-                    setReviews([]);
-                }
-            } else {
-                console.error("Failed to load reviews:", reviewResult.reason);
-                setErrorReviews(reviewResult.reason?.message || "Failed to load reviews.");
-                setReviews([]);
-            }
-
-            const availResult = results[2];
-            if (availResult.status === 'fulfilled') {
-                const availResponse = availResult.value as PaginatedResponse<DoctorAvailability>;
-                if (availResponse && Array.isArray(availResponse.results)) {
-                    setAvailability(availResponse.results);
-                } else {
-                    console.warn("Unexpected availability response structure:", availResponse);
-                    setError(prev => prev ? `${prev} & Failed to process availability.` : "Failed to process availability.");
-                }
-            } else if (!refreshReviews) {
-                console.error("Failed to load availability:", availResult.reason);
-                setError(prev => prev ? `${prev} & Failed to load availability.` : availResult.reason?.message || "Failed to load availability.");
-                setAvailability([]);
-            }
-
-        } catch (err: any) {
-            console.error("Error in loadDoctorData:", err);
-            setError(err.message || "An unexpected error occurred.");
-            setDoctor(null);
-            setReviews([]);
-            setAvailability([]);
-        } finally {
-            setIsLoading(false);
-            setIsLoadingReviews(false);
-        }
-    }, [doctorId]);
-    useEffect(() => {
-        loadDoctorData();
-    }, [loadDoctorData]);
-
-    const loadMoreReviews = async () => {
-        if (!reviewsNextPageUrl || isLoadingMoreReviews) return;
-
-        setIsLoadingMoreReviews(true);
-        setErrorReviews(null);
-
-        try {
-            const response = await getDoctorReviews(parseInt(doctorId!, 10), reviewsNextPageUrl);
-            if (response && Array.isArray(response.results)) {
-                setReviews(prevReviews => [...prevReviews, ...response.results]);
-                setReviewsNextPageUrl(response.next);
-            } else {
-                console.warn("Unexpected load more reviews structure:", response);
-                setErrorReviews("Failed to process more reviews.");
-                setReviewsNextPageUrl(null);
-            }
-        } catch (err: any) {
-            console.error("Failed to load more reviews:", err);
-            setErrorReviews(err.message || "Failed to load more reviews.");
-        } finally {
-            setIsLoadingMoreReviews(false);
-        }
-    };
-
-    const handleReviewSubmitSuccess = () => {
-        loadDoctorData(true);
-    };
-
-    const handleOpenBookingModal = () => {
-        setBookingSuccess(null);
-        setShowBookingModal(true);
-    };
-
-    const handleCloseBookingModal = () => {
-        setShowBookingModal(false);
-    };
-
-    const handleBookingSuccess = (newAppointment: Appointment) => {
-        setShowBookingModal(false);
-        setBookingSuccess(`Appointment booked successfully for ${newAppointment.date} at ${formatTime(newAppointment.start_time)}!`);
-    };
-
-    const formatTime = (timeStr: string): string => {
-        if (!timeStr) return '';
-        try {
-            const [hours, minutes] = timeStr.split(':');
-            const date = new Date();
-            date.setHours(parseInt(hours, 10), parseInt(minutes, 10));
-            return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-        } catch { return timeStr; }
-    };
-    
-    if (isLoading) {
-        return (
-            <div className="flex justify-center items-center h-64">
-                <LoadingSpinner />
-            </div>
-        );
+    if (refreshAll) {
+      setIsLoading(true);
+      setDoctor(null);
+      setAvailability([]);
     }
-
-    if (error && !doctor) {
-        return (
-            <div className="text-center py-10 bg-red-50 text-red-700 p-4 rounded-md max-w-2xl mx-auto">
-                <ErrorMessage message={error} />
-                <Link to="/doctors" className="mt-4 inline-block text-primary hover:underline">
-                    &larr; Back to Doctors List
-                </Link>
-            </div>
-        );
+    if (refreshAll || refreshJustReviews) {
+      setIsLoadingReviews(true);
+      setReviews([]);
+      setReviewsNextPageUrl(null);
+      setReviewsTotalCount(0);
     }
+    setError(null); setErrorReviews(null);
 
-    if (!doctor) {
-        return (
-            <div className="text-center py-10">
-                <p className="text-muted">Doctor not found.</p>
-                <Link to="/doctors" className="mt-4 inline-block text-primary hover:underline">
-                    &larr; Back to Doctors List
-                </Link>
-            </div>
-        );
+    try {
+      const promises = [];
+      if (refreshAll || !doctor) {
+        promises.push(getDoctorById(id));
+      } else {
+        promises.push(Promise.resolve(doctor));
+      }
+      if (refreshAll || refreshJustReviews || reviews.length === 0) {
+        promises.push(getDoctorReviews(id));
+      } else {
+        promises.push(Promise.resolve({ results: reviews, next: reviewsNextPageUrl, previous: null, count: reviewsTotalCount } as PaginatedResponse<DoctorReview>));
+      }
+      if (refreshAll || availability.length === 0) {
+        promises.push(getDoctorAvailability(id));
+      } else {
+        promises.push(Promise.resolve({ results: availability, next: null, previous: null, count: availability.length } as PaginatedResponse<DoctorAvailability>));
+      }
+
+      const [docResult, reviewResult, availResult] = await Promise.allSettled(promises);
+
+      if (docResult.status === 'fulfilled') setDoctor(docResult.value as Doctor);
+      else if (refreshAll || !doctor) throw docResult.reason;
+
+      if (reviewResult.status === 'fulfilled') {
+        const reviewResponse = reviewResult.value as PaginatedResponse<DoctorReview>;
+        setReviews(reviewResponse.results);
+        setReviewsNextPageUrl(reviewResponse.next);
+        setReviewsTotalCount(reviewResponse.count);
+      } else if (refreshAll || refreshJustReviews) {
+        setErrorReviews((reviewResult.reason as Error)?.message || "Failed to load reviews.");
+      }
+
+      if (availResult.status === 'fulfilled') {
+        const availResponse = availResult.value as PaginatedResponse<DoctorAvailability>;
+        setAvailability(availResponse.results);
+      } else if (refreshAll || availability.length === 0) {
+        // Don't overwrite main error if doc load failed
+        if (!error) setError((availResult.reason as Error)?.message || "Failed to load availability.");
+      }
+
+    } catch (err: any) {
+      console.error("Error loading doctor data:", err);
+      setError(err.message || "An unexpected error occurred.");
+    } finally {
+      setIsLoading(false);
+      setIsLoadingReviews(false);
     }
+  }, [doctorId, doctor, availability.length, reviews.length, reviewsNextPageUrl, reviewsTotalCount, error]); // Added error to dependencies to avoid loop if it occurs
 
-    const displayedRating = doctor.average_rating > 0 ? doctor.average_rating.toFixed(1) : 'No ratings';
+  useEffect(() => {
+    loadDoctorData(true);
+  }, []);
 
-    return (
-        <div className="max-w-4xl mx-auto">
-            {/* Back Button */}
-            <Link to="/doctors" className="inline-flex items-center text-primary hover:text-primary-dark mb-4 text-sm">
-                <ArrowLeftIcon className="h-4 w-4 mr-1" />
-                Back to Doctors List
-            </Link>
+useEffect(() => {
+  if (
+    followUpState?.openBookingModalDirectly &&
+    doctor &&
+    availability.length > 0 &&
+    !showBookingModal &&
+    !followUpHandledRef.current
+  ) {
+    setShowBookingModal(true);
+    followUpHandledRef.current = true;
 
-            {error && <ErrorMessage message={error} />}
+    // Clean the location.state without causing another render loop
+    navigate(location.pathname, { replace: true });
+  }
+}, [followUpState, doctor, availability, showBookingModal, navigate, location.pathname]);
 
-            {bookingSuccess && (
-                <div className="mb-4 p-3 bg-green-50 text-green-700 border border-green-200 rounded-md text-sm">
-                    {bookingSuccess} Check your <Link to="/appointments" className="font-medium underline hover:text-green-800">Appointments page</Link> for details.
-                </div>
+
+  const loadMoreReviews = async () => {
+    if (!reviewsNextPageUrl || isLoadingMoreReviews || !doctorId) return;
+
+    setIsLoadingMoreReviews(true);
+    setErrorReviews(null);
+
+    try {
+      const response = await getDoctorReviews(parseInt(doctorId, 10), reviewsNextPageUrl);
+      if (response && Array.isArray(response.results)) {
+        setReviews(prevReviews => [...prevReviews, ...response.results]);
+        setReviewsNextPageUrl(response.next);
+      } else {
+        console.warn("Unexpected load more reviews structure:", response);
+        setErrorReviews("Failed to process more reviews.");
+        setReviewsNextPageUrl(null);
+      }
+    } catch (err: any) {
+      console.error("Failed to load more reviews:", err);
+      setErrorReviews(err.message || "Failed to load more reviews.");
+    } finally {
+      setIsLoadingMoreReviews(false);
+    }
+  };
+
+  const handleReviewSubmitSuccess = () => {
+    loadDoctorData(false, true);
+  };
+
+  const handleOpenBookingModal = () => setShowBookingModal(true);
+  const handleCloseBookingModal = () => setShowBookingModal(false);
+
+  const handleBookingSuccess = (newAppointment: Appointment) => {
+    setShowBookingModal(false);
+    toast.success(`Appointment booked successfully for ${new Date(newAppointment.date + 'T00:00:00Z').toLocaleDateString()} at ${formatTime(newAppointment.start_time)}!`);
+    navigate(`/appointments/${newAppointment.id}`);
+  };
+
+  const formatTime = (timeStr: string): string => {
+    if (!timeStr) return '';
+    try {
+      const [hours, minutes] = timeStr.split(':');
+      const date = new Date();
+      date.setHours(parseInt(hours, 10), parseInt(minutes, 10));
+      return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    } catch { return timeStr; }
+  };
+
+  if (isLoading && !doctor) return <LoadingSpinner />;
+  if (error && !doctor) return <div className="text-center py-10"><ErrorMessage message={error} /><Link to="/doctors" className="mt-4 btn-primary">Back to Doctors</Link></div>;
+  if (!doctor) return <div className="text-center py-10"><p className="text-muted">Doctor not found.</p><Link to="/doctors" className="mt-4 btn-primary">Back to Doctors</Link></div>;
+
+  // Check if the current user has already reviewed this doctor
+  const hasUserReviewed = reviews.some(review => review.user === user?.id);
+
+  return (
+    <div className="max-w-4xl mx-auto pb-12">
+      <Link to="/doctors" className="inline-flex items-center text-primary hover:text-primary-dark mb-4 text-sm group">
+        <ArrowLeftIcon className="h-4 w-4 mr-1 group-hover:-translate-x-0.5 transition-transform" />
+        Back to Doctors List
+      </Link>
+
+      {/* Main doctor info card */}
+      <div className="bg-white rounded-xl shadow-2xl overflow-hidden">
+        <div className="p-6 md:flex md:items-center md:space-x-8 bg-gradient-to-br from-sky-50 via-indigo-50 to-purple-50">
+          <div className="md:w-1/3 lg:w-1/4 flex justify-center md:justify-start mb-6 md:mb-0">
+            <img src={doctor.profile_picture || placeholderImage} alt={doctor.full_name}
+              className="h-40 w-40 rounded-full object-cover border-4 border-white shadow-lg"
+              onError={(e) => { (e.target as HTMLImageElement).src = placeholderImage; }} />
+          </div>
+          <div className="text-center md:text-left md:flex-grow">
+            <div className="flex items-center justify-center md:justify-start mb-1">
+              <h1 className="text-3xl font-bold text-gray-900 mr-2">{doctor.full_name}</h1>
+              {doctor.is_verified && <CheckBadgeIcon className="h-7 w-7 text-primary" title="Verified Doctor" />}
+            </div>
+            <p className="text-primary font-semibold text-lg mb-2">
+              {doctor.specialties.map(spec => spec.name).join(', ')}
+            </p>
+            <div className="flex items-center justify-center md:justify-start text-sm text-gray-600 space-x-4">
+              <span className="flex items-center">
+                <StarIcon className="h-5 w-5 text-yellow-400 mr-1" />
+                {doctor.average_rating > 0 ? doctor.average_rating.toFixed(1) : 'New'} ({reviewsTotalCount} reviews)
+              </span>
+              <span className="flex items-center">
+                <AcademicCapIcon className="h-5 w-5 text-gray-500 mr-1" />
+                {doctor.years_of_experience} Yrs Experience
+              </span>
+            </div>
+            <p className="text-sm text-gray-500 mt-2 line-clamp-3 md:line-clamp-none">{doctor.bio || "No biography provided."}</p>
+          </div>
+          <div className="mt-6 md:mt-0 flex flex-col items-center md:items-end space-y-3 md:w-1/4 lg:w-auto">
+            <span className="text-2xl font-bold text-primary">
+              Fee: {doctor.consultation_fee ? `₦${parseFloat(doctor.consultation_fee).toLocaleString()}` : 'N/A'}
+            </span>
+            {isAuthenticated ? (
+              <button onClick={handleOpenBookingModal} className="btn-primary w-full md:w-auto px-6 py-2.5 text-base inline-flex items-center justify-center">
+                <UserPlusIcon className="h-5 w-5 mr-2" /> Book Appointment
+              </button>
+            ) : (
+              <Link to="/login" state={{ from: location }} className="btn-primary w-full md:w-auto px-6 py-2.5 text-base text-center inline-flex items-center justify-center">
+                <UserPlusIcon className="h-5 w-5 mr-2" /> Login to Book
+              </Link>
+            )}
+          </div>
+        </div>
+
+        <div className="p-6 md:p-8 space-y-8">
+          {doctor.bio && (
+            <section>
+              <h3 className="text-xl font-semibold text-gray-800 mb-3">About Dr. {doctor.last_name}</h3>
+              <p className="text-gray-700 leading-relaxed whitespace-pre-line">{doctor.bio}</p>
+            </section>
+          )}
+          <section className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+            <div>
+              <h4 className="text-lg font-semibold text-gray-700 mb-2 flex items-center">
+                <LanguageIcon className="h-5 w-5 mr-2 text-primary" /> Languages Spoken
+              </h4>
+              <p className="text-gray-700">{doctor.languages_spoken || 'Not specified'}</p>
+            </div>
+            <div>
+              <h4 className="text-lg font-semibold text-gray-700 mb-2 flex items-center">
+                <AcademicCapIcon className="h-5 w-5 mr-2 text-primary" /> Education & Credentials
+              </h4>
+              <p className="text-gray-700 whitespace-pre-line">{doctor.education || 'Not specified'}</p>
+            </div>
+          </section>
+
+          <section>
+            <AvailabilityDisplay availability={availability} />
+            {availability.length === 0 && !isLoading && (
+              <p className="text-muted text-sm mt-2">Availability information is currently not set up for this doctor.</p>
+            )}
+          </section>
+
+          <section>
+            <h3 className="text-xl font-semibold text-gray-800 mb-4">Patient Reviews ({reviewsTotalCount})</h3>
+            {isLoadingReviews && !reviews.length && <LoadingSpinner />}
+            {!isLoadingReviews && errorReviews && <ErrorMessage message={errorReviews} />}
+            {!isLoadingReviews && !errorReviews && reviews.length === 0 && (
+              <p className="text-muted text-sm">No reviews yet for this doctor. Be the first to share your experience!</p>
+            )}
+            {reviews.length > 0 && (
+              <div className="space-y-5 max-h-[500px] overflow-y-auto pr-2 -mr-2 custom-scrollbar">
+                {reviews.map(review => <ReviewCard key={review.id} review={review} />)}
+                {/* Add Load More button if there are more reviews */}
+                {reviewsNextPageUrl && (
+                  <div className="text-center py-2">
+                    <button 
+                      onClick={loadMoreReviews} 
+                      disabled={isLoadingMoreReviews}
+                      className="text-primary hover:text-primary-dark text-sm font-medium"
+                    >
+                      {isLoadingMoreReviews ? 'Loading...' : 'Load More Reviews'}
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
 
-            <div className="bg-white rounded-lg shadow-xl overflow-hidden">
-                {/* Header Section */}
-                <div className="p-6 md:flex md:items-center md:space-x-6 bg-gradient-to-r from-primary-light/20 to-primary/5">
-                    <div className="md:w-1/4 flex justify-center md:justify-start mb-4 md:mb-0">
-                         <img
-                             src={doctor.profile_picture || placeholderImage}
-                             alt={doctor.full_name}
-                             className="h-32 w-32 rounded-full object-cover border-4 border-white shadow-md"
-                             onError={(e) => { (e.target as HTMLImageElement).src = placeholderImage; }}
-                         />
-                     </div>
-                     <div className="text-center md:text-left md:flex-grow">
-                         <div className="flex items-center justify-center md:justify-start mb-1">
-                             <h1 className="text-2xl font-bold text-gray-800 mr-2">{doctor.full_name}</h1>
-                             {doctor.is_verified && <CheckBadgeIcon className="h-6 w-6 text-primary" title="Verified" />}
-                         </div>
-                         <p className="text-primary font-semibold mb-2">
-                             {doctor.specialties.map(spec => spec.name).join(', ')}
-                         </p>
-                         <div className="flex items-center justify-center md:justify-start text-sm text-muted space-x-3">
-                             <span className="flex items-center">
-                                 <StarIcon className="h-4 w-4 text-yellow-400 mr-1" />
-                                 {displayedRating} ({reviewsTotalCount} reviews)
-                             </span>
-                             <span>|</span>
-                             <span>{doctor.years_of_experience} Yrs Experience</span>
-                         </div>
-                     </div>
-                     <div className="mt-4 md:mt-0 flex flex-col items-center md:items-end space-y-2">
-                        <span className="text-xl font-bold text-primary">
-                             Fee: {doctor.consultation_fee ? `$${doctor.consultation_fee}` : 'N/A'}
-                        </span>
-                        {isAuthenticated ? (
-                             <button
-                                onClick={handleOpenBookingModal}
-                                className="btn-primary px-6 py-2 w-full md:w-auto"
-                            >
-                                 Book Appointment
-                             </button>
-                         ) : (
-                             <Link to="/login" state={{ from: location }} className="btn-primary px-6 py-2 w-full md:w-auto text-center">Login to Book</Link>
-                         )}
-                     </div>
-                </div>
-
-                <div className="p-6 border-t border-gray-200">
-                    <div className="mb-6">
-                         <h3 className="text-lg font-semibold text-gray-800 mb-2">About Dr. {doctor.last_name}</h3>
-                         <p className="text-gray-600 leading-relaxed whitespace-pre-line">{doctor.bio || "No biography provided."}</p>
-                     </div>
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                        <div>
-                             <h4 className="text-md font-semibold text-gray-700 mb-2 flex items-center">
-                                 <LanguageIcon className="h-5 w-5 mr-2 text-primary" /> Languages
-                             </h4>
-                             <p className="text-gray-600">{doctor.languages_spoken || 'Not specified'}</p>
-                        </div>
-                        <div>
-                             <h4 className="text-md font-semibold text-gray-700 mb-2 flex items-center">
-                                 <AcademicCapIcon className="h-5 w-5 mr-2 text-primary" /> Education & Experience
-                             </h4>
-                             <p className="text-gray-600 whitespace-pre-line">{doctor.education || 'Not specified'}</p>
-                             <p className="text-sm text-muted mt-1">{doctor.years_of_experience} years of experience</p>
-                        </div>
-                     </div>
-
-                    <div className="mb-6 border-t pt-4">
-                        <AvailabilityDisplay availability={availability} />
-                        {availability.length === 0 && !isLoading && (
-                             <p className="text-muted text-sm mt-2">Availability information could not be loaded.</p>
-                        )}
-                    </div>
-
-                    <div className="border-t pt-4">
-                        <h3 className="text-lg font-semibold text-gray-800 mb-3">Patient Reviews ({reviewsTotalCount})</h3>
-                        {isLoadingReviews && <LoadingSpinner />}
-                        {!isLoadingReviews && errorReviews && <ErrorMessage message={errorReviews} />}
-
-                        {!isLoadingReviews && !errorReviews && reviews.length > 0 ? (
-                            <>
-                                <div className="space-y-4 max-h-96 overflow-y-auto pr-2 border rounded p-2 bg-gray-50">
-                                    {reviews.map(review => (
-                                        <ReviewCard key={review.id} review={review} />
-                                    ))}
-                                </div>
-                                {reviewsNextPageUrl && (
-                                    <div className="mt-4 pt-4 text-center">
-                                        <button
-                                            onClick={loadMoreReviews}
-                                            disabled={isLoadingMoreReviews}
-                                            className="text-primary hover:underline text-sm disabled:opacity-50 disabled:cursor-wait"
-                                        >
-                                            {isLoadingMoreReviews ? 'Loading...' : 'Load More Reviews'}
-                                        </button>
-                                    </div>
-                                )}
-                            </>
-                        ) : (
-                            !isLoadingReviews && !errorReviews && (
-                                <p className="text-muted text-sm">No reviews yet for this doctor.</p>
-                            )
-                        )}
-                         {isAuthenticated && (
-                             <ReviewForm doctorId={doctor.id} onSubmitSuccess={handleReviewSubmitSuccess} />
-                         )}
-                          {!isAuthenticated && (
-                             <p className="text-muted text-sm mt-4">Please <Link to="/login" state={{ from: location }} className='text-primary underline'>login</Link> to write a review.</p>
-                         )}
-                    </div>
-                </div>
-            </div>
-             <Modal isOpen={showBookingModal} onClose={handleCloseBookingModal} title={`Book Appointment with ${doctor.full_name}`}>
-                 <AppointmentBookingForm
-                    doctorId={doctor.id}
-                    doctorName={doctor.full_name}
-                    availability={availability}
-                    onBookingSuccess={handleBookingSuccess}
-                    onCancel={handleCloseBookingModal}
-                 />
-            </Modal>
+            {isAuthenticated && !hasUserReviewed && (
+              <ReviewForm doctorId={doctor.id} onSubmitSuccess={handleReviewSubmitSuccess} />
+            )}
+            {isAuthenticated && hasUserReviewed && (
+              <p className="text-sm text-green-600 mt-4 p-3 bg-green-50 rounded-md">Thanks for your review!</p>
+            )}
+            {!isAuthenticated && (
+              <p className="text-muted text-sm mt-6">Please <Link to="/login" state={{ from: location }} className='text-primary underline hover:text-primary-dark'>login</Link> to write a review.</p>
+            )}
+          </section>
         </div>
-    );
+      </div>
+
+      <Modal isOpen={showBookingModal} onClose={handleCloseBookingModal} title={`Book with ${doctor.full_name}`}>
+        <AppointmentBookingForm
+          doctorId={doctor.id}
+          doctorName={doctor.full_name}
+          availability={availability}
+          onBookingSuccess={handleBookingSuccess}
+          onCancel={handleCloseBookingModal}
+          isFollowUp={followUpState?.isFollowUp}
+          prefillReason={followUpState?.prefillReason}
+        />
+      </Modal>
+    </div>
+  );
 };
 
 export default DoctorDetailPage;
