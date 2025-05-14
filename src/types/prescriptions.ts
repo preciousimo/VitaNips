@@ -1,8 +1,12 @@
 // src/types/prescriptions.ts
+import { Medication } from './pharmacy';
+
 export interface PrescriptionItem {
     id: number;
     prescription: number;
     medication_name: string;
+    medication_id: number | null;
+    medication_details?: Medication | null;
     dosage: string;
     frequency: string;
     duration: string;
