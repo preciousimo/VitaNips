@@ -11,6 +11,7 @@ interface ProfileEditFormProps {
 }
 
 const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+const genotype = ['AA', 'AS', 'SS', 'AB'];
 
 // Define stricter types for form inputs
 type FormFieldValue = string | number | boolean | null;
@@ -66,6 +67,8 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
       last_name: '',
       phone_number: null,
       date_of_birth: null,
+      address: null,
+      genotype: null,
       blood_group: null,
       allergies: null,
       chronic_conditions: null,
@@ -84,6 +87,8 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
         last_name: initialData.last_name || '',
         phone_number: initialData.phone_number || null,
         date_of_birth: initialData.date_of_birth ? initialData.date_of_birth.split('T')[0] : null,
+        address: initialData.address || null,
+        genotype: initialData.genotype || null,
         blood_group: initialData.blood_group || null,
         allergies: initialData.allergies || null,
         chronic_conditions: initialData.chronic_conditions || null,
@@ -143,7 +148,7 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
         processedValue = (e.target as HTMLInputElement).checked;
       } else if (
         value === '' &&
-        ['phone_number', 'date_of_birth', 'blood_group', 'allergies', 'chronic_conditions'].includes(
+        ['phone_number', 'date_of_birth', 'address', 'blood_group', 'genotype', 'allergies', 'chronic_conditions'].includes(
           name
         )
       ) {
@@ -371,6 +376,39 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
                 role="alert"
               >
                 {errors.blood_group}
+              </p>
+            )}
+          </div>
+          <div>
+            <label
+              htmlFor="genotype"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Genotype
+            </label>
+            <select
+              name="genotype"
+              id="genotype"
+              value={formData.genotype ?? ''}
+              onChange={handleChange}
+              className="input-field"
+              aria-invalid={!!errors.genotype}
+              aria-describedby={errors.genotype ? 'genotype-error' : undefined}
+            >
+              <option value="">-- Select --</option>
+              {genotype.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+            {errors.genotype && (
+              <p
+                id="genotype-error"
+                className="text-red-600 text-sm mt-1"
+                role="alert"
+              >
+                {errors.genotype}
               </p>
             )}
           </div>
