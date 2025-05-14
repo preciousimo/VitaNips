@@ -1,0 +1,11 @@
+{
+    "welcomeMessage": "Welcome back, {{name}}!",
+    "dashboardTitle": "Dashboard",
+    "doctorsNav": "Doctors",
+    "pharmaciesNav": "Pharmacies",
+    "remindersNav": "Reminders",
+    "profileNav": "Profile",
+    "loginButton": "Login",
+    "registerButton": "Register",
+    "findADoctorTitle": "Find a Doctor"
+  }
