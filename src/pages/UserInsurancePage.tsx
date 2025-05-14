@@ -1,5 +1,7 @@
 // src/pages/UserInsurancePage.tsx
 import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
+import { DocumentTextIcon } from '@heroicons/react/24/outline';
 import { PlusIcon } from '@heroicons/react/24/solid';
 import { getUserInsurances, addUserInsurance, updateUserInsurance, deleteUserInsurance } from '../api/insurance';
 import { UserInsurance, UserInsurancePayload } from '../types/insurance';
@@ -19,7 +21,7 @@ const UserInsurancePage: React.FC = () => {
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
     const sortInsurances = (data: UserInsurance[]) => {
-         return data.sort((a, b) => {
+        return data.sort((a, b) => {
             if (a.is_primary && !b.is_primary) return -1;
             if (!a.is_primary && b.is_primary) return 1;
             const nameA = a.plan?.provider?.name || '';
@@ -54,19 +56,19 @@ const UserInsurancePage: React.FC = () => {
         }
     }, []);
 
-     const loadMoreInsurances = async () => {
+    const loadMoreInsurances = async () => {
         if (!nextPageUrl || isLoadingMore) return;
         setIsLoadingMore(true);
         setError(null);
         try {
             const response = await getUserInsurances(nextPageUrl);
             if (response && Array.isArray(response.results)) {
-                 setInsurances(prev => sortInsurances([...prev, ...response.results]));
-                 setNextPageUrl(response.next);
+                setInsurances(prev => sortInsurances([...prev, ...response.results]));
+                setNextPageUrl(response.next);
             } else {
                 console.warn("Received unexpected insurance response on load more:", response);
-                 setError("Failed to process additional insurance data.");
-                 setNextPageUrl(null);
+                setError("Failed to process additional insurance data.");
+                setNextPageUrl(null);
             }
         } catch (err: any) {
             setError(err.message || "Failed to load more insurance plans.");
@@ -84,63 +86,69 @@ const UserInsurancePage: React.FC = () => {
     const handleEditClick = (insurance: UserInsurance) => { /* ... */ };
     const handleFormCancel = () => { /* ... */ };
     const handleFormSubmit = async (payload: UserInsurancePayload, id?: number) => {
-         setIsSubmitting(true);
-         try {
-             if (id) {
-                 await updateUserInsurance(id, payload);
-             } else {
-                 await addUserInsurance(payload);
-             }
-             setShowFormModal(false);
-             setEditingInsurance(null);
-             await loadInitialInsurances();
-         } catch (err: any) {
-             console.error("Failed to save insurance:", err);
-             throw err;
-         } finally {
-              setIsSubmitting(false);
-         }
-     };
+        setIsSubmitting(true);
+        try {
+            if (id) {
+                await updateUserInsurance(id, payload);
+            } else {
+                await addUserInsurance(payload);
+            }
+            setShowFormModal(false);
+            setEditingInsurance(null);
+            await loadInitialInsurances();
+        } catch (err: any) {
+            console.error("Failed to save insurance:", err);
+            throw err;
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
     const handleDelete = async (id: number) => {
-         if (!window.confirm("Are you sure you want to remove this insurance plan?")) {
-             return;
-         }
-         setError(null);
-         try {
-             await deleteUserInsurance(id);
-             await loadInitialInsurances();
-         } catch (err: any) {
-             setError(err.message || "Failed to remove insurance plan.");
-             console.error(err);
-         }
-     };
+        if (!window.confirm("Are you sure you want to remove this insurance plan?")) {
+            return;
+        }
+        setError(null);
+        try {
+            await deleteUserInsurance(id);
+            await loadInitialInsurances();
+        } catch (err: any) {
+            setError(err.message || "Failed to remove insurance plan.");
+            console.error(err);
+        }
+    };
 
     return (
         <div className="max-w-4xl mx-auto">
             <div className="flex justify-between items-center mb-6">
-                 <h1 className="text-3xl font-bold text-gray-800">Your Insurance Plans</h1>
-                 <button onClick={handleAddClick} className="btn-primary inline-flex items-center px-4 py-2">
-                     <PlusIcon className="h-5 w-5 mr-2" /> Add Plan
-                 </button>
+                <h1 className="text-3xl font-bold text-gray-800">Your Insurance Plans</h1>
+                <div className="flex space-x-3">
+                    <Link to="/insurance/claims" className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500">
+                        <DocumentTextIcon className="h-5 w-5 mr-2" />
+                        View/Submit Claims
+                    </Link>
+                    <button onClick={handleAddClick} className="btn-primary inline-flex items-center px-4 py-2">
+                        <PlusIcon className="h-5 w-5 mr-2" /> Add Plan
+                    </button>
+                </div>
             </div>
 
             <Modal isOpen={showFormModal} onClose={handleFormCancel} title={editingInsurance ? 'Edit Insurance Plan' : 'Add Insurance Plan'}>
-                  <UserInsuranceForm initialData={editingInsurance} onSubmit={handleFormSubmit} onCancel={handleFormCancel} isSubmitting={isSubmitting}/>
+                <UserInsuranceForm initialData={editingInsurance} onSubmit={handleFormSubmit} onCancel={handleFormCancel} isSubmitting={isSubmitting} />
             </Modal>
 
-             <div>
-                 {isLoading ? (
-                     <p className="text-muted text-center py-4">Loading your insurance plans...</p>
-                 ) : error ? (
-                     <p className="text-red-600 text-center py-4 bg-red-50 rounded">{error}</p>
-                 ) : (
-                     <>
+            <div>
+                {isLoading ? (
+                    <p className="text-muted text-center py-4">Loading your insurance plans...</p>
+                ) : error ? (
+                    <p className="text-red-600 text-center py-4 bg-red-50 rounded">{error}</p>
+                ) : (
+                    <>
                         {totalCount > 0 ? (
-                             <p className="text-sm text-muted mb-4">Showing {insurances.length} of {totalCount} plans.</p>
+                            <p className="text-sm text-muted mb-4">Showing {insurances.length} of {totalCount} plans.</p>
                         ) : null}
 
-                         {insurances.length > 0 ? (
-                             <div className="space-y-4">
+                        {insurances.length > 0 ? (
+                            <div className="space-y-4">
                                 {insurances.map(ins => (
                                     <UserInsuranceCard
                                         key={ins.id}
@@ -150,14 +158,14 @@ const UserInsurancePage: React.FC = () => {
                                     />
                                 ))}
                             </div>
-                         ) : (
+                        ) : (
                             <div className="text-center py-10 bg-gray-50 rounded-md">
-                                 <p className="text-gray-600">You haven't added any insurance plans yet.</p>
-                                 <button onClick={handleAddClick} className="mt-4 btn-primary inline-flex items-center">
+                                <p className="text-gray-600">You haven't added any insurance plans yet.</p>
+                                <button onClick={handleAddClick} className="mt-4 btn-primary inline-flex items-center">
                                     <PlusIcon className="h-5 w-5 mr-2" /> Add Your First Plan
-                                 </button>
-                             </div>
-                         )}
+                                </button>
+                            </div>
+                        )}
 
                         {nextPageUrl && (
                             <div className="mt-8 text-center">
@@ -170,9 +178,9 @@ const UserInsurancePage: React.FC = () => {
                                 </button>
                             </div>
                         )}
-                     </>
-                 )}
-             </div>
+                    </>
+                )}
+            </div>
 
         </div>
     );

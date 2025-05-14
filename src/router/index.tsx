@@ -12,6 +12,7 @@ import ProfilePage from '../pages/ProfilePage';
 import PharmacyListPage from '../pages/PharmacyListPage';
 import VaccinationsPage from '../pages/VaccinationsPage';
 import UserInsurancePage from '../pages/UserInsurancePage';
+import UserClaimsPage from '../pages/UserClaimsPage';
 import EmergencyContactsPage from '../pages/EmergencyContactsPage';
 import AppointmentsPage from '../pages/AppointmentsPage';
 import AppointmentDetailPage from '../pages/AppointmentDetailPage';
@@ -112,6 +113,7 @@ const AppRouter: React.FC = () => {
           <Route path="/pharmacies" element={<PharmacyListPage />} />
           <Route path="/vaccinations" element={<VaccinationsPage />} />
           <Route path="/insurance" element={<UserInsurancePage />} />
+          <Route path="/insurance/claims" element={<UserClaimsPage />} />
           <Route path="/emergency-contacts" element={<EmergencyContactsPage />} />
           <Route path="/appointments" element={<AppointmentsPage />} />
           <Route path="/appointments/:appointmentId" element={<AppointmentDetailPage />} />
