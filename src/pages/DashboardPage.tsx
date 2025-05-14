@@ -1,5 +1,6 @@
 // src/pages/DashboardPage.tsx
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -35,6 +36,7 @@ const ErrorDisplay: React.FC<{ message: string }> = ({ message }) => (
 );
 
 const DashboardPage: React.FC = () => {
+    const { t } = useTranslation();
     const { user } = useAuth();
 
     const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([]);
@@ -98,11 +100,11 @@ const DashboardPage: React.FC = () => {
     }, [user, fetchDashboardData]);
 
     const healthSections = [
-        { name: 'Log Vitals', path: '/health/vitals', icon: HeartIcon, description: "Track your BP, heart rate, etc." },
-        { name: 'Log Symptoms', path: '/health/symptoms', icon: ShieldExclamationIcon, description: "Record how you're feeling." },
-        { name: 'Food Journal', path: '/health/food', icon: ShoppingBagIcon, description: "Keep a journal of your meals." },
-        { name: 'Exercise Log', path: '/health/exercise', icon: FireIcon, description: "Monitor your physical activity." },
-        { name: 'Sleep Log', path: '/health/sleep', icon: MoonIcon, description: "Track your sleep patterns." },
+        { name: t('healthSections.vitals.name', 'Log Vitals'), path: '/health/vitals', icon: HeartIcon, description: t('healthSections.vitals.description', "Track your BP, heart rate, etc.") },
+        { name: t('healthSections.symptoms.name', 'Log Symptoms'), path: '/health/symptoms', icon: ShieldExclamationIcon, description: t('healthSections.symptoms.description', "Record how you're feeling.") },
+        { name: t('healthSections.food.name', 'Food Journal'), path: '/health/food', icon: ShoppingBagIcon, description: t('healthSections.food.description', "Keep a journal of your meals.") },
+        { name: t('healthSections.exercise.name', 'Exercise Log'), path: '/health/exercise', icon: FireIcon, description: t('healthSections.exercise.description', "Monitor your physical activity.") },
+        { name: t('healthSections.sleep.name', 'Sleep Log'), path: '/health/sleep', icon: MoonIcon, description: t('healthSections.sleep.description', "Track your sleep patterns.") },
     ];
 
     const formatTime = (timeStr: string | null | undefined): string => {
@@ -118,9 +120,9 @@ const DashboardPage: React.FC = () => {
         if (!dateStr) return 'N/A';
         try {
             const today = new Date();
-            today.setHours(0,0,0,0);
+            today.setHours(0, 0, 0, 0);
             const itemDate = new Date(dateStr + 'T00:00:00Z');
-            itemDate.setHours(0,0,0,0);
+            itemDate.setHours(0, 0, 0, 0);
 
             if (itemDate.getTime() === today.getTime()) return 'Today';
             const tomorrow = new Date(today);
@@ -135,9 +137,9 @@ const DashboardPage: React.FC = () => {
     return (
         <div className="space-y-8">
             <div>
-                <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
-                <p className="text-lg text-gray-600 mt-1">
-                    Welcome back, {user?.first_name || user?.username || 'User'}!
+                <h1 className="text-3xl font-bold text-gray-800 mb-2">{t('dashboardTitle')}</h1>
+                <p className="text-lg text-gray-600 mb-8">
+                    {t('welcomeMessage', { name: user?.first_name || user?.username || 'User' })}
                 </p>
             </div>
 
@@ -151,7 +153,7 @@ const DashboardPage: React.FC = () => {
                             Upcoming Appointments
                         </h2>
                         <span className="text-sm font-bold text-primary bg-primary-light px-2 py-0.5 rounded-full">
-                            {appointmentsLoading ? <LoadingSpinner size="h-4 w-4 inline-block"/> : upcomingAppointments.length}
+                            {appointmentsLoading ? <LoadingSpinner size="h-4 w-4 inline-block" /> : upcomingAppointments.length}
                         </span>
                     </div>
                     {appointmentsLoading ? (
@@ -179,13 +181,13 @@ const DashboardPage: React.FC = () => {
 
                 {/* Medication Reminders Card */}
                 <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 ease-in-out">
-                     <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center justify-between mb-3">
                         <h2 className="text-xl font-semibold text-green-600 flex items-center">
                             <BellAlertIcon className="h-6 w-6 mr-2" />
                             Active Reminders
                         </h2>
-                         <span className="text-sm font-bold text-green-600 bg-green-100 px-2 py-0.5 rounded-full">
-                            {remindersLoading ? <LoadingSpinner size="h-4 w-4 inline-block"/> : activeReminders.length}
+                        <span className="text-sm font-bold text-green-600 bg-green-100 px-2 py-0.5 rounded-full">
+                            {remindersLoading ? <LoadingSpinner size="h-4 w-4 inline-block" /> : activeReminders.length}
                         </span>
                     </div>
                     {remindersLoading ? (

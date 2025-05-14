@@ -1,0 +1,11 @@
+{
+    "welcomeMessage": "Bon retour, {{name}}!",
+    "dashboardTitle": "Tableau de bord",
+    "doctorsNav": "Médecins",
+    "pharmaciesNav": "Pharmacies",
+    "remindersNav": "Rappels",
+    "profileNav": "Profil",
+    "loginButton": "Connexion",
+    "registerButton": "S'inscrire",
+    "findADoctorTitle": "Trouver un médecin"
+  }
