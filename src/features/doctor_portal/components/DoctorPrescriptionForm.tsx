@@ -29,7 +29,6 @@ const DoctorPrescriptionForm: React.FC<DoctorPrescriptionFormProps> = ({
     const [error, setError] = useState<string | null>(null);
     const [isFormSubmitting, setIsFormSubmitting] = useState(false);
 
-
     const handleItemChange = (index: number, field: keyof DoctorPrescriptionItemPayload, value: string) => {
         const newItems = [...items];
         newItems[index] = { ...newItems[index], [field]: value };
@@ -58,6 +57,7 @@ const DoctorPrescriptionForm: React.FC<DoctorPrescriptionFormProps> = ({
             toast.error("Diagnosis is required.");
             return;
         }
+        
         const validItems = items.filter(item =>
             item.medication_name_input?.trim() &&
             item.dosage?.trim() &&
@@ -78,21 +78,23 @@ const DoctorPrescriptionForm: React.FC<DoctorPrescriptionFormProps> = ({
             notes: notes.trim() || undefined,
             items: validItems as DoctorPrescriptionItemPayload[], // Cast after validation
         };
-
+        
         try {
             await onSubmit(payload);
             toast.success("Prescription submitted successfully!");
         } catch (err: any) {
             const errorData = err.response?.data;
             let errorMessage = "Failed to submit prescription.";
+            
             if (errorData && typeof errorData === 'object') {
-                 const messages = Object.entries(errorData)
-                    .map(([key, val]) => `<span class="math-inline">\{key \=\=\= 'detail' ? '' \: key \+ '\: '\}</span>{Array.isArray(val) ? val.join(', ') : val}`)
-                    .join(' \n');
+                const messages = Object.entries(errorData)
+                    .map(([key, val]) => `${key === 'detail' ? '' : key + ': '}${Array.isArray(val) ? val.join(', ') : val}`)
+                    .join('\n');
                 errorMessage = messages || errorMessage;
             } else if (err.message) {
                 errorMessage = err.message;
             }
+            
             setError(errorMessage);
             toast.error(errorMessage, { duration: 5000 });
         } finally {
@@ -135,19 +137,19 @@ const DoctorPrescriptionForm: React.FC<DoctorPrescriptionFormProps> = ({
                                        onChange={(e) => handleItemChange(index, 'medication_name_input', e.target.value)}
                                        className="input-field mt-0.5 text-sm py-1.5" placeholder="e.g., Amoxicillin 250mg"/>
                             </div>
-                             <div>
+                            <div>
                                 <label htmlFor={`dosage_${index}`} className="text-xs font-medium text-gray-600">Dosage *</label>
                                 <input type="text" id={`dosage_${index}`} required value={item.dosage || ''}
                                        onChange={(e) => handleItemChange(index, 'dosage', e.target.value)}
                                        className="input-field mt-0.5 text-sm py-1.5" placeholder="e.g., 1 tablet, 10ml"/>
                             </div>
-                             <div>
+                            <div>
                                 <label htmlFor={`frequency_${index}`} className="text-xs font-medium text-gray-600">Frequency *</label>
                                 <input type="text" id={`frequency_${index}`} required value={item.frequency || ''}
                                        onChange={(e) => handleItemChange(index, 'frequency', e.target.value)}
                                        className="input-field mt-0.5 text-sm py-1.5" placeholder="e.g., Twice daily, Every 6 hours"/>
                             </div>
-                             <div>
+                            <div>
                                 <label htmlFor={`duration_${index}`} className="text-xs font-medium text-gray-600">Duration *</label>
                                 <input type="text" id={`duration_${index}`} required value={item.duration || ''}
                                        onChange={(e) => handleItemChange(index, 'duration', e.target.value)}
@@ -184,4 +186,5 @@ const DoctorPrescriptionForm: React.FC<DoctorPrescriptionFormProps> = ({
         </form>
     );
 };
+
 export default DoctorPrescriptionForm;
