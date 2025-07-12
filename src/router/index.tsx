@@ -3,6 +3,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import MainLayout from '../components/layout/MainLayout';
+import LandingPage from '../pages/LandingPage';
 import LoginPage from '../features/auth/pages/LoginPage';
 import RegisterPage from '../features/auth/pages/RegisterPage';
 import DashboardPage from '../pages/DashboardPage';
@@ -59,7 +60,7 @@ const ProtectedRoute: React.FC = () => {
   if (isLoading) return <LoadingScreen />;
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/" state={{ from: location }} replace />;
   }
 
   if (user?.is_pharmacy_staff) {
@@ -79,11 +80,10 @@ const PharmacyRoute: React.FC = () => {
 
   console.log("PharmacyRoute Check:", { isAuthenticated, isLoading, isStaff: user?.is_pharmacy_staff, user });
 
-
   if (isLoading) return <LoadingScreen />;
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/" state={{ from: location }} replace />;
   }
 
   if (!user?.is_pharmacy_staff) {
@@ -105,7 +105,7 @@ const DoctorRoute: React.FC = () => {
     return <div className="flex justify-center items-center h-screen"><p>Loading Doctor Portal...</p></div>;
   }
   if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/" state={{ from: location }} replace />;
   }
   if (!user?.is_doctor) {
       toast.error("Access Denied: Doctor credentials required.", { duration: 4000 });
@@ -118,10 +118,27 @@ const DoctorRoute: React.FC = () => {
    );
 };
 
+const LandingPageRoute: React.FC = () => {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) return <LoadingScreen />;
+
+  // If user is authenticated, redirect to dashboard
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // If not authenticated, show landing page
+  return <LandingPage />;
+};
+
 const AppRouter: React.FC = () => {
   return (
     <Router>
       <Routes>
+        {/* Landing page with authentication check */}
+        <Route path="/" element={<LandingPageRoute />} />
+
         <Route element={<PublicRoute />}>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
@@ -138,7 +155,7 @@ const AppRouter: React.FC = () => {
         </Route>
 
         <Route element={<ProtectedRoute />}>
-          <Route path="/" element={<DashboardPage />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/doctors" element={<DoctorListPage />} />
           <Route path="/doctors/:doctorId" element={<DoctorDetailPage />} />
           <Route path="/pharmacies" element={<PharmacyListPage />} />

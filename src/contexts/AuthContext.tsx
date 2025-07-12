@@ -10,7 +10,7 @@ interface AuthContextType {
     isAuthenticated: boolean;
     user: User | null;
     accessToken: string | null;
-    login: (access: string, refresh: string) => void;
+    login: (access: string, refresh: string) => Promise<void>;
     logout: () => void;
     isLoading: boolean;
     fetchUserProfile: (token: string) => Promise<void>;
@@ -34,11 +34,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setIsAuthenticated(false);
     }, []);
 
-    const fetchUserProfile = useCallback(async (token: string) => {
+    const fetchUserProfile = useCallback(async (token: string, skipAuthReset = false) => {
         if (!token) { setIsLoading(false); return; }
 
         setUser(null);
-        setIsAuthenticated(false);
+        if (!skipAuthReset) {
+            setIsAuthenticated(false);
+        }
 
         try {
             const decoded = jwtDecode<DecodedToken>(token);
@@ -54,7 +56,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             });
 
             setUser(response.data);
-            setIsAuthenticated(true);
+            if (!skipAuthReset) {
+                setIsAuthenticated(true);
+            }
 
             if (response.data) {
                 initializePushNotifications();
@@ -62,18 +66,30 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         } catch (error) {
             console.error('Failed to fetch user profile or token invalid:', error);
-            logout();
+            if (!skipAuthReset) {
+                logout();
+            }
         } finally {
             setIsLoading(false);
         }
     }, [logout]);
 
-    const login = (access: string, refresh: string) => {
+    const login = async (access: string, refresh: string) => {
         localStorage.setItem('accessToken', access);
         localStorage.setItem('refreshToken', refresh);
         setAccessToken(access);
         setRefreshToken(refresh);
+        
+        // Set authentication state immediately
         setIsAuthenticated(true);
+        
+        // Fetch user profile in background
+        try {
+            await fetchUserProfile(access, true); // Skip auth reset since we already set it
+        } catch (error) {
+            console.error('Failed to fetch user profile after login:', error);
+            // Don't logout here, just log the error
+        }
     };
 
     useEffect(() => {
@@ -85,7 +101,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setUser(null);
             setIsLoading(false);
         }
-    }, [accessToken, fetchUserProfile]);
+    }, [fetchUserProfile]); // Remove accessToken from dependencies to prevent infinite loops
 
     useEffect(() => {
         const responseInterceptor = axiosInstance.interceptors.response.use(
