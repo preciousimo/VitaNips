@@ -2,6 +2,17 @@
 import React, { useState, useEffect, useCallback, FormEvent } from 'react';
 import { User } from '../../../types/user';
 import { UserProfileUpdatePayload } from '../../../api/user';
+import { formatPhoneNumber, isValidEmail, isValidPhone } from '../../../utils';
+import { 
+    UserIcon, 
+    PhoneIcon, 
+    CalendarDaysIcon, 
+    MapPinIcon, 
+    HeartIcon, 
+    ExclamationTriangleIcon,
+    InformationCircleIcon,
+    CheckCircleIcon
+} from '@heroicons/react/24/outline';
 
 interface ProfileEditFormProps {
   initialData: User | null;
@@ -22,32 +33,38 @@ const NotificationPreferences: React.FC<{
   formData: UserProfileUpdatePayload;
   handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }> = ({ formData, handleChange }) => (
-  <>
-    <h4 className="md:col-span-2 text-md font-semibold text-gray-700">Notification Preferences</h4>
-    <div className="md:col-span-2 space-y-2">
+  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+    <h4 className="text-md font-semibold text-gray-700 mb-3 flex items-center">
+      <InformationCircleIcon className="h-5 w-5 mr-2 text-blue-600" />
+      Notification Preferences
+    </h4>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {[
-        { id: 'notify_appointment_reminder_email', label: 'Reminders via Email' },
-        { id: 'notify_appointment_reminder_sms', label: 'Reminders via SMS' },
-        { id: 'notify_appointment_reminder_push', label: 'Reminders via Push Notification (Browser/App)' },
-        { id: 'notify_refill_reminder_email', label: 'Receive Medication Refill Reminders via Email' },
-      ].map(({ id, label }) => (
-        <div key={id} className="flex items-center">
+        { id: 'notify_appointment_reminder_email', label: 'Appointment Reminders via Email', description: 'Get notified about upcoming appointments' },
+        { id: 'notify_appointment_reminder_sms', label: 'Appointment Reminders via SMS', description: 'Receive SMS notifications for appointments' },
+        { id: 'notify_appointment_reminder_push', label: 'Push Notifications', description: 'Browser/app push notifications' },
+        { id: 'notify_refill_reminder_email', label: 'Medication Refill Reminders', description: 'Email reminders for medication refills' },
+      ].map(({ id, label, description }) => (
+        <div key={id} className="flex items-start space-x-3 p-3 bg-white rounded-lg border border-gray-200">
           <input
             type="checkbox"
             id={id}
             name={id}
             checked={!!formData[id as keyof UserProfileUpdatePayload]}
             onChange={handleChange}
-            className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
+            className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary mt-1"
             aria-checked={!!formData[id as keyof UserProfileUpdatePayload]}
           />
-          <label htmlFor={id} className="ml-2 block text-sm text-gray-900">
-            {label}
-          </label>
+          <div className="flex-1">
+            <label htmlFor={id} className="block text-sm font-medium text-gray-900">
+              {label}
+            </label>
+            <p className="text-xs text-gray-500 mt-1">{description}</p>
+          </div>
         </div>
       ))}
     </div>
-  </>
+  </div>
 );
 
 const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
@@ -107,12 +124,25 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
   // Validate individual field
   const validateField = useCallback(
     (name: string, value: FormFieldValue): string | null => {
-      if (['first_name', 'last_name'].includes(name) && !value) {
-        return `${name.replace('_', ' ')} is required`;
+      if (['first_name', 'last_name'].includes(name)) {
+        if (!value || (typeof value === 'string' && value.trim().length === 0)) {
+          return `${name.replace('_', ' ')} is required`;
+        }
+        if (typeof value === 'string' && value.trim().length < 2) {
+          return `${name.replace('_', ' ')} must be at least 2 characters`;
+        }
+        if (typeof value === 'string' && value.trim().length > 50) {
+          return `${name.replace('_', ' ')} must be less than 50 characters`;
+        }
       }
-      if (name === 'phone_number' && value && !/^\+?\d{10,15}$/.test(value as string)) {
-        return 'Invalid phone number format';
+      
+      if (name === 'phone_number' && value) {
+        const phoneStr = value as string;
+        if (!isValidPhone(phoneStr)) {
+          return 'Please enter a valid phone number (e.g., +1234567890)';
+        }
       }
+      
       if (name === 'weight' && value !== null) {
         const numericValue = typeof value === 'string' ? parseFloat(value) : value;
         if (typeof numericValue !== 'number' || isNaN(numericValue)) {
@@ -122,6 +152,7 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
           return 'Weight must be between 0 and 500 kg';
         }
       }
+      
       if (name === 'height' && value !== null) {
         const numericValue = typeof value === 'string' ? parseFloat(value) : value;
         if (typeof numericValue !== 'number' || isNaN(numericValue)) {
@@ -131,6 +162,7 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
           return 'Height must be between 0 and 300 cm';
         }
       }
+      
       return null;
     },
     []
@@ -159,12 +191,16 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
       }
 
       setFormData((prev) => ({ ...prev, [name]: processedValue }));
-      setErrors((prev) => ({
-        ...prev,
-        [name]: validateField(name, processedValue),
-      }));
+      
+      // Clear error when user starts typing
+      if (errors[name as keyof UserProfileUpdatePayload]) {
+        setErrors((prev) => ({
+          ...prev,
+          [name]: validateField(name, processedValue),
+        }));
+      }
     },
-    [validateField]
+    [validateField, errors]
   );
 
   // Handle form submission
@@ -198,374 +234,183 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
       } catch (err: any) {
         console.error('Profile update error:', err);
         const errorData = err.response?.data;
-        if (typeof errorData === 'object' && errorData !== null) {
-          const fieldErrors: FormErrors = {};
-          Object.entries(errorData).forEach(([key, value]) => {
-            fieldErrors[key as keyof UserProfileUpdatePayload] = Array.isArray(value)
-              ? value.join(', ')
-              : String(value);
-          });
-          setErrors(fieldErrors);
-          setGlobalError('Failed to update profile. Please check the fields.');
-        } else {
-          setGlobalError(err.message || 'Failed to update profile.');
+        let errorMessage = 'Failed to update profile.';
+        
+        if (errorData && typeof errorData === 'object') {
+          const messages = Object.entries(errorData)
+            .map(([key, val]) => `${key === 'detail' ? '' : key + ': '}${Array.isArray(val) ? val.join(', ') : val}`)
+            .join('; ');
+          errorMessage = messages || errorMessage;
+        } else if (typeof errorData === 'string') {
+          errorMessage = errorData;
+        } else if (err.message) {
+          errorMessage = err.message;
         }
+        
+        setGlobalError(errorMessage);
+        throw err;
       }
     },
-    [formData, onSubmit, validateField]
+    [formData, validateField, onSubmit]
   );
 
+  const getFieldIcon = (fieldName: string) => {
+    switch (fieldName) {
+      case 'first_name':
+      case 'last_name':
+        return UserIcon;
+      case 'phone_number':
+        return PhoneIcon;
+      case 'date_of_birth':
+        return CalendarDaysIcon;
+      case 'address':
+        return MapPinIcon;
+      case 'blood_group':
+      case 'genotype':
+      case 'allergies':
+      case 'chronic_conditions':
+        return HeartIcon;
+      default:
+        return UserIcon;
+    }
+  };
+
+  const renderField = (name: keyof UserProfileUpdatePayload, label: string, type: string = 'text', options?: string[]) => {
+    const Icon = getFieldIcon(name);
+    const value = formData[name];
+    const error = errors[name];
+    const isRequired = ['first_name', 'last_name'].includes(name);
+
+    return (
+      <div className="space-y-2">
+        <label htmlFor={name} className="block text-sm font-medium text-gray-700">
+          {label} {isRequired && <span className="text-red-500">*</span>}
+        </label>
+        <div className="relative">
+          {type === 'select' ? (
+            <select
+              id={name}
+              name={name}
+              value={value as string || ''}
+              onChange={handleChange}
+              className={`input-field ${error ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
+            >
+              <option value="">Select {label}</option>
+              {options?.map(option => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+          ) : type === 'textarea' ? (
+            <textarea
+              id={name}
+              name={name}
+              value={value as string || ''}
+              onChange={handleChange}
+              rows={3}
+              className={`input-field ${error ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
+              placeholder={`Enter your ${label.toLowerCase()}`}
+            />
+          ) : (
+            <input
+              type={type}
+              id={name}
+              name={name}
+              value={value as string || ''}
+              onChange={handleChange}
+              className={`input-field ${error ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
+              placeholder={`Enter your ${label.toLowerCase()}`}
+            />
+          )}
+          <Icon className="h-5 w-5 text-gray-400 absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none" />
+        </div>
+        {error && (
+          <p className="text-red-600 text-sm flex items-center">
+            <ExclamationTriangleIcon className="h-4 w-4 mr-1" />
+            {error}
+          </p>
+        )}
+      </div>
+    );
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Error Display */}
       {globalError && (
-        <div
-          className="text-red-600 text-sm bg-red-50 p-3 rounded-md"
-          role="alert"
-        >
-          {globalError}
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <ExclamationTriangleIcon className="h-5 w-5 text-red-400 mr-2" />
+            <div className="text-sm text-red-700">
+              <p className="font-medium">Update Error</p>
+              <p className="mt-1">{globalError}</p>
+            </div>
+          </div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label
-            htmlFor="first_name"
-            className="block text-sm font-medium text-gray-700"
-          >
-            First Name *
-          </label>
-          <input
-            type="text"
-            name="first_name"
-            id="first_name"
-            required
-            value={formData.first_name ?? ''}
-            onChange={handleChange}
-            className="input-field"
-            aria-invalid={!!errors.first_name}
-            aria-describedby={errors.first_name ? 'first_name-error' : undefined}
-          />
-          {errors.first_name && (
-            <p
-              id="first_name-error"
-              className="text-red-600 text-sm mt-1"
-              role="alert"
-            >
-              {errors.first_name}
-            </p>
-          )}
+      {/* Personal Information */}
+      <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+          <UserIcon className="h-5 w-5 mr-2 text-primary" />
+          Personal Information
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {renderField('first_name', 'First Name', 'text')}
+          {renderField('last_name', 'Last Name', 'text')}
+          {renderField('phone_number', 'Phone Number', 'tel')}
+          {renderField('date_of_birth', 'Date of Birth', 'date')}
         </div>
-        <div>
-          <label
-            htmlFor="last_name"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Last Name *
-          </label>
-          <input
-            type="text"
-            name="last_name"
-            id="last_name"
-            required
-            value={formData.last_name ?? ''}
-            onChange={handleChange}
-            className="input-field"
-            aria-invalid={!!errors.last_name}
-            aria-describedby={errors.last_name ? 'last_name-error' : undefined}
-          />
-          {errors.last_name && (
-            <p
-              id="last_name-error"
-              className="text-red-600 text-sm mt-1"
-              role="alert"
-            >
-              {errors.last_name}
-            </p>
-          )}
-        </div>
-        <div>
-          <label
-            htmlFor="phone_number"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Phone Number
-          </label>
-          <input
-            type="tel"
-            name="phone_number"
-            id="phone_number"
-            value={formData.phone_number ?? ''}
-            onChange={handleChange}
-            className="input-field"
-            placeholder="+1234567890"
-            aria-invalid={!!errors.phone_number}
-            aria-describedby={errors.phone_number ? 'phone_number-error' : undefined}
-          />
-          {errors.phone_number && (
-            <p
-              id="phone_number-error"
-              className="text-red-600 text-sm mt-1"
-              role="alert"
-            >
-              {errors.phone_number}
-            </p>
-          )}
-        </div>
-        <div>
-          <label
-            htmlFor="date_of_birth"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Date of Birth
-          </label>
-          <input
-            type="date"
-            name="date_of_birth"
-            id="date_of_birth"
-            value={formData.date_of_birth ?? ''}
-            onChange={handleChange}
-            className="input-field"
-            max={new Date().toISOString().split('T')[0]} // Prevent future dates
-            aria-invalid={!!errors.date_of_birth}
-            aria-describedby={errors.date_of_birth ? 'date_of_birth-error' : undefined}
-          />
-          {errors.date_of_birth && (
-            <p
-              id="date_of_birth-error"
-              className="text-red-600 text-sm mt-1"
-              role="alert"
-            >
-              {errors.date_of_birth}
-            </p>
-          )}
+        <div className="mt-4">
+          {renderField('address', 'Address', 'textarea')}
         </div>
       </div>
 
-      <div className="pb-4 border-b">
-        <h3 className="text-lg font-semibold text-gray-700 mb-3">
+      {/* Health Information */}
+      <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+          <HeartIcon className="h-5 w-5 mr-2 text-primary" />
           Health Information
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label
-              htmlFor="blood_group"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Blood Group
-            </label>
-            <select
-              name="blood_group"
-              id="blood_group"
-              value={formData.blood_group ?? ''}
-              onChange={handleChange}
-              className="input-field"
-              aria-invalid={!!errors.blood_group}
-              aria-describedby={errors.blood_group ? 'blood_group-error' : undefined}
-            >
-              <option value="">-- Select --</option>
-              {bloodGroups.map((group) => (
-                <option key={group} value={group}>
-                  {group}
-                </option>
-              ))}
-            </select>
-            {errors.blood_group && (
-              <p
-                id="blood_group-error"
-                className="text-red-600 text-sm mt-1"
-                role="alert"
-              >
-                {errors.blood_group}
-              </p>
-            )}
-          </div>
-          <div>
-            <label
-              htmlFor="genotype"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Genotype
-            </label>
-            <select
-              name="genotype"
-              id="genotype"
-              value={formData.genotype ?? ''}
-              onChange={handleChange}
-              className="input-field"
-              aria-invalid={!!errors.genotype}
-              aria-describedby={errors.genotype ? 'genotype-error' : undefined}
-            >
-              <option value="">-- Select --</option>
-              {genotype.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
-            {errors.genotype && (
-              <p
-                id="genotype-error"
-                className="text-red-600 text-sm mt-1"
-                role="alert"
-              >
-                {errors.genotype}
-              </p>
-            )}
-          </div>
-          <div className="md:col-span-2">
-            <label
-              htmlFor="allergies"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Allergies
-            </label>
-            <textarea
-              name="allergies"
-              id="allergies"
-              rows={3}
-              value={formData.allergies ?? ''}
-              onChange={handleChange}
-              className="input-field"
-              placeholder="e.g., Penicillin, Peanuts, Pollen"
-              aria-invalid={!!errors.allergies}
-              aria-describedby={errors.allergies ? 'allergies-error' : undefined}
-            />
-            {errors.allergies && (
-              <p
-                id="allergies-error"
-                className="text-red-600 text-sm mt-1"
-                role="alert"
-              >
-                {errors.allergies}
-              </p>
-            )}
-          </div>
-          <div className="md:col-span-2">
-            <label
-              htmlFor="chronic_conditions"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Chronic Conditions
-            </label>
-            <textarea
-              name="chronic_conditions"
-              id="chronic_conditions"
-              rows={3}
-              value={formData.chronic_conditions ?? ''}
-              onChange={handleChange}
-              className="input-field"
-              placeholder="e.g., Hypertension, Diabetes Type 2, Asthma"
-              aria-invalid={!!errors.chronic_conditions}
-              aria-describedby={
-                errors.chronic_conditions ? 'chronic_conditions-error' : undefined
-              }
-            />
-            {errors.chronic_conditions && (
-              <p
-                id="chronic_conditions-error"
-                className="text-red-600 text-sm mt-1"
-                role="alert"
-              >
-                {errors.chronic_conditions}
-              </p>
-            )}
-          </div>
-          <div>
-            <label
-              htmlFor="weight"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Weight (kg)
-            </label>
-            <input
-              type="number"
-              step="0.1"
-              name="weight"
-              id="weight"
-              value={formData.weight ?? ''}
-              onChange={handleChange}
-              className="input-field"
-              placeholder="e.g., 70.5"
-              aria-invalid={!!errors.weight}
-              aria-describedby={errors.weight ? 'weight-error' : undefined}
-            />
-            {errors.weight && (
-              <p id="weight-error" className="text-red-600 text-sm mt-1" role="alert">
-                {errors.weight}
-              </p>
-            )}
-          </div>
-          <div>
-            <label
-              htmlFor="height"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Height (cm)
-            </label>
-            <input
-              type="number"
-              step="0.1"
-              name="height"
-              id="height"
-              value={formData.height ?? ''}
-              onChange={handleChange}
-              className="input-field"
-              placeholder="e.g., 175.0"
-              aria-invalid={!!errors.height}
-              aria-describedby={errors.height ? 'height-error' : undefined}
-            />
-            {errors.height && (
-              <p id="height-error" className="text-red-600 text-sm mt-1" role="alert">
-                {errors.height}
-              </p>
-            )}
-          </div>
+          {renderField('blood_group', 'Blood Group', 'select', bloodGroups)}
+          {renderField('genotype', 'Genotype', 'select', genotype)}
+          {renderField('weight', 'Weight (kg)', 'number')}
+          {renderField('height', 'Height (cm)', 'number')}
+        </div>
+        <div className="mt-4 space-y-4">
+          {renderField('allergies', 'Allergies', 'textarea')}
+          {renderField('chronic_conditions', 'Chronic Conditions', 'textarea')}
         </div>
       </div>
 
+      {/* Notification Preferences */}
       <NotificationPreferences formData={formData} handleChange={handleChange} />
 
-      <div className="flex justify-end space-x-3 pt-5 border-t">
+      {/* Action Buttons */}
+      <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary"
           disabled={isSubmitting}
+          className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={isSubmitting}
-          className="btn-primary inline-flex justify-center px-4 py-2 text-sm font-medium disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-primary"
-          aria-busy={isSubmitting}
+          className="btn-primary inline-flex items-center px-6 py-2 text-sm font-medium disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {isSubmitting ? (
-            <span className="flex items-center">
-              <svg
-                className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                />
-              </svg>
-              Saving...
-            </span>
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              Updating...
+            </>
           ) : (
-            'Save Changes'
+            <>
+              <CheckCircleIcon className="h-4 w-4 mr-2" />
+              Update Profile
+            </>
           )}
         </button>
       </div>
