@@ -21,8 +21,8 @@ const LoginPage: React.FC = () => {
     try {
       const response = await axiosInstance.post<AuthTokens>('/token/', { email, password });
       const { access, refresh } = response.data;
-      login(access, refresh);
-      navigate('/');
+      await login(access, refresh);
+      navigate('/dashboard');
     } catch (err: any) {
       console.error('Login failed:', err);
       if (err.response?.data?.detail) {

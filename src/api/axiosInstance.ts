@@ -24,26 +24,4 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-axiosInstance.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      console.error('Authentication Error:', error.response);
-      localStorage.removeItem('accessToken'); 
-      localStorage.removeItem('refreshToken');
-      if (window.location.pathname !== '/login') {
-         window.location.href = '/login';
-      }
-    }
-
-    console.error('API Error:', error.response || error.message);
-
-    return Promise.reject(error);
-  }
-);
-
 export default axiosInstance;

@@ -1,6 +1,6 @@
 // src/components/layout/Header.tsx
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
     UserIcon, 
@@ -19,8 +19,12 @@ import NotificationBell from './NotificationBell';
 const Header: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Debug logging
+  console.log('Header render - isAuthenticated:', isAuthenticated, 'user:', user);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -40,7 +44,7 @@ const Header: React.FC = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/');
     setIsDropdownOpen(false);
   };
 
@@ -62,7 +66,7 @@ const Header: React.FC = () => {
       <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
+          <Link to={isAuthenticated ? "/dashboard" : "/"} className="flex items-center space-x-2">
             <img src="/logo.png" alt="VitaNips Logo" className="h-10 w-auto" />
             <span className="text-xl font-bold text-primary">VitaNips</span>
           </Link>
@@ -189,18 +193,32 @@ const Header: React.FC = () => {
               </>
             ) : (
               <>
-                <Link 
-                  to="/login" 
-                  className="text-gray-600 hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
-                >
-                  Login
-                </Link>
-                <Link 
-                  to="/register" 
-                  className="btn-primary text-sm"
-                >
-                  Register
-                </Link>
+                {/* Landing page navigation for unauthenticated users */}
+                <div className="hidden md:flex items-center space-x-6">
+                  <a href="#features" className="text-gray-600 hover:text-primary transition-colors duration-200">
+                    Features
+                  </a>
+                  <a href="#testimonials" className="text-gray-600 hover:text-primary transition-colors duration-200">
+                    Testimonials
+                  </a>
+                  <a href="#pricing" className="text-gray-600 hover:text-primary transition-colors duration-200">
+                    Pricing
+                  </a>
+                </div>
+                <div className="flex items-center space-x-4">
+                  <Link 
+                    to="/login" 
+                    className="text-gray-600 hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+                  >
+                    Login
+                  </Link>
+                  <Link 
+                    to="/register" 
+                    className="btn-primary text-sm"
+                  >
+                    Get Started
+                  </Link>
+                </div>
               </>
             )}
           </div>
