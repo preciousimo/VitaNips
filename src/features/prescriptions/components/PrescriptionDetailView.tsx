@@ -7,8 +7,7 @@ import {
     CheckCircleIcon, ExclamationCircleIcon, EyeIcon
 } from '@heroicons/react/24/outline';
 import PharmacySelectionModal from '../../pharmacy/components/PharmacySelectionModal';
-import { createOrderFromPrescription } from '../../../api/prescriptions';
-import { MedicationOrder } from '../../../types/pharmacy';
+import { forwardPrescriptionToPharmacy } from '../../../api/prescriptions';
 import axios from 'axios';
 import Modal from '../../../components/common/Modal';
 import MedicationInfoDisplay from '../../pharmacy/components/MedicationInfoDisplay';
@@ -45,15 +44,17 @@ const PrescriptionDetailView: React.FC<PrescriptionDetailViewProps> = ({ prescri
     const handlePharmacySelected = async (pharmacyId: number) => {
         setIsOrdering(true);
         setOrderStatus(null);
-        console.log(`Attempting to create order for prescription ${prescription.id} at pharmacy ${pharmacyId}`);
+        console.log(`Attempting to forward prescription ${prescription.id} to pharmacy ${pharmacyId}`);
 
         try {
-            const order: MedicationOrder = await createOrderFromPrescription(prescription.id, pharmacyId);
-            console.log("Order creation successful:", order);
-            setOrderStatus({ success: `Order #${order.id} created successfully (Status: ${order.status}). View in 'My Orders'.` });
+            const response = await forwardPrescriptionToPharmacy(prescription.id, pharmacyId);
+            console.log("Prescription forwarding successful:", response);
+            setOrderStatus({ 
+                success: `${response.message} Order #${response.order.id} (Status: ${response.order.status}). View in 'My Orders'.` 
+            });
         } catch (error: any) {
-            console.error("Order creation failed:", error);
-            let errorMessage = "Failed to create order. Please try again.";
+            console.error("Prescription forwarding failed:", error);
+            let errorMessage = "Failed to forward prescription. Please try again.";
             if (axios.isAxiosError(error) && error.response?.data) {
                 const backendError = error.response.data;
                 if (backendError.error) {
@@ -187,10 +188,10 @@ const PrescriptionDetailView: React.FC<PrescriptionDetailViewProps> = ({ prescri
                         className="btn-primary text-sm px-3 py-1 inline-flex items-center disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                         <ForwardIcon className="h-4 w-4 mr-1.5" />
-                        {isOrdering ? 'Processing...' : (orderStatus?.success ? 'Order Placed' : 'Order from Pharmacy')}
+                        {isOrdering ? 'Sending...' : (orderStatus?.success ? 'Sent to Pharmacy' : 'Send to Pharmacy')}
                     </button>
                     {(!prescription.items || prescription.items.length === 0) && (
-                        <p className="text-xs text-red-500 mt-1 text-right">Cannot order: Prescription has no items.</p>
+                        <p className="text-xs text-red-500 mt-1 text-right">Cannot send: Prescription has no items.</p>
                     )}
                 </div>
             </div>
