@@ -4,7 +4,7 @@ import { Prescription } from '../../../types/prescriptions';
 import { Link } from 'react-router-dom';
 import { ClipboardDocumentListIcon, TagIcon, InformationCircleIcon, ForwardIcon } from '@heroicons/react/24/outline';
 import PharmacySelectionModal from '../../pharmacy/components/PharmacySelectionModal';
-import { createOrderFromPrescription } from '../../../api/prescriptions';
+import { forwardPrescriptionToPharmacy } from '../../../api/prescriptions';
 import axios from 'axios';
 
 interface PrescriptionDetailViewProps {
@@ -37,11 +37,13 @@ const PrescriptionDetailView: React.FC<PrescriptionDetailViewProps> = ({ prescri
         setIsOrdering(true);
         setOrderStatus(null);
         try {
-            const order = await createOrderFromPrescription(prescription.id, pharmacyId);
-            setOrderStatus({ success: `Order #${order.id} created successfully with status: ${order.status}.` });
+            const response = await forwardPrescriptionToPharmacy(prescription.id, pharmacyId);
+            setOrderStatus({ 
+                success: `${response.message} Order #${response.order.id} (Status: ${response.order.status}).` 
+            });
         } catch (error: any) {
-            console.error("Order creation failed:", error);
-            let errorMessage = "An unexpected error occurred while creating the order.";
+            console.error("Prescription forwarding failed:", error);
+            let errorMessage = "An unexpected error occurred while forwarding the prescription.";
             if (axios.isAxiosError(error) && error.response) {
                 const { status, data } = error.response;
                 if (data) {
@@ -54,7 +56,7 @@ const PrescriptionDetailView: React.FC<PrescriptionDetailViewProps> = ({ prescri
                         if (messages) errorMessage = messages;
                     }
                 }
-                if (errorMessage === "An unexpected error occurred while creating the order." || !data) {
+                if (errorMessage === "An unexpected error occurred while forwarding the prescription." || !data) {
                     switch (status) {
                         case 400:
                             errorMessage = "Invalid request. Please check the prescription details or selected pharmacy.";
@@ -70,8 +72,8 @@ const PrescriptionDetailView: React.FC<PrescriptionDetailViewProps> = ({ prescri
                             break;
                         case 409:
                             errorMessage = data?.error || "An order for this prescription already exists.";
-                            if (data?.existing_order_id) {
-                                errorMessage += ` (Order ID: ${data.existing_order_id}, Status: ${data.existing_order_status})`;
+                            if (data?.order_id) {
+                                errorMessage += ` (Order ID: ${data.order_id}, Status: ${data.status})`;
                             }
                             break;
                         case 500:
@@ -147,7 +149,7 @@ const PrescriptionDetailView: React.FC<PrescriptionDetailViewProps> = ({ prescri
                         className="btn-primary text-sm px-3 py-1 inline-flex items-center disabled:opacity-60"
                     >
                         <ForwardIcon className="h-4 w-4 mr-1.5" />
-                        {isOrdering ? 'Processing...' : (orderStatus?.success ? 'Order Placed' : 'Order from Pharmacy')}
+                        {isOrdering ? 'Sending...' : (orderStatus?.success ? 'Sent to Pharmacy' : 'Send to Pharmacy')}
                     </button>
                 </div>
             </div>
