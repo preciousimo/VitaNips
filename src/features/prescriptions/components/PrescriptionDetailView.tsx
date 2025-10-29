@@ -52,7 +52,7 @@ const PrescriptionDetailView: React.FC<PrescriptionDetailViewProps> = ({ prescri
             setOrderStatus({ 
                 success: `${response.message} Order #${response.order.id} (Status: ${response.order.status}). View in 'My Orders'.` 
             });
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Prescription forwarding failed:", error);
             let errorMessage = "Failed to forward prescription. Please try again.";
             if (axios.isAxiosError(error) && error.response?.data) {
@@ -67,7 +67,7 @@ const PrescriptionDetailView: React.FC<PrescriptionDetailViewProps> = ({ prescri
                     const messages = Object.values(backendError).flat().join(' ');
                     if (messages) errorMessage = messages;
                 }
-            } else if (error.message) {
+            } else if (error instanceof Error) {
                 errorMessage = error.message;
             }
             setOrderStatus({ error: errorMessage });

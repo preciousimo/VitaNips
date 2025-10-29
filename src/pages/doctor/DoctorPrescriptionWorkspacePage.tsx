@@ -10,8 +10,7 @@ import {
 } from '../../api/doctorPortal';
 import { Prescription as UserPrescription } from '../../types/prescriptions';
 import Modal from '../../components/common/Modal';
-import DoctorPrescriptionForm from '../../features/doctor_portal/components/DoctorPrescriptionForm'; 
-import toast from 'react-hot-toast';
+import DoctorPrescriptionForm from '../../features/doctor_portal/components/DoctorPrescriptionForm';
 
 const formatDate = (dateStr: string) => new Date(dateStr + "T00:00:00Z").toLocaleDateString('en-CA');
 
@@ -37,14 +36,20 @@ const EligibleAppointmentItem: React.FC<{
 );
 
 // Simple list item for doctor's written prescriptions
-const DoctorPrescriptionItem: React.FC<{ pres: UserPrescription }> = ({ pres }) => (
-     <div className="p-3 bg-white shadow rounded-md hover:shadow-md">
-        <p className="text-sm font-medium text-primary">Patient: { (pres.user as any)?.email || pres.user}</p> {/* Adjust based on your UserPrescription type */}
-        <p className="text-xs text-gray-600">Prescribed: {new Date(pres.date_prescribed + "T00:00:00Z").toLocaleDateString()} - Diagnosis: {pres.diagnosis}</p>
-        <p className="text-xs mt-1">{pres.items.length} medication(s).</p>
-        {/* Add Link to view/edit detail later */}
-    </div>
-);
+const DoctorPrescriptionItem: React.FC<{ pres: UserPrescription }> = ({ pres }) => {
+    const patientEmail = typeof pres.user === 'object' && pres.user !== null && 'email' in pres.user 
+        ? (pres.user as { email?: string }).email 
+        : String(pres.user);
+    
+    return (
+        <div className="p-3 bg-white shadow rounded-md hover:shadow-md">
+            <p className="text-sm font-medium text-primary">Patient: {patientEmail}</p>
+            <p className="text-xs text-gray-600">Prescribed: {new Date(pres.date_prescribed + "T00:00:00Z").toLocaleDateString()} - Diagnosis: {pres.diagnosis}</p>
+            <p className="text-xs mt-1">{pres.items.length} medication(s).</p>
+            {/* Add Link to view/edit detail later */}
+        </div>
+    );
+};
 
 
 const DoctorPrescriptionWorkspacePage: React.FC = () => {
@@ -63,7 +68,10 @@ const DoctorPrescriptionWorkspacePage: React.FC = () => {
         try {
             const response = await getDoctorEligibleAppointments();
             setEligibleAppointments(response.results.filter(appt => !appt.has_existing_prescription)); // Only show those without prescriptions
-        } catch (err: any) { setError(err.message || "Failed to load eligible appointments."); }
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to load eligible appointments.";
+            setError(errorMessage);
+        }
         finally { setIsLoadingAppointments(false); }
     }, []);
 
@@ -72,7 +80,10 @@ const DoctorPrescriptionWorkspacePage: React.FC = () => {
         try {
             const response = await getDoctorPrescriptions();
             setWrittenPrescriptions(response.results);
-        } catch (err: any) { setError(err.message || "Failed to load written prescriptions."); }
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to load written prescriptions.";
+            setError(errorMessage);
+        }
         finally { setIsLoadingPrescriptions(false); }
     }, []);
 
@@ -99,9 +110,6 @@ const DoctorPrescriptionWorkspacePage: React.FC = () => {
             // Refresh both lists
             await fetchEligibleAppointments();
             await fetchWrittenPrescriptions();
-        } catch (err) {
-            // Error is handled by the form's toast, but we re-throw for the form.
-            throw err;
         } finally {
             setIsSubmittingForm(false);
         }

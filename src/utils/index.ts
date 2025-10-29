@@ -1,23 +1,14 @@
 // src/utils/index.ts
-
 /**
- * Format a time string (HH:MM) to a readable format (e.g., "2:30 PM")
+ * Central export for all utility functions
+ * This file re-exports utilities from other modules and includes legacy functions
  */
-export const formatTime = (timeStr: string | null | undefined): string => {
-    if (!timeStr) return '';
-    try {
-        const [hours, minutes] = timeStr.split(':');
-        const date = new Date();
-        date.setHours(parseInt(hours, 10), parseInt(minutes, 10));
-        return date.toLocaleTimeString('en-US', { 
-            hour: 'numeric', 
-            minute: '2-digit', 
-            hour12: true 
-        });
-    } catch { 
-        return timeStr; 
-    }
-};
+
+// Re-export from new utility modules
+export * from './dateTime';
+export * from './validation';
+export * from './formatting';
+export * from './errorMessages';
 
 /**
  * Format a date string to a readable format with smart detection for today/tomorrow
@@ -180,7 +171,7 @@ export const formatFileSize = (bytes: number): string => {
 /**
  * Debounce function to limit how often a function can be called
  */
-export const debounce = <T extends (...args: any[]) => any>(
+export const debounce = <T extends (...args: unknown[]) => unknown>(
     func: T,
     wait: number
 ): ((...args: Parameters<T>) => void) => {
@@ -210,7 +201,7 @@ export const isValidEmail = (email: string): boolean => {
  * Check if a string is a valid phone number
  */
 export const isValidPhone = (phone: string): boolean => {
-    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
+    const phoneRegex = /^[+]?[1-9][\d]{0,15}$/;
     return phoneRegex.test(phone.replace(/\D/g, ''));
 };
 

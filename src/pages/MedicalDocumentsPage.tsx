@@ -10,11 +10,12 @@ import { MedicalDocument, MedicalDocumentUploadPayload } from '../types/health';
 import MedicalDocumentListItem from '../features/health/components/MedicalDocumentListItem';
 import MedicalDocumentUploadForm from '../features/health/components/MedicalDocumentUploadForm';
 import Modal from '../components/common/Modal';
+import { SkeletonList } from '../components/common/SkeletonLoader';
+import ConfirmDialog from '../components/common/ConfirmDialog';
 
 const MedicalDocumentsPage: React.FC = () => {
     const [documents, setDocuments] = useState<MedicalDocument[]>([]);
     const [nextPageUrl, setNextPageUrl] = useState<string | null>(null);
-    const [totalCount, setTotalCount] = useState<number>(0);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
@@ -23,13 +24,14 @@ const MedicalDocumentsPage: React.FC = () => {
     const [isUploading, setIsUploading] = useState<boolean>(false);
 
     const [deletingId, setDeletingId] = useState<number | null>(null);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
+    const [documentToDelete, setDocumentToDelete] = useState<number | null>(null);
 
     const loadInitialDocuments = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         setDocuments([]);
         setNextPageUrl(null);
-        setTotalCount(0);
         try {
             const response = await getUserMedicalDocuments();
 
@@ -37,14 +39,14 @@ const MedicalDocumentsPage: React.FC = () => {
                  response.results.sort((a, b) => new Date(b.uploaded_at).getTime() - new Date(a.uploaded_at).getTime());
                 setDocuments(response.results);
                 setNextPageUrl(response.next);
-                setTotalCount(response.count);
             } else {
                 console.warn("Received unexpected documents response structure:", response);
                 setError("Received invalid data from server.");
                 setDocuments([]);
             }
-        } catch (err: any) {
-            setError(err.message || "Failed to load medical documents.");
+        } catch (err) {
+            const error = err as Error;
+            setError(error.message || "Failed to load medical documents.");
             console.error(err);
             setDocuments([]);
         } finally {
@@ -69,8 +71,9 @@ const MedicalDocumentsPage: React.FC = () => {
                  setError("Received invalid data while loading more.");
                  setNextPageUrl(null);
             }
-        } catch (err: any) {
-            setError(err.message || "Failed to load more documents.");
+        } catch (err) {
+            const error = err as Error;
+            setError(error.message || "Failed to load more documents.");
             console.error(err);
         } finally {
             setIsLoadingMore(false);
@@ -101,23 +104,36 @@ const MedicalDocumentsPage: React.FC = () => {
         }
     };
 
-    const handleDelete = async (id: number) => {
-        if (deletingId === id || !window.confirm("Are you sure you want to delete this document? This action cannot be undone.")) {
-             return;
-         }
-         setDeletingId(id);
-         setError(null);
-         try {
-             await deleteMedicalDocument(id);
-            
-             await loadInitialDocuments();
-         } catch (err: any) {
-             setError(err.message || "Failed to delete document.");
-             console.error(err);
-         } finally {
-             setDeletingId(null);
-         }
-     };
+    const handleDeleteClick = (id: number) => {
+        setDocumentToDelete(id);
+        setShowDeleteConfirm(true);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!documentToDelete) return;
+        
+        setDeletingId(documentToDelete);
+        setError(null);
+        try {
+            await deleteMedicalDocument(documentToDelete);
+            await loadInitialDocuments();
+            setShowDeleteConfirm(false);
+            setDocumentToDelete(null);
+        } catch (err) {
+            const error = err as Error;
+            setError(error.message || "Failed to delete document.");
+            console.error(err);
+        } finally {
+            setDeletingId(null);
+        }
+    };
+
+    const handleCancelDelete = () => {
+        if (!deletingId) {
+            setShowDeleteConfirm(false);
+            setDocumentToDelete(null);
+        }
+    };
 
     return (
         <div className="max-w-4xl mx-auto">
@@ -132,17 +148,28 @@ const MedicalDocumentsPage: React.FC = () => {
                 </button>
             </div>
 
-             <Modal isOpen={showUploadModal} onClose={handleCloseUploadModal} title="">
-                 <MedicalDocumentUploadForm
+            <Modal isOpen={showUploadModal} onClose={handleCloseUploadModal} title="">
+                <MedicalDocumentUploadForm
                     onSubmit={handleUploadSubmit}
                     onCancel={handleCloseUploadModal}
                     isSubmitting={isUploading}
-                 />
-             </Modal>
+                />
+            </Modal>
+
+            <ConfirmDialog
+                isOpen={showDeleteConfirm}
+                onClose={handleCancelDelete}
+                onConfirm={handleDeleteConfirm}
+                title="Delete Document"
+                message="Are you sure you want to delete this document? This action cannot be undone and the document will be permanently removed."
+                confirmText="Delete"
+                cancelText="Cancel"
+                isLoading={!!deletingId}
+            />
 
             <div>
                 {isLoading ? (
-                    <p className="text-muted text-center py-4">Loading documents...</p>
+                    <SkeletonList count={4} />
                 ) : error && documents.length === 0 ? (
                     <p className="text-red-600 text-center py-4">{error}</p>
                 ) : (
@@ -154,7 +181,7 @@ const MedicalDocumentsPage: React.FC = () => {
                                     <MedicalDocumentListItem
                                         key={doc.id}
                                         document={doc}
-                                        onDelete={handleDelete}
+                                        onDelete={handleDeleteClick}
                                         isDeleting={deletingId === doc.id}
                                     />
                                 ))}

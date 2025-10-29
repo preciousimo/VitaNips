@@ -1,6 +1,6 @@
 // src/pages/pharmacy/PharmacyOrderDetailPage.tsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { getPharmacyOrderDetail, updatePharmacyOrder } from '../../api/pharmacy';
 import { MedicationOrder, MedicationOrderUpdatePayload } from '../../types/pharmacy';
@@ -8,7 +8,6 @@ import axios from 'axios';
 
 const PharmacyOrderDetailPage: React.FC = () => {
     const { orderId } = useParams<{ orderId: string }>();
-    const navigate = useNavigate();
 
     const [order, setOrder] = useState<MedicationOrder | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -28,8 +27,9 @@ const PharmacyOrderDetailPage: React.FC = () => {
         try {
             const fetchedOrder = await getPharmacyOrderDetail(parseInt(orderId, 10));
             setOrder(fetchedOrder);
-        } catch (err: any) {
-            setError(err.message || "Failed to load order details.");
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to load order details.";
+            setError(errorMessage);
             console.error(err);
             setOrder(null);
         } finally {
@@ -49,7 +49,7 @@ const PharmacyOrderDetailPage: React.FC = () => {
         try {
             const updatedOrder = await updatePharmacyOrder(order.id, payload);
             setOrder(updatedOrder);
-        } catch (err: any) {
+        } catch (err) {
             let message = "Failed to update order status. Please try again.";
             if (axios.isAxiosError(err) && err.response?.data) {
                 const backendError = err.response.data;
@@ -65,11 +65,11 @@ const PharmacyOrderDetailPage: React.FC = () => {
                         message = errorMessages.join(' ');
                     }
                 }
-            } else if (err.message) {
+            } else if (err instanceof Error && err.message) {
                 message = err.message;
             }
             setUpdateError(message);
-            console.error("Order Update Error:", err.response?.data || err);
+            console.error("Order Update Error:", axios.isAxiosError(err) ? err.response?.data || err : err);
         } finally {
             setIsUpdating(false);
         }

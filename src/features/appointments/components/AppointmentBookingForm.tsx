@@ -1,13 +1,15 @@
 // src/features/appointments/components/AppointmentBookingForm.tsx
-import React, { useState, useEffect, FormEvent, useMemo } from 'react';
-import { AppointmentPayload } from '../../../types/appointments';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { AppointmentPayload, Appointment } from '../../../types/appointments';
 import { DoctorAvailability } from '../../../types/doctors';
 import { createAppointment } from '../../../api/appointments';
-import { formatTime, formatDate } from '../../../utils';
+import { formatTime } from '../../../utils';
+import { appointmentBookingSchema, AppointmentBookingFormData } from '../../../schemas/appointmentSchema';
 import toast from 'react-hot-toast';
 import { 
     CalendarDaysIcon, 
-    ClockIcon, 
     UserIcon, 
     VideoCameraIcon, 
     UserGroupIcon,
@@ -19,7 +21,7 @@ interface AppointmentBookingFormProps {
     doctorId: number;
     doctorName: string;
     availability: DoctorAvailability[];
-    onBookingSuccess: (newAppointment: any) => void;
+    onBookingSuccess: (newAppointment: Appointment) => void;
     onCancel: () => void;
     isFollowUp?: boolean;
     prefillReason?: string;
@@ -49,23 +51,37 @@ const AppointmentBookingForm: React.FC<AppointmentBookingFormProps> = ({
     isFollowUp,
     prefillReason
 }) => {
-    const [selectedDate, setSelectedDate] = useState<string>('');
-    const [selectedTime, setSelectedTime] = useState<string>('');
-    const [reason, setReason] = useState<string>('');
-    const [notes, setNotes] = useState<string>('');
     const [appointmentType, setAppointmentType] = useState<'in_person' | 'virtual'>('in_person');
     const [availableSlots, setAvailableSlots] = useState<string[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-    const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
+    // React Hook Form setup
+    const {
+        register,
+        handleSubmit: handleFormSubmit,
+        watch,
+        setValue,
+        formState: { errors: formErrors }
+    } = useForm<AppointmentBookingFormData>({
+        resolver: zodResolver(appointmentBookingSchema),
+        defaultValues: {
+            doctor: doctorId,
+            date: '',
+            start_time: '',
+            reason: prefillReason || '',
+            notes: ''
+        }
+    });
+
+    const selectedDate = watch('date');
+    const selectedTime = watch('start_time');
 
     useEffect(() => {
         if (isFollowUp && prefillReason) {
-            setReason(prefillReason);
-        } else {
-            setReason('');
+            setValue('reason', prefillReason);
         }
-    }, [isFollowUp, prefillReason]);
+    }, [isFollowUp, prefillReason, setValue]);
 
     useEffect(() => {
         if (selectedDate && availability.length > 0) {
@@ -78,12 +94,12 @@ const AppointmentBookingForm: React.FC<AppointmentBookingFormProps> = ({
                 .flatMap(slot => generateTimeSlots(slot.start_time, slot.end_time));
 
             setAvailableSlots(slotsForDay);
-            setSelectedTime(''); // Reset time when date changes
+            setValue('start_time', ''); // Reset time when date changes
         } else {
             setAvailableSlots([]);
-            setSelectedTime('');
+            setValue('start_time', '');
         }
-    }, [selectedDate, availability]);
+    }, [selectedDate, availability, setValue]);
 
     const calculateEndTime = (startTime: string, durationMinutes = 30): string => {
         if (!startTime) return '';
@@ -100,44 +116,11 @@ const AppointmentBookingForm: React.FC<AppointmentBookingFormProps> = ({
 
     const today = new Date().toISOString().split('T')[0];
 
-    // Validation function
-    const validateForm = (): boolean => {
-        const errors: Record<string, string> = {};
-
-        if (!selectedDate) {
-            errors.date = 'Please select a date for your appointment.';
-        }
-
-        if (!selectedTime) {
-            errors.time = 'Please select a time slot.';
-        }
-
-        if (!reason.trim()) {
-            errors.reason = 'Please provide a reason for your appointment.';
-        } else if (reason.trim().length < 10) {
-            errors.reason = 'Please provide a more detailed reason (at least 10 characters).';
-        }
-
-        if (notes.trim().length > 500) {
-            errors.notes = 'Notes cannot exceed 500 characters.';
-        }
-
-        setValidationErrors(errors);
-        return Object.keys(errors).length === 0;
-    };
-
-    const handleSubmit = async (e: FormEvent) => {
-        e.preventDefault();
+    const onSubmit = async (data: AppointmentBookingFormData) => {
         setError(null);
-        setValidationErrors({});
-
-        if (!validateForm()) {
-            toast.error('Please fix the errors below.');
-            return;
-        }
-
         setIsSubmitting(true);
-        const endTime = calculateEndTime(selectedTime);
+        
+        const endTime = calculateEndTime(data.start_time);
         if (!endTime) {
             setError("Invalid start time selected, cannot calculate end time.");
             toast.error("Invalid start time.");
@@ -147,28 +130,28 @@ const AppointmentBookingForm: React.FC<AppointmentBookingFormProps> = ({
 
         const payload: AppointmentPayload = {
             doctor: doctorId,
-            date: selectedDate,
-            start_time: selectedTime,
+            date: data.date,
+            start_time: data.start_time,
             end_time: endTime,
             appointment_type: appointmentType,
-            reason: reason.trim(),
-            notes: notes.trim() || undefined,
+            reason: data.reason.trim(),
+            notes: data.notes?.trim() || undefined,
         };
 
         try {
             const newAppointment = await createAppointment(payload);
             toast.success('Appointment booked successfully!');
             onBookingSuccess(newAppointment);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Appointment booking error:", err);
-            const errorData = err.response?.data;
+            const errorData = (err as { response?: { data?: unknown } }).response?.data;
             let errorMessage = "Failed to book appointment. The time slot might be unavailable or there was a server error.";
             if (errorData && typeof errorData === 'object') {
                 const messages = Object.entries(errorData)
                     .map(([key, val]) => `${key === 'detail' ? '' : key + ': '}${Array.isArray(val) ? val.join(', ') : val}`)
                     .join(' \n');
                 errorMessage = messages || errorMessage;
-            } else if (err.message) {
+            } else if (err instanceof Error) {
                 errorMessage = err.message;
             }
             setError(errorMessage);
@@ -187,7 +170,7 @@ const AppointmentBookingForm: React.FC<AppointmentBookingFormProps> = ({
     }, [availability]);
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6 p-4 md:p-6">
+        <form onSubmit={handleFormSubmit(onSubmit)} className="space-y-6 p-4 md:p-6">
             {/* Header */}
             <div className="border-b border-gray-200 pb-4">
                 <h3 className="text-xl font-semibold text-gray-800 flex items-center">
@@ -220,44 +203,34 @@ const AppointmentBookingForm: React.FC<AppointmentBookingFormProps> = ({
 
             {/* Date Selection */}
             <div>
-                <label htmlFor="appointment-date" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-2">
                     Select Date *
                 </label>
                 <input 
                     type="date" 
-                    id="appointment-date" 
-                    name="appointment-date"
-                    value={selectedDate} 
+                    id="date" 
+                    {...register('date')}
                     min={today}
-                    onChange={(e) => {
-                        setSelectedDate(e.target.value);
-                        setValidationErrors(prev => ({ ...prev, date: '' }));
-                    }}
-                    className={`input-field ${validationErrors.date ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
+                    className={`input-field ${formErrors.date ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
                 />
-                {validationErrors.date && (
-                    <p className="text-red-600 text-sm mt-1">{validationErrors.date}</p>
+                {formErrors.date && (
+                    <p className="text-red-600 text-sm mt-1">{formErrors.date.message}</p>
                 )}
             </div>
 
             {/* Time Selection */}
             {selectedDate && (
                 <div>
-                    <label htmlFor="appointment-time" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="start_time" className="block text-sm font-medium text-gray-700 mb-2">
                         Select Available Time Slot *
                     </label>
                     {availableSlots.length > 0 ? (
                         <select 
-                            id="appointment-time" 
-                            name="appointment-time" 
-                            value={selectedTime}
-                            onChange={(e) => {
-                                setSelectedTime(e.target.value);
-                                setValidationErrors(prev => ({ ...prev, time: '' }));
-                            }}
-                            className={`input-field ${validationErrors.time ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
+                            id="start_time" 
+                            {...register('start_time')}
+                            className={`input-field ${formErrors.start_time ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
                         >
-                            <option value="" disabled>-- Select Time --</option>
+                            <option value="">-- Select Time --</option>
                             {availableSlots.map(slot => (
                                 <option key={slot} value={slot}>
                                     {formatTime(slot)}
@@ -275,8 +248,8 @@ const AppointmentBookingForm: React.FC<AppointmentBookingFormProps> = ({
                             </div>
                         </div>
                     )}
-                    {validationErrors.time && (
-                        <p className="text-red-600 text-sm mt-1">{validationErrors.time}</p>
+                    {formErrors.start_time && (
+                        <p className="text-red-600 text-sm mt-1">{formErrors.start_time.message}</p>
                     )}
                 </div>
             )}
@@ -344,21 +317,16 @@ const AppointmentBookingForm: React.FC<AppointmentBookingFormProps> = ({
                 </label>
                 <textarea 
                     id="reason" 
-                    name="reason" 
+                    {...register('reason')}
                     rows={isFollowUp ? 3 : 4} 
-                    value={reason}
-                    onChange={(e) => {
-                        setReason(e.target.value);
-                        setValidationErrors(prev => ({ ...prev, reason: '' }));
-                    }}
-                    className={`input-field ${validationErrors.reason ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
+                    className={`input-field ${formErrors.reason ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
                     placeholder="Please describe your symptoms, concerns, or reason for the appointment..."
                 />
-                {validationErrors.reason && (
-                    <p className="text-red-600 text-sm mt-1">{validationErrors.reason}</p>
+                {formErrors.reason && (
+                    <p className="text-red-600 text-sm mt-1">{formErrors.reason.message}</p>
                 )}
                 <p className="text-xs text-gray-500 mt-1">
-                    {reason.length}/500 characters (minimum 10 required)
+                    {watch('reason')?.length || 0}/500 characters (minimum 10 required)
                 </p>
             </div>
 
@@ -369,21 +337,16 @@ const AppointmentBookingForm: React.FC<AppointmentBookingFormProps> = ({
                 </label>
                 <textarea 
                     id="notes" 
-                    name="notes" 
+                    {...register('notes')}
                     rows={3} 
-                    value={notes}
-                    onChange={(e) => {
-                        setNotes(e.target.value);
-                        setValidationErrors(prev => ({ ...prev, notes: '' }));
-                    }}
-                    className={`input-field ${validationErrors.notes ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
+                    className={`input-field ${formErrors.notes ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
                     placeholder="Any other information for the doctor..."
                 />
-                {validationErrors.notes && (
-                    <p className="text-red-600 text-sm mt-1">{validationErrors.notes}</p>
+                {formErrors.notes && (
+                    <p className="text-red-600 text-sm mt-1">{formErrors.notes.message}</p>
                 )}
                 <p className="text-xs text-gray-500 mt-1">
-                    {notes.length}/500 characters
+                    {watch('notes')?.length || 0}/1000 characters
                 </p>
             </div>
 
@@ -399,7 +362,7 @@ const AppointmentBookingForm: React.FC<AppointmentBookingFormProps> = ({
                 </button>
                 <button 
                     type="submit" 
-                    disabled={isSubmitting || !selectedTime || !reason.trim() || availableSlots.length === 0}
+                    disabled={isSubmitting || !selectedTime || availableSlots.length === 0}
                     className="btn-primary inline-flex items-center px-6 py-2 text-sm font-medium disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                     {isSubmitting ? (

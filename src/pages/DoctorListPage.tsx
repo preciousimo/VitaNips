@@ -4,6 +4,7 @@ import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { getDoctors } from '../api/doctors';
 import { Doctor } from '../types/doctors';
 import DoctorCard from '../features/doctors/components/DoctorCard';
+import { SkeletonList } from '../components/common/SkeletonLoader';
 
 const DoctorListPage: React.FC = () => {
     const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -37,9 +38,10 @@ const DoctorListPage: React.FC = () => {
                 setError("Received invalid data from server.");
                 setDoctors([]);
             }
-        } catch (err: any) {
+        } catch (err) {
             console.error("Error fetching doctors:", err);
-            setError(err.message || 'Failed to load doctors. Please try again later.');
+            const errorMessage = err instanceof Error ? err.message : 'Failed to load doctors. Please try again later.';
+            setError(errorMessage);
             setDoctors([]);
         } finally {
             setIsLoading(false);
@@ -63,9 +65,10 @@ const DoctorListPage: React.FC = () => {
                  setError("Received invalid data while loading more.");
                  setNextPageUrl(null);
             }
-        } catch (err: any) {
+        } catch (err) {
             console.error("Error loading more doctors:", err);
-            setError(err.message || 'Failed to load more doctors.');
+            const errorMessage = err instanceof Error ? err.message : 'Failed to load more doctors.';
+            setError(errorMessage);
         } finally {
             setIsLoadingMore(false);
         }
@@ -73,7 +76,7 @@ const DoctorListPage: React.FC = () => {
 
     useEffect(() => {
         fetchInitialDoctors(searchTerm);
-    }, [fetchInitialDoctors]);
+    }, [fetchInitialDoctors, searchTerm]);
 
     const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setSearchTerm(event.target.value);
@@ -107,8 +110,8 @@ const DoctorListPage: React.FC = () => {
 
             <div>
                 {isLoading ? (
-                    <div className="text-center py-10">
-                        <p className="text-muted">Loading doctors...</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        <SkeletonList count={8} />
                     </div>
                 ) : error ? (
                     <div className="text-center py-10 bg-red-50 text-red-700 p-4 rounded-md">

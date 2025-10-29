@@ -4,6 +4,7 @@ import { MagnifyingGlassIcon, MapPinIcon } from '@heroicons/react/24/outline';
 import { getPharmacies } from '../api/pharmacy';
 import { Pharmacy } from '../types/pharmacy';
 import PharmacyCard from '../features/pharmacy/components/PharmacyCard';
+import { SkeletonList } from '../components/common/SkeletonLoader';
 
 const PharmacyListPage: React.FC = () => {
     const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
@@ -21,40 +22,6 @@ const PharmacyListPage: React.FC = () => {
     const [locationError, setLocationError] = useState<string | null>(null);
 
     const initialLocationAttempted = useRef(false);
-
-    const getUserLocation = useCallback(() => {
-        if (!navigator.geolocation) {
-            setLocationError("Geolocation is not supported by your browser.");
-            setIsNearMeSearch(false);
-            return;
-        }
-        setIsGettingLocation(true);
-        setLocationError(null);
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                setUserLocation({
-                    lat: position.coords.latitude,
-                    lon: position.coords.longitude,
-                });
-                setIsGettingLocation(false);
-                initialLocationAttempted.current = true;
-                if(isNearMeSearch) {
-                    fetchInitialPharmacies(searchTerm, true, { lat: position.coords.latitude, lon: position.coords.longitude }, searchRadiusKm);
-                }
-            },
-            (geoError) => {
-                console.error("Geolocation Error:", geoError);
-                setLocationError(`Location Error: ${geoError.message}. Showing results based on search term only.`);
-                setUserLocation(null);
-                setIsNearMeSearch(false);
-                setIsGettingLocation(false);
-                initialLocationAttempted.current = true;
-                fetchInitialPharmacies(searchTerm, false, null, searchRadiusKm);
-
-            },
-            { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
-        );
-    }, [isNearMeSearch, searchTerm, searchRadiusKm]);
 
     const fetchInitialPharmacies = useCallback(async (
         currentSearchTerm: string,
@@ -89,14 +56,49 @@ const PharmacyListPage: React.FC = () => {
                  setError("Failed to process pharmacy data.");
                  setPharmacies([]);
             }
-        } catch (err: any) {
-            setError(err.message || 'Failed to load pharmacies. Please try again later.');
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'Failed to load pharmacies. Please try again later.';
+            setError(errorMessage);
             console.error(err);
             setPharmacies([]);
         } finally {
             setIsLoading(false);
         }
     }, []);
+
+    const getUserLocation = useCallback(() => {
+        if (!navigator.geolocation) {
+            setLocationError("Geolocation is not supported by your browser.");
+            setIsNearMeSearch(false);
+            return;
+        }
+        setIsGettingLocation(true);
+        setLocationError(null);
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                setUserLocation({
+                    lat: position.coords.latitude,
+                    lon: position.coords.longitude,
+                });
+                setIsGettingLocation(false);
+                initialLocationAttempted.current = true;
+                if(isNearMeSearch) {
+                    fetchInitialPharmacies(searchTerm, true, { lat: position.coords.latitude, lon: position.coords.longitude }, searchRadiusKm);
+                }
+            },
+            (geoError) => {
+                console.error("Geolocation Error:", geoError);
+                setLocationError(`Location Error: ${geoError.message}. Showing results based on search term only.`);
+                setUserLocation(null);
+                setIsNearMeSearch(false);
+                setIsGettingLocation(false);
+                initialLocationAttempted.current = true;
+                fetchInitialPharmacies(searchTerm, false, null, searchRadiusKm);
+
+            },
+            { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+        );
+    }, [isNearMeSearch, searchTerm, searchRadiusKm, fetchInitialPharmacies]);
 
     const loadMorePharmacies = async () => {
         if (!nextPageUrl || isLoadingMore) return;
@@ -112,8 +114,9 @@ const PharmacyListPage: React.FC = () => {
                   setError("Failed to process additional pharmacy data.");
                   setNextPageUrl(null);
             }
-        } catch (err: any) {
-            setError(err.message || 'Failed to load more pharmacies.');
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'Failed to load more pharmacies.';
+            setError(errorMessage);
             console.error(err);
         } finally {
             setIsLoadingMore(false);
@@ -123,7 +126,7 @@ const PharmacyListPage: React.FC = () => {
     useEffect(() => {
         fetchInitialPharmacies(searchTerm, false, null, searchRadiusKm);
         initialLocationAttempted.current = false;
-    }, []);
+    }, [fetchInitialPharmacies, searchTerm, searchRadiusKm]);
 
      const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
          setSearchTerm(event.target.value);
@@ -231,8 +234,8 @@ const PharmacyListPage: React.FC = () => {
 
       <div>
         {isLoading ? (
-          <div className="text-center py-10">
-            <p className="text-muted">Loading pharmacies...</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <SkeletonList count={6} />
           </div>
         ) : error ? (
            <div className="text-center py-10 bg-red-50 text-red-700 p-4 rounded-md">

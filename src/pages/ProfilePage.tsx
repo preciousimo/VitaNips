@@ -1,16 +1,14 @@
 // src/pages/ProfilePage.tsx
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
     PencilIcon, ShieldCheckIcon, UserCircleIcon, CakeIcon, PhoneIcon, MapPinIcon, AtSymbolIcon, IdentificationIcon, // Basic Info
-    HeartIcon, ClipboardDocumentListIcon, LifebuoyIcon, UsersIcon, // Health & Emergency
-    BellAlertIcon, // Notifications
-    ExclamationTriangleIcon // Error
+    HeartIcon, LifebuoyIcon, // Health & Emergency
+    BellAlertIcon // Notifications
 } from '@heroicons/react/24/outline'; // Using outline for a cleaner look in display mode
 import { useAuth } from '../contexts/AuthContext';
 import { updateUserProfile, UserProfileUpdatePayload } from '../api/user';
 import ProfileEditForm from '../features/user/components/ProfileEditForm';
-import { User, EmergencyContact as UserEmergencyContactType } from '../types/user'; // Assuming EmergencyContact is also in user.ts
 import toast from 'react-hot-toast';
 
 // Helper to display fields nicely
@@ -86,9 +84,11 @@ const ProfilePage: React.FC = () => {
             }
             toast.success("Profile updated successfully!", { id: toastId });
             setIsEditing(false);
-        } catch (err: any) {
+        } catch (err) {
             console.error("Update failed:", err);
-            const errorData = err.response?.data;
+            const errorData = err && typeof err === 'object' && 'response' in err 
+                ? (err as { response?: { data?: unknown } }).response?.data 
+                : undefined;
             let errorMessage = "Failed to update profile.";
              if (errorData && typeof errorData === 'object') {
                 errorMessage = Object.entries(errorData)
@@ -96,7 +96,7 @@ const ProfilePage: React.FC = () => {
                     .join('; ') || errorMessage;
             } else if (typeof errorData === 'string') {
                 errorMessage = errorData;
-            } else if (err.message) {
+            } else if (err instanceof Error && err.message) {
                 errorMessage = err.message;
             }
             toast.error(errorMessage, { id: toastId, duration: 5000 });

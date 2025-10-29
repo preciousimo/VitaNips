@@ -1,7 +1,7 @@
 // src/pages/DoctorDetailPage.tsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeftIcon, StarIcon, CheckBadgeIcon, LanguageIcon, BanknotesIcon, CalendarDaysIcon, AcademicCapIcon, UserPlusIcon } from '@heroicons/react/24/solid';
+import { ArrowLeftIcon, StarIcon, CheckBadgeIcon, LanguageIcon, AcademicCapIcon, UserPlusIcon } from '@heroicons/react/24/solid';
 
 import { getDoctorById, getDoctorReviews, getDoctorAvailability, PostReviewPayload, postDoctorReview } from '../api/doctors';
 import { Doctor, DoctorReview, DoctorAvailability } from '../types/doctors';
@@ -39,12 +39,20 @@ const ReviewForm: React.FC<ReviewFormProps> = ({ doctorId, onSubmitSuccess }) =>
       toast.success("Review submitted successfully!");
       setRating(0); setComment('');
       onSubmitSuccess(); // This should re-fetch reviews
-    } catch (err: any) {
-      const apiError = err.response?.data;
+    } catch (err) {
+      const apiError = err && typeof err === 'object' && 'response' in err 
+        ? (err as { response?: { data?: unknown } }).response?.data 
+        : undefined;
       let errMsg = "Failed to submit review.";
-      if (apiError?.non_field_errors) errMsg = apiError.non_field_errors.join(' ');
-      else if (apiError?.rating) errMsg = `Rating: ${apiError.rating.join(' ')}`;
-      else if (apiError?.detail) errMsg = apiError.detail;
+      if (apiError && typeof apiError === 'object') {
+        if ('non_field_errors' in apiError && Array.isArray(apiError.non_field_errors)) {
+          errMsg = apiError.non_field_errors.join(' ');
+        } else if ('rating' in apiError && Array.isArray(apiError.rating)) {
+          errMsg = `Rating: ${apiError.rating.join(' ')}`;
+        } else if ('detail' in apiError && typeof apiError.detail === 'string') {
+          errMsg = apiError.detail;
+        }
+      }
       setFormError(errMsg);
       toast.error(errMsg);
     } finally { setIsSubmitting(false); }
@@ -168,18 +176,20 @@ const DoctorDetailPage: React.FC = () => {
         if (!error) setError((availResult.reason as Error)?.message || "Failed to load availability.");
       }
 
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error loading doctor data:", err);
-      setError(err.message || "An unexpected error occurred.");
+      const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred.";
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
       setIsLoadingReviews(false);
     }
-  }, [doctorId, doctor, availability.length, reviews.length, reviewsNextPageUrl, reviewsTotalCount, error]); // Added error to dependencies to avoid loop if it occurs
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doctorId]);
 
   useEffect(() => {
     loadDoctorData(true);
-  }, []);
+  }, [loadDoctorData]);
 
 useEffect(() => {
   if (
@@ -214,9 +224,10 @@ useEffect(() => {
         setErrorReviews("Failed to process more reviews.");
         setReviewsNextPageUrl(null);
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error("Failed to load more reviews:", err);
-      setErrorReviews(err.message || "Failed to load more reviews.");
+      const errorMessage = err instanceof Error ? err.message : "Failed to load more reviews.";
+      setErrorReviews(errorMessage);
     } finally {
       setIsLoadingMoreReviews(false);
     }

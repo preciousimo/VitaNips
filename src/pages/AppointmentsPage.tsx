@@ -3,6 +3,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { getUserAppointments, cancelAppointment } from '../api/appointments';
 import { Appointment } from '../types/appointments';
 import AppointmentListItem from '../features/appointments/components/AppointmentListItem';
+import { SkeletonList } from '../components/common/SkeletonLoader';
+import ConfirmDialog from '../components/common/ConfirmDialog';
 
 const AppointmentsPage: React.FC = () => {
     const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -12,6 +14,9 @@ const AppointmentsPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [cancellingId, setCancellingId] = useState<number | null>(null);
+    
+    const [showConfirmDialog, setShowConfirmDialog] = useState<boolean>(false);
+    const [cancelId, setCancelId] = useState<number | null>(null);
 
     const sortAppointments = (data: Appointment[]) => {
          return data.sort((a, b) => {
@@ -47,8 +52,9 @@ const AppointmentsPage: React.FC = () => {
                 setError("Failed to process appointment data.");
                 setAppointments([]);
             }
-        } catch (err: any) {
-            setError(err.message || "Failed to load appointments.");
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to load appointments.";
+            setError(errorMessage);
             console.error(err);
             setAppointments([]);
         } finally {
@@ -70,8 +76,9 @@ const AppointmentsPage: React.FC = () => {
                 setError("Failed to process additional appointment data.");
                 setNextPageUrl(null);
             }
-        } catch (err: any) {
-            setError(err.message || "Failed to load more appointments.");
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to load more appointments.";
+            setError(errorMessage);
             console.error(err);
         } finally {
             setIsLoadingMore(false);
@@ -82,21 +89,32 @@ const AppointmentsPage: React.FC = () => {
         loadInitialAppointments();
     }, [loadInitialAppointments]);
 
-    const handleCancel = async (id: number) => {
-        if (!window.confirm("Are you sure you want to cancel this appointment?")) {
-            return;
-        }
-        setCancellingId(id);
+    const handleCancel = (id: number) => {
+        setCancelId(id);
+        setShowConfirmDialog(true);
+    };
+
+    const handleConfirmCancel = async () => {
+        if (!cancelId) return;
+        setCancellingId(cancelId);
         setError(null);
         try {
-            await cancelAppointment(id);
+            await cancelAppointment(cancelId);
+            setShowConfirmDialog(false);
+            setCancelId(null);
             loadInitialAppointments();
-        } catch (err: any) {
-            setError(err.message || "Failed to cancel appointment.");
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to cancel appointment.";
+            setError(errorMessage);
             console.error(err);
         } finally {
             setCancellingId(null);
         }
+    };
+
+    const handleCancelDialog = () => {
+        setShowConfirmDialog(false);
+        setCancelId(null);
     };
 
     const now = new Date();
@@ -111,8 +129,19 @@ const AppointmentsPage: React.FC = () => {
         <div className="max-w-4xl mx-auto">
             <h1 className="text-3xl font-bold text-gray-800 mb-6">Your Appointments</h1>
 
+            <ConfirmDialog
+                isOpen={showConfirmDialog}
+                onClose={handleCancelDialog}
+                onConfirm={handleConfirmCancel}
+                title="Cancel Appointment"
+                message="Are you sure you want to cancel this appointment? This action cannot be undone."
+                confirmText="Cancel Appointment"
+                cancelText="Keep Appointment"
+                isLoading={!!cancellingId}
+            />
+
              {isLoading && (
-                <p className="text-muted text-center py-4">Loading appointments...</p>
+                <SkeletonList count={5} />
              )}
 
              {!isLoading && error && (

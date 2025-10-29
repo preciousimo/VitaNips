@@ -8,6 +8,8 @@ import VitalSignLogListItem from '../features/health/components/VitalSignLogList
 import VitalSignForm from '../features/health/components/VitalSignForm';
 import Modal from '../components/common/Modal';
 import toast from 'react-hot-toast';
+import { SkeletonList } from '../components/common/SkeletonLoader';
+import ConfirmDialog from '../components/common/ConfirmDialog';
 
 const VitalsLogPage: React.FC = () => {
     const [logs, setLogs] = useState<VitalSignLog[]>([]);
@@ -20,6 +22,10 @@ const VitalsLogPage: React.FC = () => {
     const [showFormModal, setShowFormModal] = useState<boolean>(false);
     const [editingLog, setEditingLog] = useState<VitalSignLog | null>(null);
     const [isSubmittingForm, setIsSubmittingForm] = useState<boolean>(false);
+    
+    const [showConfirmDialog, setShowConfirmDialog] = useState<boolean>(false);
+    const [deleteId, setDeleteId] = useState<number | null>(null);
+    const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
     const sortLogs = (data: VitalSignLog[]): VitalSignLog[] => {
         return [...data].sort((a, b) => new Date(b.date_recorded).getTime() - new Date(a.date_recorded).getTime());
@@ -41,8 +47,9 @@ const VitalsLogPage: React.FC = () => {
             setLogs(prev => sortLogs(url ? [...prev, ...newLogs] : newLogs));
             setNextPageUrl(response.next);
             if (reset || !url) setTotalCount(response.count);
-        } catch (err: any) {
-            setError(err.message || "Failed to load vital signs.");
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to load vital signs.";
+            setError(errorMessage);
         } finally {
             setIsLoading(false);
             setIsLoadingMore(false);
@@ -74,23 +81,37 @@ const VitalsLogPage: React.FC = () => {
             setShowFormModal(false);
             setEditingLog(null);
             await fetchLogs(null, true);
-        } catch (err) {
-            throw err; // Let form handle displaying detailed error
         } finally {
             setIsSubmittingForm(false);
         }
     };
 
-    const handleDelete = async (id: number) => {
-        if (!window.confirm("Are you sure you want to delete this vitals log entry?")) return;
+    const handleDelete = (id: number) => {
+        setDeleteId(id);
+        setShowConfirmDialog(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!deleteId) return;
+        setIsDeleting(true);
         const toastId = toast.loading("Deleting entry...");
         try {
-            await deleteVitalSign(id);
+            await deleteVitalSign(deleteId);
             toast.success("Vitals log entry deleted.", { id: toastId });
+            setShowConfirmDialog(false);
+            setDeleteId(null);
             await fetchLogs(null, true);
-        } catch (err: any) {
-            toast.error(err.message || "Failed to delete entry.", { id: toastId });
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to delete entry.";
+            toast.error(errorMessage, { id: toastId });
+        } finally {
+            setIsDeleting(false);
         }
+    };
+
+    const handleCancelDelete = () => {
+        setShowConfirmDialog(false);
+        setDeleteId(null);
     };
 
     return (
@@ -108,8 +129,19 @@ const VitalsLogPage: React.FC = () => {
                 <VitalSignForm initialData={editingLog} onSubmit={handleFormSubmit} onCancel={handleFormCancel} isSubmitting={isSubmittingForm} />
             </Modal>
 
+            <ConfirmDialog
+                isOpen={showConfirmDialog}
+                onClose={handleCancelDelete}
+                onConfirm={handleConfirmDelete}
+                title="Delete Vitals Log Entry"
+                message="Are you sure you want to delete this vitals log entry? This action cannot be undone."
+                confirmText="Delete"
+                cancelText="Cancel"
+                isLoading={isDeleting}
+            />
+
             {isLoading && logs.length === 0 && (
-                <p className="text-center py-4 text-sm text-muted">Loading vitals...</p>
+                <SkeletonList count={5} />
             )}
 
             {error && (

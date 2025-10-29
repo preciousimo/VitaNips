@@ -8,6 +8,8 @@ import ExerciseLogListItem from '../features/health/components/ExerciseLogListIt
 import ExerciseLogForm from '../features/health/components/ExerciseLogForm';
 import Modal from '../components/common/Modal';
 import toast from 'react-hot-toast';
+import { SkeletonList } from '../components/common/SkeletonLoader';
+import ConfirmDialog from '../components/common/ConfirmDialog';
 
 const ExerciseLogPage: React.FC = () => {
     const [logs, setLogs] = useState<ExerciseLog[]>([]);
@@ -21,6 +23,10 @@ const ExerciseLogPage: React.FC = () => {
     const [showFormModal, setShowFormModal] = useState<boolean>(false);
     const [editingLog, setEditingLog] = useState<ExerciseLog | null>(null);
     const [isSubmittingForm, setIsSubmittingForm] = useState<boolean>(false);
+    
+    const [showConfirmDialog, setShowConfirmDialog] = useState<boolean>(false);
+    const [deleteId, setDeleteId] = useState<number | null>(null);
+    const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
     const sortLogs = (data: ExerciseLog[]): ExerciseLog[] => {
         return [...data].sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime());
@@ -37,7 +43,9 @@ const ExerciseLogPage: React.FC = () => {
             setLogs(prev => sortLogs(url ? [...prev, ...newLogs] : newLogs));
             setNextPageUrl(response.next);
             if (reset || !url) setTotalCount(response.count);
-        } catch (err: any) { setError(err.message || "Failed to load exercise logs.");
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to load exercise logs.";
+            setError(errorMessage);
         } finally { setIsLoading(false); setIsLoadingMore(false); }
     }, []);
 
@@ -48,26 +56,42 @@ const ExerciseLogPage: React.FC = () => {
     const handleFormCancel = () => { setShowFormModal(false); setEditingLog(null); };
 
     const handleFormSubmit = async (payload: ExercisePayload, id?: number) => {
-        // ... (submit logic using createExerciseLog/updateExerciseLog) ...
+        // ... (submit logic similar to VitalsLogPage, using createExerciseLog/updateExerciseLog) ...
         setIsSubmittingForm(true);
         try {
             if (id) await updateExerciseLog(id, payload);
             else await createExerciseLog(payload);
             setShowFormModal(false); setEditingLog(null);
             await fetchLogs(null, true);
-        } catch (err) { throw err;
         } finally { setIsSubmittingForm(false); }
     };
 
-    const handleDelete = async (id: number) => {
-        // ... (delete logic using deleteExerciseLog) ...
-        if (!window.confirm("Delete this exercise log entry?")) return;
+    const handleDelete = (id: number) => {
+        setDeleteId(id);
+        setShowConfirmDialog(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!deleteId) return;
+        setIsDeleting(true);
         const toastId = toast.loading("Deleting entry...");
         try {
-            await deleteExerciseLog(id);
+            await deleteExerciseLog(deleteId);
             toast.success("Exercise log entry deleted.", { id: toastId });
+            setShowConfirmDialog(false);
+            setDeleteId(null);
             await fetchLogs(null, true);
-        } catch (err: any) { toast.error(err.message || "Failed to delete entry.", { id: toastId });}
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to delete entry.";
+            toast.error(errorMessage, { id: toastId });
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    const handleCancelDelete = () => {
+        setShowConfirmDialog(false);
+        setDeleteId(null);
     };
 
     return (
@@ -83,8 +107,20 @@ const ExerciseLogPage: React.FC = () => {
              <Modal isOpen={showFormModal} onClose={handleFormCancel} title={editingLog ? 'Edit Exercise Log' : 'Log New Exercise'}>
                 <ExerciseLogForm initialData={editingLog} onSubmit={handleFormSubmit} onCancel={handleFormCancel} isSubmitting={isSubmittingForm} />
             </Modal>
+
+            <ConfirmDialog
+                isOpen={showConfirmDialog}
+                onClose={handleCancelDelete}
+                onConfirm={handleConfirmDelete}
+                title="Delete Exercise Log Entry"
+                message="Are you sure you want to delete this exercise log entry? This action cannot be undone."
+                confirmText="Delete"
+                cancelText="Cancel"
+                isLoading={isDeleting}
+            />
+
             {/* Loading, Error, Empty States, List, Pagination as in VitalsLogPage */}
-            {isLoading && logs.length === 0 && <p className="text-center text-muted py-10">Loading exercise logs...</p>}
+            {isLoading && logs.length === 0 && <SkeletonList count={5} />}
             {error && <p className="text-red-600 text-center py-4 bg-red-50 rounded my-4">{error}</p>}
             {!isLoading && !error && logs.length === 0 && ( /* Empty state */ <div className="text-center py-16 bg-gray-50 rounded-lg shadow"> <PageIcon className="mx-auto h-12 w-12 text-gray-400" /> <h3 className="mt-2 text-lg font-medium text-gray-900">No Exercise Logged</h3> <p className="mt-1 text-sm text-gray-500">Track your workouts and physical activities.</p> <div className="mt-6"> <button onClick={handleAddClick} type="button" className="btn-primary inline-flex items-center"> <PlusIcon className="h-5 w-5 mr-2" /> Log Your First Activity </button> </div> </div> )}
             {logs.length > 0 && ( <div className="space-y-3"> {logs.map(log => <ExerciseLogListItem key={log.id} log={log} onEdit={handleEditClick} onDelete={handleDelete} />)} </div> )}

@@ -41,8 +41,9 @@ const PharmacyOrderListPage: React.FC = () => {
                 setError("Failed to process orders.");
                 setOrders([]);
              }
-        } catch (err: any) {
-            setError(err.message || "Failed to load orders.");
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to load orders.";
+            setError(errorMessage);
             console.error(err);
             setOrders([]);
         } finally {
@@ -64,8 +65,9 @@ const PharmacyOrderListPage: React.FC = () => {
                  setError("Failed processing more orders.");
                  setNextPageUrl(null);
              }
-        } catch (err: any) {
-             setError(err.message || "Failed to load more orders.");
+        } catch (err) {
+             const errorMessage = err instanceof Error ? err.message : "Failed to load more orders.";
+             setError(errorMessage);
              console.error(err);
         } finally {
             setIsLoadingMore(false);

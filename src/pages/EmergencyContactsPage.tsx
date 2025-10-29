@@ -6,6 +6,7 @@ import { EmergencyContact, EmergencyContactPayload } from '../types/user';
 import EmergencyContactListItem from '../features/user/components/EmergencyContactListItem';
 import EmergencyContactForm from '../features/user/components/EmergencyContactForm';
 import Modal from '../components/common/Modal';
+import ConfirmDialog from '../components/common/ConfirmDialog';
 
 const EmergencyContactsPage: React.FC = () => {
     const [contacts, setContacts] = useState<EmergencyContact[]>([]);
@@ -17,6 +18,10 @@ const EmergencyContactsPage: React.FC = () => {
     const [showFormModal, setShowFormModal] = useState<boolean>(false);
     const [editingContact, setEditingContact] = useState<EmergencyContact | null>(null);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+    
+    const [showConfirmDialog, setShowConfirmDialog] = useState<boolean>(false);
+    const [deleteId, setDeleteId] = useState<number | null>(null);
+    const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
     const loadInitialContacts = useCallback(async () => {
         setIsLoading(true);
@@ -35,8 +40,9 @@ const EmergencyContactsPage: React.FC = () => {
                  setError("Failed to process contact data.");
                  setContacts([]);
             }
-        } catch (err: any) {
-            setError(err.message || "Failed to load emergency contacts.");
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to load emergency contacts.";
+            setError(errorMessage);
             console.error(err);
             setContacts([]);
         } finally {
@@ -58,8 +64,9 @@ const EmergencyContactsPage: React.FC = () => {
                  setError("Failed to process additional contact data.");
                  setNextPageUrl(null);
             }
-        } catch (err: any) {
-            setError(err.message || "Failed to load more contacts.");
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to load more contacts.";
+            setError(errorMessage);
             console.error(err);
         } finally {
             setIsLoadingMore(false);
@@ -71,7 +78,6 @@ const EmergencyContactsPage: React.FC = () => {
     }, [loadInitialContacts]);
 
     const handleAddClick = () => { /* ... */ };
-    const handleEditClick = (contact: EmergencyContact) => { /* ... */ };
     const handleFormCancel = () => { /* ... */ };
     const handleFormSubmit = async (payload: EmergencyContactPayload, id?: number) => {
         setIsSubmitting(true);
@@ -84,29 +90,53 @@ const EmergencyContactsPage: React.FC = () => {
             setShowFormModal(false);
             setEditingContact(null);
             await loadInitialContacts();
-        } catch (err: any) {
+        } catch (err) {
             console.error("Failed to save contact:", err);
             throw err;
         } finally {
              setIsSubmitting(false);
         }
     };
-     const handleDelete = async (id: number) => {
-         if (!window.confirm("Are you sure you want to delete this emergency contact?")) {
-             return;
-         }
-         setError(null);
-         try {
-             await deleteEmergencyContact(id);
-             await loadInitialContacts();
-         } catch (err: any) {
-             setError(err.message || "Failed to delete contact.");
-             console.error(err);
-         }
-     };
+    const handleDelete = (id: number) => {
+        setDeleteId(id);
+        setShowConfirmDialog(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!deleteId) return;
+        setIsDeleting(true);
+        setError(null);
+        try {
+            await deleteEmergencyContact(deleteId);
+            setShowConfirmDialog(false);
+            setDeleteId(null);
+            await loadInitialContacts();
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to delete contact.";
+            setError(errorMessage);
+            console.error(err);
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    const handleCancelDelete = () => {
+        setShowConfirmDialog(false);
+        setDeleteId(null);
+    };
 
     return (
         <div className="max-w-3xl mx-auto">
+            <ConfirmDialog
+                isOpen={showConfirmDialog}
+                onClose={handleCancelDelete}
+                onConfirm={handleConfirmDelete}
+                title="Delete Emergency Contact"
+                message="Are you sure you want to delete this emergency contact? This action cannot be undone."
+                confirmText="Delete Contact"
+                cancelText="Cancel"
+                isLoading={isDeleting}
+            />
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-3xl font-bold text-gray-800">Emergency Contacts</h1>
                 <button onClick={handleAddClick} className="btn-primary inline-flex items-center px-4 py-2">
@@ -139,7 +169,7 @@ const EmergencyContactsPage: React.FC = () => {
                                     <EmergencyContactListItem
                                         key={contact.id}
                                         contact={contact}
-                                        onEdit={handleEditClick}
+                                        onEdit={() => {/* TODO: Implement edit functionality */}}
                                         onDelete={handleDelete}
                                     />
                                 ))}

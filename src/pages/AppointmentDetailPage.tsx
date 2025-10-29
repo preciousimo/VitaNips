@@ -3,12 +3,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
     ArrowLeftIcon, CalendarIcon, ClockIcon, VideoCameraIcon, BuildingOfficeIcon,
-    CheckCircleIcon, XCircleIcon, InformationCircleIcon, PencilIcon, TrashIcon, UserIcon,
+    CheckCircleIcon, XCircleIcon, InformationCircleIcon, TrashIcon, UserIcon,
     ArrowPathIcon
 } from '@heroicons/react/24/outline';
 import { getAppointmentDetails, cancelAppointment } from '../api/appointments';
 import { Appointment } from '../types/appointments';
 import toast from 'react-hot-toast';
+import ConfirmDialog from '../components/common/ConfirmDialog';
 
 const formatTime = (timeStr: string): string => {
     if (!timeStr) return '';
@@ -58,6 +59,8 @@ const AppointmentDetailPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [isCancelling, setIsCancelling] = useState<boolean>(false);
+    
+    const [showConfirmDialog, setShowConfirmDialog] = useState<boolean>(false);
 
     const fetchAppointment = useCallback(async () => {
         if (!appointmentId) { setError("Appointment ID not found."); setIsLoading(false); return; }
@@ -67,8 +70,10 @@ const AppointmentDetailPage: React.FC = () => {
         try {
             const data = await getAppointmentDetails(id);
             setAppointment(data);
-        } catch (err: any) {
-            setError(err.message || "Failed to load appointment details."); setAppointment(null);
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to load appointment details.";
+            setError(errorMessage); 
+            setAppointment(null);
             console.error("Fetch appointment error:", err);
         } finally { setIsLoading(false); }
     }, [appointmentId]);
@@ -77,26 +82,33 @@ const AppointmentDetailPage: React.FC = () => {
         fetchAppointment();
     }, [fetchAppointment]);
 
-    const handleCancel = async () => {
-        if (!appointment || !window.confirm("Are you sure you want to cancel this appointment? This action cannot be undone.")) {
-            return;
-        }
+    const handleCancel = () => {
+        setShowConfirmDialog(true);
+    };
+
+    const handleConfirmCancel = async () => {
+        if (!appointment) return;
         setIsCancelling(true);
         setError(null);
         const toastId = toast.loading("Cancelling appointment...");
         try {
             await cancelAppointment(appointment.id);
             toast.success('Appointment cancelled successfully.', { id: toastId });
+            setShowConfirmDialog(false);
             // navigate('/appointments', { state: { message: 'Appointment cancelled successfully.' } }); // Or refresh current page
             fetchAppointment(); // Refresh the details on the current page
-        } catch (err: any) {
-            const errorMsg = err.message || "Failed to cancel appointment.";
+        } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : "Failed to cancel appointment.";
             setError(errorMsg);
             toast.error(errorMsg, { id: toastId });
             console.error("Cancel appointment error:", err);
         } finally {
             setIsCancelling(false);
         }
+    };
+
+    const handleCancelDialog = () => {
+        setShowConfirmDialog(false);
     };
 
     const handleScheduleFollowUp = () => {
@@ -142,6 +154,16 @@ const AppointmentDetailPage: React.FC = () => {
 
     return (
         <div className="max-w-3xl mx-auto">
+            <ConfirmDialog
+                isOpen={showConfirmDialog}
+                onClose={handleCancelDialog}
+                onConfirm={handleConfirmCancel}
+                title="Cancel Appointment"
+                message="Are you sure you want to cancel this appointment? This action cannot be undone."
+                confirmText="Cancel Appointment"
+                cancelText="Keep Appointment"
+                isLoading={isCancelling}
+            />
             {error && !isCancelling && <div className="mb-4"><ErrorMessage message={error} /></div>}
             <Link to="/appointments" className="inline-flex items-center text-primary hover:underline mb-4 text-sm group">
                 <ArrowLeftIcon className="h-4 w-4 mr-1 group-hover:-translate-x-0.5 transition-transform" /> Back to Appointments
