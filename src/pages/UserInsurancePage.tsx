@@ -8,6 +8,8 @@ import { UserInsurance, UserInsurancePayload } from '../types/insurance';
 import UserInsuranceCard from '../features/insurance/components/UserInsuranceCard';
 import UserInsuranceForm from '../features/insurance/components/UserInsuranceForm';
 import Modal from '../components/common/Modal';
+import { SkeletonList } from '../components/common/SkeletonLoader';
+import ConfirmDialog from '../components/common/ConfirmDialog';
 
 const UserInsurancePage: React.FC = () => {
     const [insurances, setInsurances] = useState<UserInsurance[]>([]);
@@ -19,6 +21,10 @@ const UserInsurancePage: React.FC = () => {
     const [showFormModal, setShowFormModal] = useState<boolean>(false);
     const [editingInsurance, setEditingInsurance] = useState<UserInsurance | null>(null);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+    
+    const [showConfirmDialog, setShowConfirmDialog] = useState<boolean>(false);
+    const [deleteId, setDeleteId] = useState<number | null>(null);
+    const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
     const sortInsurances = (data: UserInsurance[]) => {
         return data.sort((a, b) => {
@@ -47,8 +53,9 @@ const UserInsurancePage: React.FC = () => {
                 setError("Failed to process insurance data.");
                 setInsurances([]);
             }
-        } catch (err: any) {
-            setError(err.message || "Failed to load your insurance records.");
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to load your insurance records.";
+            setError(errorMessage);
             console.error(err);
             setInsurances([]);
         } finally {
@@ -70,8 +77,9 @@ const UserInsurancePage: React.FC = () => {
                 setError("Failed to process additional insurance data.");
                 setNextPageUrl(null);
             }
-        } catch (err: any) {
-            setError(err.message || "Failed to load more insurance plans.");
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to load more insurance plans.";
+            setError(errorMessage);
             console.error(err);
         } finally {
             setIsLoadingMore(false);
@@ -83,7 +91,6 @@ const UserInsurancePage: React.FC = () => {
     }, [loadInitialInsurances]);
 
     const handleAddClick = () => { /* ... */ };
-    const handleEditClick = (insurance: UserInsurance) => { /* ... */ };
     const handleFormCancel = () => { /* ... */ };
     const handleFormSubmit = async (payload: UserInsurancePayload, id?: number) => {
         setIsSubmitting(true);
@@ -96,25 +103,39 @@ const UserInsurancePage: React.FC = () => {
             setShowFormModal(false);
             setEditingInsurance(null);
             await loadInitialInsurances();
-        } catch (err: any) {
+        } catch (err) {
             console.error("Failed to save insurance:", err);
             throw err;
         } finally {
             setIsSubmitting(false);
         }
     };
-    const handleDelete = async (id: number) => {
-        if (!window.confirm("Are you sure you want to remove this insurance plan?")) {
-            return;
-        }
+    const handleDelete = (id: number) => {
+        setDeleteId(id);
+        setShowConfirmDialog(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!deleteId) return;
+        setIsDeleting(true);
         setError(null);
         try {
-            await deleteUserInsurance(id);
+            await deleteUserInsurance(deleteId);
+            setShowConfirmDialog(false);
+            setDeleteId(null);
             await loadInitialInsurances();
-        } catch (err: any) {
-            setError(err.message || "Failed to remove insurance plan.");
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to remove insurance plan.";
+            setError(errorMessage);
             console.error(err);
+        } finally {
+            setIsDeleting(false);
         }
+    };
+
+    const handleCancelDelete = () => {
+        setShowConfirmDialog(false);
+        setDeleteId(null);
     };
 
     return (
@@ -136,9 +157,20 @@ const UserInsurancePage: React.FC = () => {
                 <UserInsuranceForm initialData={editingInsurance} onSubmit={handleFormSubmit} onCancel={handleFormCancel} isSubmitting={isSubmitting} />
             </Modal>
 
+            <ConfirmDialog
+                isOpen={showConfirmDialog}
+                onClose={handleCancelDelete}
+                onConfirm={handleConfirmDelete}
+                title="Remove Insurance Plan"
+                message="Are you sure you want to remove this insurance plan? This action cannot be undone."
+                confirmText="Remove"
+                cancelText="Cancel"
+                isLoading={isDeleting}
+            />
+
             <div>
                 {isLoading ? (
-                    <p className="text-muted text-center py-4">Loading your insurance plans...</p>
+                    <SkeletonList count={3} />
                 ) : error ? (
                     <p className="text-red-600 text-center py-4 bg-red-50 rounded">{error}</p>
                 ) : (
@@ -153,7 +185,7 @@ const UserInsurancePage: React.FC = () => {
                                     <UserInsuranceCard
                                         key={ins.id}
                                         insurance={ins}
-                                        onEdit={handleEditClick}
+                                        onEdit={() => {/* TODO: Implement edit functionality */}}
                                         onDelete={handleDelete}
                                     />
                                 ))}

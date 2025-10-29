@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
-    ChartBarIcon,
     HeartIcon,
     ShieldExclamationIcon,
     ShoppingBagIcon,
@@ -21,8 +20,12 @@ import {
 
 import { getUserAppointments } from '../api/appointments';
 import { getMedicationReminders } from '../api/medicationReminders';
+import { getVitalSigns } from '../api/healthLogs';
+import { getUnreadNotificationCount } from '../api/notifications';
 import { Appointment } from '../types/appointments';
 import { MedicationReminder } from '../types/reminders';
+import { VitalSignLog } from '../types/healthLogs';
+import SkeletonLoader from '../components/common/SkeletonLoader';
 
 // Enhanced Loading Spinner with better styling
 const LoadingSpinner: React.FC<{ size?: string; className?: string }> = ({ 
@@ -33,22 +36,6 @@ const LoadingSpinner: React.FC<{ size?: string; className?: string }> = ({
         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
     </svg>
-);
-
-// Skeleton Loader for cards
-const CardSkeleton: React.FC = () => (
-    <div className="bg-white p-6 rounded-xl shadow-lg animate-pulse">
-        <div className="flex items-center justify-between mb-3">
-            <div className="h-6 bg-gray-200 rounded w-32"></div>
-            <div className="h-6 w-8 bg-gray-200 rounded-full"></div>
-        </div>
-        <div className="space-y-2">
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-            <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-        </div>
-        <div className="mt-4 h-4 bg-gray-200 rounded w-24"></div>
-    </div>
 );
 
 // Enhanced Error Display
@@ -103,7 +90,15 @@ const DashboardPage: React.FC = () => {
     const [remindersLoading, setRemindersLoading] = useState<boolean>(true);
     const [remindersError, setRemindersError] = useState<string | null>(null);
 
+    const [recentVitals, setRecentVitals] = useState<VitalSignLog[]>([]);
+    const [vitalsLoading, setVitalsLoading] = useState<boolean>(true);
+    const [vitalsError, setVitalsError] = useState<string | null>(null);
+
+    const [unreadCount, setUnreadCount] = useState<number>(0);
+    const [notificationsLoading, setNotificationsLoading] = useState<boolean>(true);
+
     const fetchDashboardData = useCallback(async () => {
+        // Fetch Appointments
         setAppointmentsLoading(true);
         setAppointmentsError(null);
         try {
@@ -124,6 +119,7 @@ const DashboardPage: React.FC = () => {
             setAppointmentsLoading(false);
         }
 
+        // Fetch Medication Reminders
         setRemindersLoading(true);
         setRemindersError(null);
         try {
@@ -143,6 +139,32 @@ const DashboardPage: React.FC = () => {
             setRemindersError("Could not load reminders.");
         } finally {
             setRemindersLoading(false);
+        }
+
+        // Fetch Recent Vital Signs (last 3)
+        setVitalsLoading(true);
+        setVitalsError(null);
+        try {
+            const response = await getVitalSigns({ page: 1 });
+            const recent = response.results.slice(0, 3);
+            setRecentVitals(recent);
+        } catch (err) {
+            console.error("Failed to fetch vitals for dashboard:", err);
+            setVitalsError("Could not load vitals.");
+        } finally {
+            setVitalsLoading(false);
+        }
+
+        // Fetch Unread Notifications Count
+        setNotificationsLoading(true);
+        try {
+            const countData = await getUnreadNotificationCount();
+            setUnreadCount(countData.unread_count || 0);
+        } catch (err) {
+            console.error("Failed to fetch notification count:", err);
+            setUnreadCount(0);
+        } finally {
+            setNotificationsLoading(false);
         }
     }, []);
 
@@ -282,7 +304,7 @@ const DashboardPage: React.FC = () => {
             </div>
 
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {/* Upcoming Appointments Card */}
                 <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 ease-in-out">
                     <div className="flex items-center justify-between mb-4">
@@ -301,9 +323,9 @@ const DashboardPage: React.FC = () => {
                     
                     {appointmentsLoading ? (
                         <div className="space-y-3">
-                            <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
-                            <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse"></div>
-                            <div className="h-4 bg-gray-200 rounded w-2/3 animate-pulse"></div>
+                            <SkeletonLoader variant="text" width="75%" height="h-4" />
+                            <SkeletonLoader variant="text" width="50%" height="h-4" />
+                            <SkeletonLoader variant="text" width="65%" height="h-4" />
                         </div>
                     ) : appointmentsError ? (
                         <ErrorDisplay message={appointmentsError} onRetry={fetchDashboardData} />
@@ -357,9 +379,9 @@ const DashboardPage: React.FC = () => {
                     
                     {remindersLoading ? (
                         <div className="space-y-3">
-                            <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
-                            <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse"></div>
-                            <div className="h-4 bg-gray-200 rounded w-2/3 animate-pulse"></div>
+                            <SkeletonLoader variant="text" width="75%" height="h-4" />
+                            <SkeletonLoader variant="text" width="50%" height="h-4" />
+                            <SkeletonLoader variant="text" width="65%" height="h-4" />
                         </div>
                     ) : remindersError ? (
                         <ErrorDisplay message={remindersError} onRetry={fetchDashboardData} />
@@ -389,6 +411,120 @@ const DashboardPage: React.FC = () => {
                     <Link to="/medication-reminders" className="mt-4 inline-flex items-center text-sm text-green-600 hover:text-green-700 font-medium group">
                         Manage Reminders
                         <ArrowRightIcon className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                    </Link>
+                </div>
+
+                {/* Recent Vital Signs Card */}
+                <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 ease-in-out">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-xl font-semibold text-blue-600 flex items-center">
+                            <HeartIcon className="h-6 w-6 mr-2" />
+                            Recent Vital Signs
+                        </h2>
+                        <span className="text-sm font-bold text-blue-600 bg-blue-100 px-3 py-1 rounded-full">
+                            {vitalsLoading ? (
+                                <LoadingSpinner size="h-4 w-4" className="text-blue-600" />
+                            ) : (
+                                recentVitals.length
+                            )}
+                        </span>
+                    </div>
+                    
+                    {vitalsLoading ? (
+                        <div className="space-y-3">
+                            <SkeletonLoader variant="text" width="75%" height="h-4" />
+                            <SkeletonLoader variant="text" width="50%" height="h-4" />
+                            <SkeletonLoader variant="text" width="65%" height="h-4" />
+                        </div>
+                    ) : vitalsError ? (
+                        <ErrorDisplay message={vitalsError} onRetry={fetchDashboardData} />
+                    ) : recentVitals.length > 0 ? (
+                        <div className="space-y-3">
+                            {recentVitals.map((vital, index) => (
+                                <div key={vital.id} className={`${index > 0 ? 'border-t pt-2' : ''}`}>
+                                    <p className="text-sm text-gray-600 flex items-center mb-1">
+                                        <ClockIcon className="h-3 w-3 mr-1" />
+                                        {formatDate(vital.date_recorded.split('T')[0])}
+                                    </p>
+                                    <div className="grid grid-cols-2 gap-2 text-xs">
+                                        {vital.systolic_pressure && vital.diastolic_pressure && (
+                                            <div>
+                                                <span className="text-gray-500">BP:</span>
+                                                <span className="ml-1 font-medium text-blue-600">
+                                                    {vital.systolic_pressure}/{vital.diastolic_pressure}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {vital.heart_rate && (
+                                            <div>
+                                                <span className="text-gray-500">HR:</span>
+                                                <span className="ml-1 font-medium text-blue-600">
+                                                    {vital.heart_rate} bpm
+                                                </span>
+                                            </div>
+                                        )}
+                                        {vital.temperature && (
+                                            <div>
+                                                <span className="text-gray-500">Temp:</span>
+                                                <span className="ml-1 font-medium text-blue-600">
+                                                    {vital.temperature}°C
+                                                </span>
+                                            </div>
+                                        )}
+                                        {vital.weight && (
+                                            <div>
+                                                <span className="text-gray-500">Weight:</span>
+                                                <span className="ml-1 font-medium text-blue-600">
+                                                    {vital.weight} kg
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-4">
+                            <HeartIcon className="h-12 w-12 text-gray-300 mx-auto mb-2" />
+                            <p className="text-gray-500 text-sm">No vital signs recorded yet</p>
+                            <Link to="/health/vitals" className="text-blue-600 hover:text-blue-700 text-sm font-medium mt-2 inline-block">
+                                Log vitals
+                            </Link>
+                        </div>
+                    )}
+                    
+                    <Link to="/health/vitals" className="mt-4 inline-flex items-center text-sm text-blue-600 hover:text-blue-700 font-medium group">
+                        View All Vitals
+                        <ArrowRightIcon className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                    </Link>
+                </div>
+            </div>
+
+            {/* Notifications Overview Card */}
+            <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-6 rounded-xl shadow-lg">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                        <div className="bg-yellow-500 text-white p-3 rounded-full mr-4">
+                            <BellAlertIcon className="h-6 w-6" />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-semibold text-gray-800">Notifications</h3>
+                            <p className="text-sm text-gray-600">
+                                {notificationsLoading ? (
+                                    <LoadingSpinner size="h-4 w-4" className="text-yellow-600" />
+                                ) : (
+                                    <>
+                                        You have <span className="font-bold text-yellow-700">{unreadCount}</span> unread notification{unreadCount !== 1 ? 's' : ''}
+                                    </>
+                                )}
+                            </p>
+                        </div>
+                    </div>
+                    <Link 
+                        to="/settings/notifications" 
+                        className="bg-white text-yellow-600 hover:bg-yellow-600 hover:text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors shadow"
+                    >
+                        View All
                     </Link>
                 </div>
             </div>

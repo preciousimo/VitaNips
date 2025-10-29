@@ -6,6 +6,8 @@ import { Vaccination, VaccinationPayload } from '../types/health';
 import VaccinationListItem from '../features/health/components/VaccinationListItem';
 import VaccinationForm from '../features/health/components/VaccinationForm';
 import Modal from '../components/common/Modal';
+import { SkeletonList } from '../components/common/SkeletonLoader';
+import ConfirmDialog from '../components/common/ConfirmDialog';
 
 const VaccinationsPage: React.FC = () => {
     const [vaccinations, setVaccinations] = useState<Vaccination[]>([]);
@@ -17,6 +19,10 @@ const VaccinationsPage: React.FC = () => {
     const [showFormModal, setShowFormModal] = useState<boolean>(false);
     const [editingVaccination, setEditingVaccination] = useState<Vaccination | null>(null);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+    
+    const [showConfirmDialog, setShowConfirmDialog] = useState<boolean>(false);
+    const [deleteId, setDeleteId] = useState<number | null>(null);
+    const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
     const sortVaccinations = (data: Vaccination[]) => {
         return data.sort((a, b) =>
@@ -41,8 +47,9 @@ const VaccinationsPage: React.FC = () => {
                  setError("Failed to process vaccination data.");
                  setVaccinations([]);
             }
-        } catch (err: any) {
-            setError(err.message || "Failed to load vaccination records.");
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to load vaccination records.";
+            setError(errorMessage);
             console.error(err);
             setVaccinations([]);
         } finally {
@@ -64,8 +71,9 @@ const VaccinationsPage: React.FC = () => {
                   setError("Failed to process additional vaccination data.");
                   setNextPageUrl(null);
              }
-        } catch (err: any) {
-            setError(err.message || "Failed to load more records.");
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to load more records.";
+            setError(errorMessage);
             console.error(err);
         } finally {
             setIsLoadingMore(false);
@@ -100,25 +108,40 @@ const VaccinationsPage: React.FC = () => {
              setShowFormModal(false);
              setEditingVaccination(null);
              await loadInitialVaccinations();
-         } catch (err: any) {
+         } catch (err) {
              console.error("Failed to save vaccination:", err);
-             throw new Error(err.message || "Failed to save record. Please check details.");
+             const errorMessage = err instanceof Error ? err.message : "Failed to save record. Please check details.";
+             throw new Error(errorMessage);
          } finally {
               setIsSubmitting(false);
          }
      };
-      const handleDelete = async (id: number) => {
-          if (!window.confirm("Are you sure you want to delete this vaccination record?")) {
-              return;
-          }
+      const handleDelete = (id: number) => {
+          setDeleteId(id);
+          setShowConfirmDialog(true);
+      };
+
+      const handleConfirmDelete = async () => {
+          if (!deleteId) return;
+          setIsDeleting(true);
           setError(null);
           try {
-              await deleteVaccination(id);
+              await deleteVaccination(deleteId);
+              setShowConfirmDialog(false);
+              setDeleteId(null);
               await loadInitialVaccinations();
-          } catch (err: any) {
-              setError(err.message || "Failed to delete vaccination record.");
+          } catch (err) {
+              const errorMessage = err instanceof Error ? err.message : "Failed to delete vaccination record.";
+              setError(errorMessage);
               console.error(err);
+          } finally {
+              setIsDeleting(false);
           }
+      };
+
+      const handleCancelDelete = () => {
+          setShowConfirmDialog(false);
+          setDeleteId(null);
       };
 
     return (
@@ -139,9 +162,20 @@ const VaccinationsPage: React.FC = () => {
                   />
               </Modal>
 
+              <ConfirmDialog
+                  isOpen={showConfirmDialog}
+                  onClose={handleCancelDelete}
+                  onConfirm={handleConfirmDelete}
+                  title="Delete Vaccination Record"
+                  message="Are you sure you want to delete this vaccination record? This action cannot be undone."
+                  confirmText="Delete"
+                  cancelText="Cancel"
+                  isLoading={isDeleting}
+              />
+
              <div>
                  {isLoading ? (
-                     <p className="text-muted text-center py-4">Loading records...</p>
+                     <SkeletonList count={4} />
                  ) : error ? (
                      <p className="text-red-600 text-center py-4 bg-red-50 rounded">{error}</p>
                  ) : (

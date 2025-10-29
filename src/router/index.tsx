@@ -10,6 +10,7 @@ import DashboardPage from '../pages/DashboardPage';
 import DoctorListPage from '../pages/DoctorListPage';
 import DoctorDetailPage from '../pages/DoctorDetailPage';
 import ProfilePage from '../pages/ProfilePage';
+import NotificationSettingsPage from '../pages/NotificationSettingsPage';
 import PharmacyListPage from '../pages/PharmacyListPage';
 import VaccinationsPage from '../pages/VaccinationsPage';
 import UserInsurancePage from '../pages/UserInsurancePage';
@@ -168,6 +169,7 @@ const AppRouter: React.FC = () => {
           <Route path="/appointments/:appointmentId/call" element={<VideoCallPage />} />
           <Route path="/prescriptions" element={<PrescriptionsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/settings/notifications" element={<NotificationSettingsPage />} />
           <Route path="/medical-documents" element={<MedicalDocumentsPage />} />
           <Route path="/health/vitals" element={<VitalsLogPage />} />
           <Route path="/health/symptoms" element={<SymptomLogPage />} />

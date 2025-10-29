@@ -4,10 +4,10 @@ import { getUserPrescriptions } from '../api/prescriptions';
 import { Prescription } from '../types/prescriptions';
 import PrescriptionListItem from '../features/prescriptions/components/PrescriptionListItem';
 import PrescriptionDetailView from '../features/prescriptions/components/PrescriptionDetailView';
+import { SkeletonList } from '../components/common/SkeletonLoader';
 
 const PrescriptionsPage: React.FC = () => {
     const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
-    const [nextPageUrl, setNextPageUrl] = useState<string | null>(null);
     const [totalCount, setTotalCount] = useState<number>(0);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -17,7 +17,6 @@ const PrescriptionsPage: React.FC = () => {
         setIsLoading(true);
         setError(null);
         setPrescriptions([]);
-        setNextPageUrl(null);
         setTotalCount(0);
         setSelectedPrescriptionId(null);
         try {
@@ -26,15 +25,15 @@ const PrescriptionsPage: React.FC = () => {
                  setPrescriptions(response.results.sort((a, b) =>
                      new Date(b.date_prescribed).getTime() - new Date(a.date_prescribed).getTime()
                  ));
-                 setNextPageUrl(response.next);
                  setTotalCount(response.count);
             } else {
                 console.warn("Received unexpected prescription response:", response);
                  setError("Failed to process prescription data.");
                  setPrescriptions([]);
             }
-        } catch (err: any) {
-            setError(err.message || "Failed to load your prescriptions.");
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to load your prescriptions.";
+            setError(errorMessage);
             console.error(err);
             setPrescriptions([]);
         } finally {
@@ -57,7 +56,7 @@ const PrescriptionsPage: React.FC = () => {
             <h1 className="text-3xl font-bold text-gray-800 mb-6">Your Prescriptions</h1>
 
             {isLoading ? (
-                <p className="text-muted text-center py-4">Loading prescriptions...</p>
+                <SkeletonList count={4} />
             ) : error ? (
                 <p className="text-red-600 text-center py-4 bg-red-50 rounded">{error}</p>
             ) : (

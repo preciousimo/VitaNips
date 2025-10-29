@@ -12,6 +12,7 @@ import MedicationReminderListItem from '../features/pharmacy/components/Medicati
 import MedicationReminderForm from '../features/pharmacy/components/MedicationReminderForm';
 import Modal from '../components/common/Modal';
 import toast from 'react-hot-toast';
+import ConfirmDialog from '../components/common/ConfirmDialog';
 
 const MedicationRemindersPage: React.FC = () => {
     const [reminders, setReminders] = useState<MedicationReminder[]>([]);
@@ -24,6 +25,10 @@ const MedicationRemindersPage: React.FC = () => {
     const [showFormModal, setShowFormModal] = useState<boolean>(false);
     const [editingReminder, setEditingReminder] = useState<MedicationReminder | null>(null);
     const [isSubmittingForm, setIsSubmittingForm] = useState<boolean>(false);
+    
+    const [showConfirmDialog, setShowConfirmDialog] = useState<boolean>(false);
+    const [deleteId, setDeleteId] = useState<number | null>(null);
+    const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
     const sortReminders = (data: MedicationReminder[]): MedicationReminder[] => {
         return [...data].sort((a, b) => {
@@ -61,8 +66,9 @@ const MedicationRemindersPage: React.FC = () => {
                 console.warn("Unexpected reminders response:", response);
                 setError("Failed to process reminders data.");
             }
-        } catch (err: any) {
-            setError(err.message || "Failed to load medication reminders.");
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to load medication reminders.";
+            setError(errorMessage);
             console.error(err);
         } finally {
             setIsLoading(false);
@@ -100,7 +106,7 @@ const MedicationRemindersPage: React.FC = () => {
             setShowFormModal(false);
             setEditingReminder(null);
             await fetchReminders(null, true); // Refresh list completely after add/edit
-        } catch (err: any) {
+        } catch (err) {
             console.error("Failed to save reminder from page handler:", err);
             // Error is displayed within the form, but re-throwing allows form to catch it.
             throw err;
@@ -109,22 +115,35 @@ const MedicationRemindersPage: React.FC = () => {
         }
     };
 
-    const handleDelete = async (id: number) => {
-        if (!window.confirm("Are you sure you want to delete this reminder? This action cannot be undone.")) {
-            return;
-        }
+    const handleDelete = (id: number) => {
+        setDeleteId(id);
+        setShowConfirmDialog(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!deleteId) return;
+        setIsDeleting(true);
         const toastId = toast.loading("Deleting reminder...");
         setError(null);
         try {
-            await deleteMedicationReminder(id);
+            await deleteMedicationReminder(deleteId);
             toast.success("Reminder deleted successfully.", { id: toastId });
+            setShowConfirmDialog(false);
+            setDeleteId(null);
             await fetchReminders(null, true); // Refresh list
-        } catch (err: any) {
-            const errorMsg = err.message || "Failed to delete reminder.";
+        } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : "Failed to delete reminder.";
             setError(errorMsg);
             toast.error(errorMsg, { id: toastId });
             console.error(err);
+        } finally {
+            setIsDeleting(false);
         }
+    };
+
+    const handleCancelDelete = () => {
+        setShowConfirmDialog(false);
+        setDeleteId(null);
     };
 
     const handleToggleActive = async (id: number, newActiveState: boolean) => {
@@ -136,7 +155,7 @@ const MedicationRemindersPage: React.FC = () => {
             toast.success(`Reminder ${newActiveState ? 'activated' : 'deactivated'}.`);
             // Optionally re-fetch to ensure consistency if backend has other side effects
             // await fetchReminders(null, true);
-        } catch (error: any) {
+        } catch (error) {
             console.error("Failed to toggle reminder active state", error);
             setReminders(originalReminders); // Revert optimistic update
             toast.error("Could not update reminder status. Please try again.");
@@ -168,6 +187,17 @@ const MedicationRemindersPage: React.FC = () => {
                     isSubmitting={isSubmittingForm}
                 />
             </Modal>
+
+            <ConfirmDialog
+                isOpen={showConfirmDialog}
+                onClose={handleCancelDelete}
+                onConfirm={handleConfirmDelete}
+                title="Delete Medication Reminder"
+                message="Are you sure you want to delete this reminder? This action cannot be undone."
+                confirmText="Delete"
+                cancelText="Cancel"
+                isLoading={isDeleting}
+            />
 
             {isLoading && reminders.length === 0 && (
                 <div className="text-center py-10 text-muted">

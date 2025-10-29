@@ -1,8 +1,9 @@
 // src/features/user/components/ProfileEditForm.tsx
-import React, { useState, useEffect, useCallback, FormEvent } from 'react';
+import React, { useState, useEffect, useCallback, FormEvent, useRef } from 'react';
 import { User } from '../../../types/user';
-import { UserProfileUpdatePayload } from '../../../api/user';
-import { formatPhoneNumber, isValidEmail, isValidPhone } from '../../../utils';
+import { UserProfileUpdatePayload, uploadProfilePicture } from '../../../api/user';
+import { isValidPhone } from '../../../utils';
+import toast from 'react-hot-toast';
 import { 
     UserIcon, 
     PhoneIcon, 
@@ -11,7 +12,9 @@ import {
     HeartIcon, 
     ExclamationTriangleIcon,
     InformationCircleIcon,
-    CheckCircleIcon
+    CheckCircleIcon,
+    CameraIcon,
+    XMarkIcon
 } from '@heroicons/react/24/outline';
 
 interface ProfileEditFormProps {
@@ -76,6 +79,12 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
   const [formData, setFormData] = useState<UserProfileUpdatePayload>({});
   const [errors, setErrors] = useState<FormErrors>({});
   const [globalError, setGlobalError] = useState<string | null>(null);
+  
+  // Profile picture states
+  const [profilePicture, setProfilePicture] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isUploadingPicture, setIsUploadingPicture] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Initialize form data
   useEffect(() => {
@@ -116,6 +125,12 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
         notify_refill_reminder_email: initialData.notify_refill_reminder_email ?? true,
         notify_appointment_reminder_push: initialData.notify_appointment_reminder_push ?? true,
       });
+      
+      // Set initial profile picture
+      if (initialData.profile_picture) {
+        setProfilePicture(initialData.profile_picture);
+        setPreviewUrl(initialData.profile_picture);
+      }
     } else {
       setFormData(defaultData);
     }
@@ -231,9 +246,9 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
 
       try {
         await onSubmit(payload);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Profile update error:', err);
-        const errorData = err.response?.data;
+        const errorData = (err as { response?: { data?: unknown } }).response?.data;
         let errorMessage = 'Failed to update profile.';
         
         if (errorData && typeof errorData === 'object') {
@@ -243,7 +258,7 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
           errorMessage = messages || errorMessage;
         } else if (typeof errorData === 'string') {
           errorMessage = errorData;
-        } else if (err.message) {
+        } else if (err instanceof Error) {
           errorMessage = err.message;
         }
         
@@ -253,6 +268,69 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
     },
     [formData, validateField, onSubmit]
   );
+
+  const uploadPicture = useCallback(async (file: File) => {
+    setIsUploadingPicture(true);
+    try {
+      const updatedUser = await uploadProfilePicture(file);
+      setProfilePicture(updatedUser.profile_picture || null);
+      toast.success('Profile picture updated successfully!');
+    } catch (error) {
+      console.error('Failed to upload profile picture:', error);
+      toast.error('Failed to upload profile picture. Please try again.');
+      // Reset preview on error
+      setPreviewUrl(profilePicture);
+    } finally {
+      setIsUploadingPicture(false);
+    }
+  }, [profilePicture]);
+
+  // Handle profile picture selection
+  const handleProfilePictureChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      // Validate file type
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      if (!validTypes.includes(file.type)) {
+        toast.error('Please upload a valid image file (JPG, PNG, GIF, or WebP)');
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        toast.error('File size must be less than 5MB');
+        return;
+      }
+
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+
+      // Upload immediately
+      uploadPicture(file);
+    },
+    [uploadPicture]
+  );
+
+  const handleRemoveProfilePicture = useCallback(() => {
+    setPreviewUrl(null);
+    setProfilePicture(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    // Note: You might want to call an API endpoint to remove the picture from the backend
+    toast.success('Profile picture removed');
+  }, []);
+
+  const handleProfilePictureClick = () => {
+    fileInputRef.current?.click();
+  };
 
   const getFieldIcon = (fieldName: string) => {
     switch (fieldName) {
@@ -347,6 +425,73 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
           </div>
         </div>
       )}
+
+      {/* Profile Picture Upload */}
+      <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+          <CameraIcon className="h-5 w-5 mr-2 text-primary" />
+          Profile Picture
+        </h3>
+        <div className="flex items-center space-x-6">
+          {/* Profile Picture Preview */}
+          <div className="relative">
+            <div className="h-32 w-32 rounded-full overflow-hidden bg-gray-100 border-2 border-gray-200">
+              {previewUrl ? (
+                <img
+                  src={previewUrl}
+                  alt="Profile preview"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="h-full w-full flex items-center justify-center">
+                  <UserIcon className="h-16 w-16 text-gray-400" />
+                </div>
+              )}
+            </div>
+            {isUploadingPicture && (
+              <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+              </div>
+            )}
+          </div>
+
+          {/* Upload Controls */}
+          <div className="flex-1 space-y-3">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+              onChange={handleProfilePictureChange}
+              className="hidden"
+            />
+            <div className="flex space-x-3">
+              <button
+                type="button"
+                onClick={handleProfilePictureClick}
+                disabled={isUploadingPicture}
+                className="px-4 py-2 bg-primary text-white rounded-md text-sm font-medium hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center"
+              >
+                <CameraIcon className="h-4 w-4 mr-2" />
+                {previewUrl ? 'Change Picture' : 'Upload Picture'}
+              </button>
+              {previewUrl && (
+                <button
+                  type="button"
+                  onClick={handleRemoveProfilePicture}
+                  disabled={isUploadingPicture}
+                  className="px-4 py-2 bg-red-50 text-red-600 rounded-md text-sm font-medium hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center"
+                >
+                  <XMarkIcon className="h-4 w-4 mr-2" />
+                  Remove
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-gray-500">
+              JPG, PNG, GIF or WebP. Max file size 5MB.
+            </p>
+          </div>
+        </div>
+      </div>
 
       {/* Personal Information */}
       <div className="bg-white p-6 rounded-lg border border-gray-200">

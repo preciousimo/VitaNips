@@ -1,11 +1,10 @@
 // src/components/layout/Header.tsx
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
     UserIcon, 
     ArrowLeftOnRectangleIcon, 
-    Cog6ToothIcon, 
     BellAlertIcon,
     ChevronDownIcon,
     HeartIcon,
@@ -19,12 +18,8 @@ import NotificationBell from './NotificationBell';
 const Header: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Debug logging
-  console.log('Header render - isAuthenticated:', isAuthenticated, 'user:', user);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -146,6 +141,15 @@ const Header: React.FC = () => {
                         >
                           <UserIcon className="h-4 w-4 mr-3" />
                           Profile & Settings
+                        </Link>
+
+                        <Link
+                          to="/settings/notifications"
+                          onClick={() => setIsDropdownOpen(false)}
+                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200"
+                        >
+                          <BellAlertIcon className="h-4 w-4 mr-3" />
+                          Notification Settings
                         </Link>
 
                         <Link

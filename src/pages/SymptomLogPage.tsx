@@ -8,6 +8,8 @@ import SymptomLogListItem from '../features/health/components/SymptomLogListItem
 import SymptomLogForm from '../features/health/components/SymptomLogForm';
 import Modal from '../components/common/Modal';
 import toast from 'react-hot-toast';
+import { SkeletonList } from '../components/common/SkeletonLoader';
+import ConfirmDialog from '../components/common/ConfirmDialog';
 
 const SymptomLogPage: React.FC = () => {
     const [logs, setLogs] = useState<SymptomLog[]>([]);
@@ -20,6 +22,10 @@ const SymptomLogPage: React.FC = () => {
     const [showFormModal, setShowFormModal] = useState<boolean>(false);
     const [editingLog, setEditingLog] = useState<SymptomLog | null>(null);
     const [isSubmittingForm, setIsSubmittingForm] = useState<boolean>(false);
+    
+    const [showConfirmDialog, setShowConfirmDialog] = useState<boolean>(false);
+    const [deleteId, setDeleteId] = useState<number | null>(null);
+    const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
     const sortLogs = (data: SymptomLog[]): SymptomLog[] => {
         return [...data].sort((a, b) => new Date(b.date_experienced).getTime() - new Date(a.date_experienced).getTime());
@@ -36,7 +42,9 @@ const SymptomLogPage: React.FC = () => {
             setLogs(prev => sortLogs(url ? [...prev, ...newLogs] : newLogs));
             setNextPageUrl(response.next);
             if (reset || !url) setTotalCount(response.count);
-        } catch (err: any) { setError(err.message || "Failed to load symptom logs.");
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to load symptom logs.";
+            setError(errorMessage);
         } finally { setIsLoading(false); setIsLoadingMore(false); }
     }, []);
 
@@ -53,18 +61,35 @@ const SymptomLogPage: React.FC = () => {
             else await createSymptomLog(payload);
             setShowFormModal(false); setEditingLog(null);
             await fetchLogs(null, true);
-        } catch (err) { throw err;
         } finally { setIsSubmittingForm(false); }
     };
 
-    const handleDelete = async (id: number) => {
-        if (!window.confirm("Delete this symptom log entry?")) return;
+    const handleDelete = (id: number) => {
+        setDeleteId(id);
+        setShowConfirmDialog(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!deleteId) return;
+        setIsDeleting(true);
         const toastId = toast.loading("Deleting entry...");
         try {
-            await deleteSymptomLog(id);
+            await deleteSymptomLog(deleteId);
             toast.success("Symptom log entry deleted.", { id: toastId });
+            setShowConfirmDialog(false);
+            setDeleteId(null);
             await fetchLogs(null, true);
-        } catch (err: any) { toast.error(err.message || "Failed to delete entry.", { id: toastId });}
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to delete entry.";
+            toast.error(errorMessage, { id: toastId });
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    const handleCancelDelete = () => {
+        setShowConfirmDialog(false);
+        setDeleteId(null);
     };
 
     return (
@@ -82,8 +107,19 @@ const SymptomLogPage: React.FC = () => {
                 <SymptomLogForm initialData={editingLog} onSubmit={handleFormSubmit} onCancel={handleFormCancel} isSubmitting={isSubmittingForm} />
             </Modal>
 
+            <ConfirmDialog
+                isOpen={showConfirmDialog}
+                onClose={handleCancelDelete}
+                onConfirm={handleConfirmDelete}
+                title="Delete Symptom Log Entry"
+                message="Are you sure you want to delete this symptom log entry? This action cannot be undone."
+                confirmText="Delete"
+                cancelText="Cancel"
+                isLoading={isDeleting}
+            />
+
             {/* Loading, Error, Empty States as in VitalsLogPage */}
-            {isLoading && logs.length === 0 && <p className="text-center text-muted py-10">Loading symptom logs...</p>}
+            {isLoading && logs.length === 0 && <SkeletonList count={5} />}
             {error && <p className="text-red-600 text-center py-4 bg-red-50 rounded my-4">{error}</p>}
             {!isLoading && !error && logs.length === 0 && (
                  <div className="text-center py-16 bg-gray-50 rounded-lg shadow">

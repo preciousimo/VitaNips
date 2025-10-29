@@ -7,7 +7,7 @@ import { InsuranceClaim, InsuranceClaimPayload } from '../types/insuranceClaims'
 import ClaimListItem from '../features/insurance/components/ClaimListItem';
 import ClaimSubmissionForm from '../features/insurance/components/ClaimSubmissionForm';
 import Modal from '../components/common/Modal';
-import toast from 'react-hot-toast';
+import { SkeletonList } from '../components/common/SkeletonLoader';
 
 const UserClaimsPage: React.FC = () => {
     const [claims, setClaims] = useState<InsuranceClaim[]>([]);
@@ -35,7 +35,9 @@ const UserClaimsPage: React.FC = () => {
             setClaims(prev => sortClaims(url ? [...prev, ...newClaims] : newClaims));
             setNextPageUrl(response.next);
             if (reset || !url) setTotalCount(response.count);
-        } catch (err: any) { setError(err.message || "Failed to load your insurance claims.");
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to load your insurance claims.";
+            setError(errorMessage);
         } finally { setIsLoading(false); setIsLoadingMore(false); }
     }, []);
 
@@ -50,7 +52,6 @@ const UserClaimsPage: React.FC = () => {
             await createInsuranceClaim(payload);
             setShowFormModal(false);
             await fetchClaims(null, true); // Refresh list
-        } catch (err) { throw err; // Let form display its own detailed error
         } finally { setIsSubmittingForm(false); }
     };
 
@@ -69,7 +70,7 @@ const UserClaimsPage: React.FC = () => {
                 <ClaimSubmissionForm onSubmit={handleFormSubmit} onCancel={handleFormCancel} isSubmitting={isSubmittingForm} />
             </Modal>
 
-            {isLoading && claims.length === 0 && <p className="text-center text-muted py-10">Loading your claims...</p>}
+            {isLoading && claims.length === 0 && <SkeletonList count={5} />}
             {error && <p className="text-red-600 text-center py-4 bg-red-50 rounded my-4">{error}</p>}
             {!isLoading && !error && claims.length === 0 && (
                  <div className="text-center py-16 bg-gray-50 rounded-lg shadow">

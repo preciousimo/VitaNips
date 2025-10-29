@@ -45,3 +45,20 @@ export const updateUserProfile = async (payload: UserProfileUpdatePayload): Prom
         throw error;
     }
 };
+
+export const uploadProfilePicture = async (file: File): Promise<User> => {
+    try {
+        const formData = new FormData();
+        formData.append('profile_picture', file);
+        
+        const response = await axiosInstance.patch<User>('/users/profile/', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Failed to upload profile picture:', error);
+        throw error;
+    }
+};
