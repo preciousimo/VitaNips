@@ -1,6 +1,6 @@
 {
-    "welcomeMessage": "Bon retour, {{name}}!",
-    "dashboardTitle": "Tableau de bord",
+    "welcomeMessage": "Voici ce qui se passe avec votre santé aujourd'hui.",
+    "dashboardTitle": "Bon retour",
     "doctorsNav": "Médecins",
     "pharmaciesNav": "Pharmacies",
     "remindersNav": "Rappels",

@@ -1,8 +1,8 @@
 // src/features/telehealth/components/VideoCallUI.tsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import TwilioVideo, {
-    Room, LocalTrack, RemoteParticipant, RemoteTrack, LocalVideoTrack,
-    LocalAudioTrack, RemoteVideoTrack, RemoteAudioTrack, ConnectOptions,
+    Room, RemoteParticipant, RemoteTrack,
+    LocalVideoTrack, LocalAudioTrack, RemoteVideoTrack, RemoteAudioTrack, ConnectOptions,
     TwilioError
 } from 'twilio-video';
 import { MicrophoneIcon, VideoCameraIcon, VideoCameraSlashIcon, PhoneXMarkIcon, UserIcon } from '@heroicons/react/24/solid';
@@ -132,16 +132,20 @@ const VideoCallUI: React.FC<VideoCallUIProps> = ({ token, roomName, onDisconnect
     
                 currentRoom.localParticipant.tracks.forEach(publication => {
                     const track = publication.track;
-                    if (track) {
-                        if (typeof track.stop === 'function') {
-                            track.stop();
-                            console.log(`Stopped local track: ${track.kind} ${track.name || track.id}`);
+                    if (track && 'kind' in track && (track.kind === 'video' || track.kind === 'audio')) {
+                        const mediaTrack = track as LocalAudioTrack | LocalVideoTrack;
+                        const mt = mediaTrack as { stop?: () => void };
+                        if (typeof mt.stop === 'function') {
+                            mt.stop();
+                            console.log(`Stopped local track: ${mediaTrack.kind} ${mediaTrack.name || ''}`);
                         }
-                        const elements = track.detach();
-                        elements.forEach(element => {
-                            element.remove();
-                            console.log(`Detached and removed element for local track: ${track.kind}`);
-                        });
+                        if (typeof mediaTrack.detach === 'function') {
+                            const elements = mediaTrack.detach();
+                            elements.forEach((element: Element) => {
+                                element.remove();
+                                console.log(`Detached and removed element for local track: ${mediaTrack.kind}`);
+                            });
+                        }
                     }
                 });
     
@@ -260,7 +264,7 @@ const VideoCallUI: React.FC<VideoCallUIProps> = ({ token, roomName, onDisconnect
                 onDisconnect();
             }
         };
-    }, [token, roomName, cleanupAndDisconnect]); 
+    }, [token, roomName, cleanupAndDisconnect, onDisconnect]); 
 
 
      const toggleVideo = useCallback(() => {

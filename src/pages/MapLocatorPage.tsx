@@ -38,11 +38,10 @@ const RecenterMap = ({ center }: { center: LatLngExpression }) => {
 const MapLocatorPage: React.FC = () => {
     const [mapCenter, setMapCenter] = useState<LatLngExpression>([7.3776, 3.9470]);
     const [userLocation, setUserLocation] = useState<LatLngExpression | null>(null);
-    const [zoomLevel, setZoomLevel] = useState<number>(13);
+    const [zoomLevel] = useState<number>(13);
     const [radiusKm, setRadiusKm] = useState<number>(5);
     const [serviceType, setServiceType] = useState<'all' | 'pharmacy' | 'hospital'>('all');
     const [services, setServices] = useState<Service[]>([]);
-    const [selectedService, setSelectedService] = useState<Service | null>(null);
     const [isLoadingLocation, setIsLoadingLocation] = useState<boolean>(true);
     const [isLoadingServices, setIsLoadingServices] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
@@ -109,9 +108,10 @@ const MapLocatorPage: React.FC = () => {
             const uniqueResults = Array.from(new Map(combinedResults.map(item => [item.id, item])).values());
             setServices(uniqueResults);
 
-        } catch (fetchError: any) {
+        } catch (fetchError: unknown) {
             console.error("Failed to fetch services:", fetchError);
-            setError(fetchError.message || "Failed to load nearby services.");
+            const message = fetchError instanceof Error && fetchError.message ? fetchError.message : "Failed to load nearby services.";
+            setError(message);
             setServices([]);
         } finally {
             setIsLoadingServices(false);
@@ -134,7 +134,7 @@ const MapLocatorPage: React.FC = () => {
                     <select
                         id="serviceType"
                         value={serviceType}
-                        onChange={(e) => setServiceType(e.target.value as any)}
+                        onChange={(e) => setServiceType(e.target.value as 'all' | 'pharmacy' | 'hospital')}
                         className="input-field py-1"
                         disabled={isLoadingServices}
                     >

@@ -6,12 +6,22 @@ export default {
   ],
   theme: {
     extend: {
+      container: {
+        center: true,
+        padding: {
+          DEFAULT: '1rem',
+          sm: '1.25rem',
+          md: '2rem',
+          lg: '2.5rem',
+          xl: '3rem',
+        },
+      },
       colors: {
-        // Define colors based on your logo
+        // Define colors based on your logo (#32a852)
         primary: {
-          light: '#6fbf73', // Lighter shade of green
-          DEFAULT: '#4CAF50', // Main green (adjust if you have the exact hex)
-          dark: '#388e3c', // Darker shade of green
+          light: '#5bc475',   // Lighter shade
+          DEFAULT: '#32a852', // VitaNips brand green
+          dark: '#267a3e',    // Darker shade
         },
         secondary: '#333333', // Dark gray / Almost black for text
         accent: '#ffc107',   // Example accent color (Amber) - choose one if needed
@@ -22,6 +32,13 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'], // Example: Using Inter font
+      },
+      borderRadius: {
+        xl: '1rem',
+        '2xl': '1.25rem',
+      },
+      boxShadow: {
+        card: '0 10px 30px -12px rgba(0,0,0,0.2)',
       },
     },
   },

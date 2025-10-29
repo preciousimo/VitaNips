@@ -11,14 +11,12 @@ import {
     CheckCircleIcon,
     ArrowRightIcon,
     PlayIcon,
-    StarIcon,
-    ChatBubbleLeftRightIcon,
-    MapPinIcon,
-    ClockIcon,
-    DocumentTextIcon
+    StarIcon
 } from '@heroicons/react/24/outline';
+import { useAuth } from '../contexts/AuthContext';
 
 const LandingPage: React.FC = () => {
+    const { isAuthenticated, user } = useAuth();
     const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
 
     const features = [
@@ -114,10 +112,21 @@ const LandingPage: React.FC = () => {
                             <a href="#features" className="text-gray-600 hover:text-primary transition-colors">Features</a>
                             <a href="#testimonials" className="text-gray-600 hover:text-primary transition-colors">Testimonials</a>
                             <a href="#pricing" className="text-gray-600 hover:text-primary transition-colors">Pricing</a>
-                            <Link to="/login" className="text-gray-600 hover:text-primary transition-colors">Login</Link>
-                            <Link to="/register" className="btn-primary px-6 py-2 rounded-lg">
-                                Get Started
-                            </Link>
+                            {isAuthenticated ? (
+                                <>
+                                    <Link to="/dashboard" className="text-gray-600 hover:text-primary transition-colors">Dashboard</Link>
+                                    <Link to="/profile" className="btn-primary px-6 py-2 rounded-lg">
+                                        {user?.first_name || 'My Account'}
+                                    </Link>
+                                </>
+                            ) : (
+                                <>
+                                    <Link to="/login" className="text-gray-600 hover:text-primary transition-colors">Login</Link>
+                                    <Link to="/register" className="btn-primary px-6 py-2 rounded-lg">
+                                        Get Started
+                                    </Link>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -130,42 +139,77 @@ const LandingPage: React.FC = () => {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                         <div>
                             <h1 className="text-4xl lg:text-6xl font-bold leading-tight mb-6">
-                                Your Health, 
-                                <span className="block text-yellow-300">Simplified</span>
+                                {isAuthenticated && user ? (
+                                    <>
+                                        Welcome Back,
+                                        <span className="block text-yellow-300">{user.first_name || 'User'}!</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        Your Health, 
+                                        <span className="block text-yellow-300">Simplified</span>
+                                    </>
+                                )}
                             </h1>
                             <p className="text-xl lg:text-2xl text-gray-100 mb-8 leading-relaxed">
-                                The all-in-one platform that connects you with healthcare providers, 
-                                manages your medications, and tracks your health journey.
+                                {isAuthenticated 
+                                    ? "Continue managing your health journey with our comprehensive platform."
+                                    : "The all-in-one platform that connects you with healthcare providers, manages your medications, and tracks your health journey."
+                                }
                             </p>
                             <div className="flex flex-col sm:flex-row gap-4">
-                                <Link 
-                                    to="/register" 
-                                    className="bg-white text-primary px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-colors inline-flex items-center justify-center"
-                                >
-                                    Start Your Health Journey
-                                    <ArrowRightIcon className="ml-2 h-5 w-5" />
-                                </Link>
-                                <button 
-                                    onClick={() => setIsVideoModalOpen(true)}
-                                    className="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-white hover:text-primary transition-colors inline-flex items-center justify-center"
-                                >
-                                    <PlayIcon className="mr-2 h-5 w-5" />
-                                    Watch Demo
-                                </button>
+                                {isAuthenticated ? (
+                                    <>
+                                        <Link 
+                                            to="/dashboard" 
+                                            className="bg-white text-primary px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-colors inline-flex items-center justify-center"
+                                        >
+                                            Go to Dashboard
+                                            <ArrowRightIcon className="ml-2 h-5 w-5" />
+                                        </Link>
+                                        <Link 
+                                            to="/doctors" 
+                                            className="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-white hover:text-primary transition-colors inline-flex items-center justify-center"
+                                        >
+                                            Find a Doctor
+                                        </Link>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Link 
+                                            to="/register" 
+                                            className="bg-white text-primary px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-colors inline-flex items-center justify-center"
+                                        >
+                                            Start Your Health Journey
+                                            <ArrowRightIcon className="ml-2 h-5 w-5" />
+                                        </Link>
+                                        <button 
+                                            onClick={() => setIsVideoModalOpen(true)}
+                                            className="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-white hover:text-primary transition-colors inline-flex items-center justify-center"
+                                        >
+                                            <PlayIcon className="mr-2 h-5 w-5" />
+                                            Watch Demo
+                                        </button>
+                                    </>
+                                )}
                             </div>
                             <div className="mt-8 flex items-center space-x-6 text-sm">
-                                <div className="flex items-center">
-                                    <CheckCircleIcon className="h-5 w-5 text-green-400 mr-2" />
-                                    <span>Free to start</span>
-                                </div>
-                                <div className="flex items-center">
-                                    <CheckCircleIcon className="h-5 w-5 text-green-400 mr-2" />
-                                    <span>No credit card required</span>
-                                </div>
-                                <div className="flex items-center">
-                                    <CheckCircleIcon className="h-5 w-5 text-green-400 mr-2" />
-                                    <span>Setup in 2 minutes</span>
-                                </div>
+                                {!isAuthenticated && (
+                                    <>
+                                        <div className="flex items-center">
+                                            <CheckCircleIcon className="h-5 w-5 text-green-400 mr-2" />
+                                            <span>Free to start</span>
+                                        </div>
+                                        <div className="flex items-center">
+                                            <CheckCircleIcon className="h-5 w-5 text-green-400 mr-2" />
+                                            <span>No credit card required</span>
+                                        </div>
+                                        <div className="flex items-center">
+                                            <CheckCircleIcon className="h-5 w-5 text-green-400 mr-2" />
+                                            <span>Setup in 2 minutes</span>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
                         <div className="relative">
@@ -335,30 +379,58 @@ const LandingPage: React.FC = () => {
             {/* CTA Section */}
             <section className="py-20 bg-primary text-white">
                 <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-                    <h2 className="text-3xl md:text-4xl font-bold mb-6">
-                        Ready to take control of your health?
-                    </h2>
-                    <p className="text-xl text-gray-100 mb-8">
-                        Join thousands of users who have already transformed their healthcare experience.
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <Link 
-                            to="/register" 
-                            className="bg-white text-primary px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-colors inline-flex items-center justify-center"
-                        >
-                            Get Started Free
-                            <ArrowRightIcon className="ml-2 h-5 w-5" />
-                        </Link>
-                        <Link 
-                            to="/login" 
-                            className="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-white hover:text-primary transition-colors"
-                        >
-                            Sign In
-                        </Link>
-                    </div>
-                    <p className="text-sm text-gray-300 mt-4">
-                        No credit card required • Free forever plan • Setup in 2 minutes
-                    </p>
+                    {isAuthenticated ? (
+                        <>
+                            <h2 className="text-3xl md:text-4xl font-bold mb-6">
+                                Ready to manage your health today?
+                            </h2>
+                            <p className="text-xl text-gray-100 mb-8">
+                                Book an appointment, check your prescriptions, or explore health resources.
+                            </p>
+                            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                                <Link 
+                                    to="/doctors" 
+                                    className="bg-white text-primary px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-colors inline-flex items-center justify-center"
+                                >
+                                    Find a Doctor
+                                    <ArrowRightIcon className="ml-2 h-5 w-5" />
+                                </Link>
+                                <Link 
+                                    to="/appointments" 
+                                    className="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-white hover:text-primary transition-colors"
+                                >
+                                    My Appointments
+                                </Link>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <h2 className="text-3xl md:text-4xl font-bold mb-6">
+                                Ready to take control of your health?
+                            </h2>
+                            <p className="text-xl text-gray-100 mb-8">
+                                Join thousands of users who have already transformed their healthcare experience.
+                            </p>
+                            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                                <Link 
+                                    to="/register" 
+                                    className="bg-white text-primary px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-colors inline-flex items-center justify-center"
+                                >
+                                    Get Started Free
+                                    <ArrowRightIcon className="ml-2 h-5 w-5" />
+                                </Link>
+                                <Link 
+                                    to="/login" 
+                                    className="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-white hover:text-primary transition-colors"
+                                >
+                                    Sign In
+                                </Link>
+                            </div>
+                            <p className="text-sm text-gray-300 mt-4">
+                                No credit card required • Free forever plan • Setup in 2 minutes
+                            </p>
+                        </>
+                    )}
                 </div>
             </section>
 

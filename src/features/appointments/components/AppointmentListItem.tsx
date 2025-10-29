@@ -1,7 +1,7 @@
 // src/features/appointments/components/AppointmentListItem.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { CalendarIcon, ClockIcon, UserIcon, VideoCameraIcon, BuildingOfficeIcon, CheckCircleIcon, XCircleIcon, InformationCircleIcon } from '@heroicons/react/24/outline'; // Use outline for status?
+import { CalendarIcon, ClockIcon, VideoCameraIcon, BuildingOfficeIcon, CheckCircleIcon, XCircleIcon, InformationCircleIcon } from '@heroicons/react/24/outline'; // Use outline for status?
 import { Appointment } from '../../../types/appointments';
 
 interface AppointmentListItemProps {
@@ -54,9 +54,9 @@ const AppointmentListItem: React.FC<AppointmentListItemProps> = ({ appointment, 
                         <ClockIcon className="h-4 w-4 mr-1.5" />
                         <span>{formatTime(appointment.start_time)} - {formatTime(appointment.end_time)}</span>
                     </div>
-                     <p className="text-lg font-semibold text-primary group-hover:underline mb-1 inline-block">
-                        Doctor ID: {appointment.doctor}
-+                    </p>
+                            <p className="text-lg font-semibold text-primary group-hover:underline mb-1 inline-block">
+                                Doctor ID: {appointment.doctor}
+                            </p>
                     <p className="text-sm text-gray-600 mb-2">
                         <span className="font-medium">Reason:</span> {appointment.reason || 'Not specified'}
                     </p>

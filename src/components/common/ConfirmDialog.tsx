@@ -1,5 +1,5 @@
 // src/components/common/ConfirmDialog.tsx
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { ExclamationTriangleIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 interface ConfirmDialogProps {
@@ -27,6 +27,55 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
     icon,
     isLoading = false,
 }) => {
+    const dialogRef = useRef<HTMLDivElement>(null);
+    const cancelButtonRef = useRef<HTMLButtonElement>(null);
+
+    // Focus management and keyboard handling
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const handleEscape = (event: KeyboardEvent) => {
+            if (event.key === 'Escape' && !isLoading) {
+                onClose();
+            }
+        };
+
+        const handleTab = (event: KeyboardEvent) => {
+            if (event.key !== 'Tab' || !dialogRef.current) return;
+
+            const focusableElements = dialogRef.current.querySelectorAll<HTMLElement>(
+                'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled])'
+            );
+            const firstElement = focusableElements[0];
+            const lastElement = focusableElements[focusableElements.length - 1];
+
+            if (event.shiftKey) {
+                if (document.activeElement === firstElement) {
+                    event.preventDefault();
+                    lastElement?.focus();
+                }
+            } else {
+                if (document.activeElement === lastElement) {
+                    event.preventDefault();
+                    firstElement?.focus();
+                }
+            }
+        };
+
+        // Focus the cancel button when dialog opens
+        cancelButtonRef.current?.focus();
+
+        document.addEventListener('keydown', handleEscape);
+        document.addEventListener('keydown', handleTab);
+        document.body.style.overflow = 'hidden';
+
+        return () => {
+            document.removeEventListener('keydown', handleEscape);
+            document.removeEventListener('keydown', handleTab);
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen, isLoading, onClose]);
+
     if (!isOpen) return null;
 
     const handleConfirm = () => {
@@ -43,54 +92,62 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         <div
             className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
             onClick={handleBackdropClick}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirm-dialog-title"
+            aria-describedby="confirm-dialog-description"
         >
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 relative animate-fadeIn">
+            <div ref={dialogRef} className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 relative animate-fadeIn">
                 {/* Close button */}
                 <button
                     onClick={onClose}
                     disabled={isLoading}
-                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-primary rounded"
                     aria-label="Close dialog"
                 >
-                    <XMarkIcon className="h-5 w-5" />
+                    <XMarkIcon className="h-5 w-5" aria-hidden="true" />
                 </button>
 
                 {/* Icon */}
-                <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mb-4">
+                <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mb-4" aria-hidden="true">
                     {icon || <ExclamationTriangleIcon className="h-6 w-6 text-red-600" />}
                 </div>
 
                 {/* Title */}
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                <h3 id="confirm-dialog-title" className="text-lg font-semibold text-gray-900 mb-2">
                     {title}
                 </h3>
 
                 {/* Message */}
-                <p className="text-gray-600 mb-6">
+                <p id="confirm-dialog-description" className="text-gray-600 mb-6">
                     {message}
                 </p>
 
                 {/* Actions */}
                 <div className="flex space-x-3 justify-end">
                     <button
+                        ref={cancelButtonRef}
                         onClick={onClose}
                         disabled={isLoading}
-                        className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary"
+                        aria-label={cancelText}
                     >
                         {cancelText}
                     </button>
                     <button
                         onClick={handleConfirm}
                         disabled={isLoading}
-                        className={`px-4 py-2 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${confirmButtonClass}`}
+                        className={`px-4 py-2 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 ${confirmButtonClass}`}
+                        aria-label={isLoading ? 'Processing, please wait' : confirmText}
                     >
                         {isLoading ? (
                             <span className="flex items-center">
-                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>
-                                Processing...
+                                <span>Processing...</span>
+                                <span className="sr-only">Please wait</span>
                             </span>
                         ) : (
                             confirmText

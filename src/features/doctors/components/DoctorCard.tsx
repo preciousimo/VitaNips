@@ -3,22 +3,25 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { StarIcon, CheckBadgeIcon } from '@heroicons/react/24/solid';
 import { Doctor } from '../../../types/doctors';
+import SmartImage from '../../../components/common/SmartImage';
 
 interface DoctorCardProps {
   doctor: Doctor;
 }
 
 const DoctorCard: React.FC<DoctorCardProps> = ({ doctor }) => {
-  const placeholderImage = '/path/to/default-doctor-avatar.png';
+  const placeholderImage = '/images/doctor-placeholder.svg';
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 ease-in-out flex flex-col">
-      <div className="h-48 bg-gray-200 flex items-center justify-center">
-        <img
+    <div className="card overflow-hidden flex flex-col hover:scale-[1.02] transition-all duration-200">
+      <div className="relative overflow-hidden aspect-video bg-gray-100">
+        <SmartImage
           src={doctor.profile_picture || placeholderImage}
+          placeholderSrc={placeholderImage}
           alt={`Dr. ${doctor.first_name} ${doctor.last_name}`}
-          className="w-full h-full object-cover"
-          onError={(e) => (e.currentTarget.src = placeholderImage)}
+          className="absolute inset-0"
+          eager={false}
+          sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 100vw"
         />
       </div>
       <div className="p-5 flex flex-col flex-grow">
@@ -27,7 +30,7 @@ const DoctorCard: React.FC<DoctorCardProps> = ({ doctor }) => {
              {doctor.full_name}
            </h3>
            {doctor.is_verified && (
-                <CheckBadgeIcon className="h-6 w-6 text-primary" title="Verified"/>
+                <CheckBadgeIcon className="h-6 w-6 text-primary flex-shrink-0 ml-2" title="Verified"/>
            )}
         </div>
 
@@ -36,7 +39,7 @@ const DoctorCard: React.FC<DoctorCardProps> = ({ doctor }) => {
         </p>
 
         <div className="flex items-center text-sm text-muted mb-3">
-          <StarIcon className="h-4 w-4 text-yellow-400 mr-1" />
+          <StarIcon className="h-4 w-4 text-yellow-400 mr-1 flex-shrink-0" />
           <span>{doctor.average_rating > 0 ? doctor.average_rating.toFixed(1) : 'No ratings'}</span>
           <span className="mx-2">|</span>
           <span>{doctor.years_of_experience} Yrs Experience</span>
@@ -48,7 +51,7 @@ const DoctorCard: React.FC<DoctorCardProps> = ({ doctor }) => {
 
         <Link
           to={`/doctors/${doctor.id}`}
-          className="mt-auto block w-full text-center bg-primary-light text-primary-dark font-semibold py-2 px-4 rounded hover:bg-primary hover:text-white transition duration-150 ease-in-out"
+          className="mt-auto btn btn-outline text-sm py-2 px-4 text-center"
         >
           View Profile
         </Link>

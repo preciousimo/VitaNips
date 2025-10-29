@@ -2,6 +2,7 @@
 import React, { useState, FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axiosInstance from '../../../api/axiosInstance';
+import { toast } from 'react-hot-toast';
 
 const RegisterPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -13,6 +14,8 @@ const RegisterPage: React.FC = () => {
     password2: '',
   });
 
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPassword2, setShowPassword2] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -44,118 +47,209 @@ const RegisterPage: React.FC = () => {
         password2: formData.password2,
       });
 
-      setSuccess('Registration successful! Redirecting to login...');
-      setIsLoading(false);
+      const msg = 'Registration successful! Redirecting to login...';
+      setSuccess(msg);
+      toast.success('Welcome! Your account was created.');
 
       setTimeout(() => {
         navigate('/login');
-      }, 2000);
+      }, 1200);
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       let errorMessage = 'Registration failed. Please try again.';
-      if (err.response?.data) {
-        const errors = err.response.data;
-        if (errors.email) errorMessage = `Email: ${errors.email.join(', ')}`;
-        else if (errors.username) errorMessage = `Username: ${errors.username.join(', ')}`;
-        else if (errors.password) errorMessage = `Password: ${errors.password.join(', ')}`;
+      const axiosErr = err as { response?: { data?: unknown } } | undefined;
+      const data = axiosErr?.response?.data;
+      if (typeof data === 'object' && data !== null) {
+        const obj = data as Record<string, unknown>;
+        if (Array.isArray(obj.email)) errorMessage = `Email: ${(obj.email as unknown[]).join(', ')}`;
+        else if (Array.isArray(obj.username)) errorMessage = `Username: ${(obj.username as unknown[]).join(', ')}`;
+        else if (Array.isArray(obj.password)) errorMessage = `Password: ${(obj.password as unknown[]).join(', ')}`;
         else {
-          const errorDetails = Object.values(errors).flat().join(' ');
-          if (errorDetails) errorMessage = errorDetails;
+          const values = Object.values(obj);
+          const flat = values
+            .map((v) => (Array.isArray(v) ? v.join(' ') : typeof v === 'string' ? v : ''))
+            .filter(Boolean)
+            .join(' ');
+          if (flat) errorMessage = flat;
         }
       }
       setError(errorMessage);
+    } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-tr from-gray-100 to-blue-100 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-md">
-        <div className="mb-6 text-center">
-          <img className="mx-auto h-12 w-auto" src="/logo.png" alt="VitaNips Logo" />
-          <h2 className="mt-4 text-2xl font-bold text-gray-800">Create your VitaNips account</h2>
+    <div className="min-h-screen grid lg:grid-cols-2 bg-white">
+      {/* Left hero panel */}
+      <div className="hidden lg:flex items-center justify-center p-12">
+        <div className="hero-gradient w-full h-[80vh] rounded-3xl relative overflow-hidden flex items-center justify-center shadow-[0_30px_80px_-20px_rgba(0,0,0,0.25)]">
+          <div className="absolute inset-0 bg-white/10" />
+          <div className="relative z-10 text-center text-white px-10">
+            <img src="/logo.png" alt="VitaNips" className="mx-auto h-20 drop-shadow-md" />
+            <h1 className="mt-6 text-4xl font-extrabold tracking-tight">Join <span className="whitespace-nowrap">VitaNips</span></h1>
+            <p className="mt-3 text-white/90 max-w-md mx-auto text-balance">
+              Create your account to manage health records, appointments, and more.
+            </p>
+          </div>
         </div>
+      </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && <div className="text-sm text-red-600 text-center">{error}</div>}
-          {success && <div className="text-sm text-green-600 text-center">{success}</div>}
+      {/* Right form panel */}
+      <div className="flex items-center justify-center p-6 lg:p-12 bg-surface">
+        <div className="w-full max-w-md">
+          <div className="card p-8 sm:p-10">
+            <div className="text-center">
+              <img className="mx-auto h-14" src="/logo.png" alt="VitaNips Logo" />
+              <h2 className="mt-4 text-2xl sm:text-3xl font-bold">
+                Create your <span className="gradient-text">VitaNips</span> account
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">It only takes a minute.</p>
+            </div>
 
-          <input
-            name="first_name"
-            type="text"
-            required
-            placeholder="First Name"
-            value={formData.first_name}
-            onChange={handleChange}
-            disabled={isLoading}
-            className="w-full px-4 py-2 border rounded-md focus:ring focus:ring-primary focus:outline-none"
-          />
-          <input
-            name="last_name"
-            type="text"
-            required
-            placeholder="Last Name"
-            value={formData.last_name}
-            onChange={handleChange}
-            disabled={isLoading}
-            className="w-full px-4 py-2 border rounded-md focus:ring focus:ring-primary focus:outline-none"
-          />
-          <input
-            name="email"
-            type="email"
-            required
-            placeholder="Email Address"
-            value={formData.email}
-            onChange={handleChange}
-            disabled={isLoading}
-            className="w-full px-4 py-2 border rounded-md focus:ring focus:ring-primary focus:outline-none"
-          />
-          <input
-            name="username"
-            type="text"
-            required
-            placeholder="Username"
-            value={formData.username}
-            onChange={handleChange}
-            disabled={isLoading}
-            className="w-full px-4 py-2 border rounded-md focus:ring focus:ring-primary focus:outline-none"
-          />
-          <input
-            name="password"
-            type="password"
-            required
-            placeholder="Password"
-            value={formData.password}
-            onChange={handleChange}
-            disabled={isLoading}
-            className="w-full px-4 py-2 border rounded-md focus:ring focus:ring-primary focus:outline-none"
-          />
-          <input
-            name="password2"
-            type="password"
-            required
-            placeholder="Confirm Password"
-            value={formData.password2}
-            onChange={handleChange}
-            disabled={isLoading}
-            className="w-full px-4 py-2 border rounded-md focus:ring focus:ring-primary focus:outline-none"
-          />
+            {error && <div role="alert" aria-live="assertive" className="mt-5 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">{error}</div>}
+            {success && <div className="mt-5 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm">{success}</div>}
 
-          <button
-            type="submit"
-            className="w-full py-2 px-4 bg-primary hover:bg-primary-dark text-white font-semibold rounded-md transition duration-200"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Registering...' : 'Register'}
-          </button>
-        </form>
+            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="first_name" className="block text-sm font-medium text-gray-700">First name</label>
+                  <input
+                    id="first_name"
+                    name="first_name"
+                    type="text"
+                    required
+                    placeholder="Jane"
+                    value={formData.first_name}
+                    onChange={handleChange}
+                    disabled={isLoading}
+                    className="input-field mt-1"
+                    autoComplete="given-name"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="last_name" className="block text-sm font-medium text-gray-700">Last name</label>
+                  <input
+                    id="last_name"
+                    name="last_name"
+                    type="text"
+                    required
+                    placeholder="Doe"
+                    value={formData.last_name}
+                    onChange={handleChange}
+                    disabled={isLoading}
+                    className="input-field mt-1"
+                    autoComplete="family-name"
+                  />
+                </div>
+              </div>
 
-        <p className="mt-6 text-center text-sm text-gray-600">
-          Already have an account?{' '}
-          <Link to="/login" className="text-primary hover:underline">
-            Sign in
-          </Link>
-        </p>
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email address</label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  placeholder="you@example.com"
+                  value={formData.email}
+                  onChange={handleChange}
+                  disabled={isLoading}
+                  className="input-field mt-1"
+                  autoComplete="email"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="username" className="block text-sm font-medium text-gray-700">Username</label>
+                <input
+                  id="username"
+                  name="username"
+                  type="text"
+                  required
+                  placeholder="yourname"
+                  value={formData.username}
+                  onChange={handleChange}
+                  disabled={isLoading}
+                  className="input-field mt-1"
+                  autoComplete="username"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
+                <div className="relative mt-1">
+                  <input
+                    id="password"
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    placeholder="••••••••"
+                    value={formData.password}
+                    onChange={handleChange}
+                    disabled={isLoading}
+                    className="input-field pr-10"
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((s) => !s)}
+                    className="absolute inset-y-0 right-2 my-auto h-8 px-2 rounded-md text-sm text-gray-600 hover:bg-gray-100"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+                <p className="mt-1 text-xs text-gray-500">Use at least 8 characters with a mix of letters and numbers.</p>
+              </div>
+
+              <div>
+                <label htmlFor="password2" className="block text-sm font-medium text-gray-700">Confirm password</label>
+                <div className="relative mt-1">
+                  <input
+                    id="password2"
+                    name="password2"
+                    type={showPassword2 ? 'text' : 'password'}
+                    required
+                    placeholder="••••••••"
+                    value={formData.password2}
+                    onChange={handleChange}
+                    disabled={isLoading}
+                    className="input-field pr-10"
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword2((s) => !s)}
+                    className="absolute inset-y-0 right-2 my-auto h-8 px-2 rounded-md text-sm text-gray-600 hover:bg-gray-100"
+                    aria-label={showPassword2 ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword2 ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="btn btn-primary w-full"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Registering…' : 'Create account'}
+              </button>
+            </form>
+
+            <p className="mt-6 text-center text-sm text-gray-600">
+              Already have an account?{' '}
+              <Link to="/login" className="text-primary hover:text-primary-dark font-medium">
+                Sign in
+              </Link>
+            </p>
+          </div>
+
+          <p className="mt-6 text-center text-xs text-gray-500">
+            By creating an account you agree to our <a href="#" className="text-primary">Terms</a> and <a href="#" className="text-primary">Privacy Policy</a>.
+          </p>
+        </div>
       </div>
     </div>
   );

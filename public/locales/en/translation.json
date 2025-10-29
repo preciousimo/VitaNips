@@ -1,6 +1,6 @@
 {
-    "welcomeMessage": "Welcome back, {{name}}!",
-    "dashboardTitle": "Dashboard",
+    "welcomeMessage": "Here's what's happening with your health today.",
+    "dashboardTitle": "Welcome back",
     "doctorsNav": "Doctors",
     "pharmaciesNav": "Pharmacies",
     "remindersNav": "Reminders",

@@ -13,6 +13,7 @@ import ReviewCard from '../features/doctors/components/ReviewCard';
 import AvailabilityDisplay from '../features/doctors/components/AvailabilityDisplay';
 import AppointmentBookingForm from '../features/appointments/components/AppointmentBookingForm';
 import Modal from '../components/common/Modal';
+import SmartImage from '../components/common/SmartImage';
 import { useAuth } from '../contexts/AuthContext';
 
 const LoadingSpinner: React.FC = () => <div className="text-center py-4"><p className="text-muted">Loading...</p></div>;
@@ -114,7 +115,7 @@ const DoctorDetailPage: React.FC = () => {
 
   const [showBookingModal, setShowBookingModal] = useState<boolean>(false);
 
-  const placeholderImage = '/default-doctor-avatar.png';
+  const placeholderImage = '/images/doctor-placeholder.svg';
 
   const followUpHandledRef = useRef(false);
 
@@ -274,9 +275,15 @@ useEffect(() => {
       <div className="bg-white rounded-xl shadow-2xl overflow-hidden">
         <div className="p-6 md:flex md:items-center md:space-x-8 bg-gradient-to-br from-sky-50 via-indigo-50 to-purple-50">
           <div className="md:w-1/3 lg:w-1/4 flex justify-center md:justify-start mb-6 md:mb-0">
-            <img src={doctor.profile_picture || placeholderImage} alt={doctor.full_name}
-              className="h-40 w-40 rounded-full object-cover border-4 border-white shadow-lg"
-              onError={(e) => { (e.target as HTMLImageElement).src = placeholderImage; }} />
+            <SmartImage
+              src={doctor.profile_picture || placeholderImage}
+              placeholderSrc={placeholderImage}
+              alt={doctor.full_name}
+              width={160}
+              height={160}
+              eager={true}
+              className="h-40 w-40 rounded-full overflow-hidden border-4 border-white shadow-lg"
+            />
           </div>
           <div className="text-center md:text-left md:flex-grow">
             <div className="flex items-center justify-center md:justify-start mb-1">

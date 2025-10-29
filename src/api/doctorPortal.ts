@@ -1,7 +1,6 @@
 // src/api/doctorPortal.ts
 import axiosInstance from './axiosInstance';
 import { PaginatedResponse } from '../types/common';
-import { Appointment } from '../types/appointments'; // User-facing Appointment type
 import { Prescription as UserPrescription } from '../types/prescriptions'; // User-facing Prescription type
 
 // Type for appointments listed for doctors to write prescriptions

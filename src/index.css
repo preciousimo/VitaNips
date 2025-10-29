@@ -4,11 +4,11 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom CSS Variables */
+/* Custom CSS Variables (overridable at runtime via utils/branding.ts) */
 :root {
-  --primary: #2563eb;
-  --primary-dark: #1d4ed8;
-  --primary-light: #dbeafe;
+  --primary: #32a852;       /* VitaNips brand green */
+  --primary-dark: #267a3e;  /* darker shade */
+  --primary-light: #e6f7eb; /* light tint */
   --surface: #f8fafc;
   --muted: #6b7280;
 }
@@ -24,25 +24,31 @@ body {
 }
 
 /* Custom Components */
-.btn-primary {
-  @apply bg-primary text-white px-4 py-2 rounded-lg font-medium hover:bg-primary-dark transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2;
-}
+.btn { @apply inline-flex items-center justify-center rounded-xl font-medium transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2; }
+.btn-primary { @apply px-4 py-2 shadow-md hover:shadow-lg; }
+.btn-primary { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: #fff; }
+.btn-primary:disabled { @apply opacity-60 cursor-not-allowed; }
 
-.btn-secondary {
-  @apply bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-medium hover:bg-gray-300 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2;
-}
+.btn-secondary { @apply px-4 py-2 rounded-xl font-medium shadow hover:shadow-md focus-visible:ring-gray-400; }
+.btn-secondary { background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%); color: #1f2937; }
 
-.input-field {
-  @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors duration-200;
-}
+.btn-outline { @apply px-4 py-2 rounded-xl border text-gray-800 hover:bg-gray-50 focus-visible:ring-primary; border-color: var(--primary); color: var(--primary); }
+.btn-ghost { @apply px-3 py-2 rounded-xl text-gray-700 hover:bg-gray-100; }
 
-.card {
-  @apply bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300;
-}
+.input-field { @apply w-full px-3 py-2 border rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 shadow-sm; }
+.input-field { border-color: color-mix(in oklab, var(--primary) 25%, #d1d5db); --tw-ring-color: var(--primary); }
+
+.card { @apply bg-white rounded-2xl shadow-[0_10px_30px_-12px_rgba(0,0,0,0.2)] transition-transform duration-300 border border-gray-100; }
+.card:hover { @apply -translate-y-0.5 shadow-[0_18px_40px_-15px_rgba(0,0,0,0.25)]; }
+
+/* Image Loading Optimization - keep layout stable via fixed containers instead of content-visibility
+   Note: content-visibility can cause pop-in on some browsers; prefer skeletons + fixed sizes. */
 
 /* Landing Page Specific Styles */
 .hero-gradient {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: radial-gradient(1200px 600px at 10% -10%, var(--primary-light), transparent 60%),
+              radial-gradient(1200px 600px at 100% 0%, color-mix(in oklab, var(--primary), white 80%), transparent 40%),
+              linear-gradient(135deg, var(--primary), var(--primary-dark));
 }
 
 .feature-card {
@@ -168,7 +174,7 @@ select:focus {
 
 /* Gradient Text */
 .gradient-text {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -223,13 +229,10 @@ select:focus {
 }
 
 /* Navigation Styles */
-.nav-link {
-  @apply text-gray-600 hover:text-primary transition-colors duration-200;
-}
-
-.nav-link-active {
-  @apply text-primary font-medium;
-}
+.nav-link { @apply text-gray-600 transition-colors duration-200; }
+.nav-link { color: color-mix(in oklab, var(--primary) 25%, #4b5563); }
+.nav-link-active { @apply font-medium; }
+.nav-link-active { color: var(--primary); }
 
 /* Modal Styles */
 .modal-overlay {
@@ -241,9 +244,8 @@ select:focus {
 }
 
 /* Toast Styles */
-.toast {
-  @apply fixed top-4 right-4 z-50 bg-white rounded-lg shadow-lg border border-gray-200 p-4;
-}
+.toast { @apply fixed top-4 right-4 z-50 bg-white rounded-xl shadow-lg border border-gray-100 p-4; }
+.toast { border-top: 3px solid var(--primary); }
 
 /* Responsive Grid */
 .grid-responsive {
@@ -273,3 +275,16 @@ select:focus {
     display: block !important;
   }
 }
+
+/* Dynamic branding utility mappings to Tailwind-like names */
+@layer utilities {
+  .text-primary { color: var(--primary) !important; }
+  .bg-primary { background-color: var(--primary) !important; }
+  .bg-primary-dark { background-color: var(--primary-dark) !important; }
+  .bg-primary-light { background-color: var(--primary-light) !important; }
+  .border-primary { border-color: var(--primary) !important; }
+  .ring-primary { --tw-ring-color: var(--primary) !important; }
+}
+
+/* Header glass effect */
+.glass-header { backdrop-filter: blur(10px); background-color: rgba(255,255,255,0.75); border-bottom: 1px solid rgba(255,255,255,0.4); }

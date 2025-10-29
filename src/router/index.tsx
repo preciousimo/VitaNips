@@ -50,7 +50,8 @@ const PublicRoute: React.FC = () => {
 
   if (isLoading) return <LoadingScreen />;
 
-  const from = location.state?.from?.pathname || "/";
+  // If authenticated user tries to access login/register, redirect to dashboard
+  const from = location.state?.from?.pathname || "/dashboard";
   return isAuthenticated ? <Navigate to={from} replace /> : <Outlet />;
 };
 
@@ -120,16 +121,11 @@ const DoctorRoute: React.FC = () => {
 };
 
 const LandingPageRoute: React.FC = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isLoading } = useAuth();
 
   if (isLoading) return <LoadingScreen />;
 
-  // If user is authenticated, redirect to dashboard
-  if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  // If not authenticated, show landing page
+  // Allow both authenticated and non-authenticated users to view landing page
   return <LandingPage />;
 };
 
