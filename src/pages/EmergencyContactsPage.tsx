@@ -7,6 +7,8 @@ import EmergencyContactListItem from '../features/user/components/EmergencyConta
 import EmergencyContactForm from '../features/user/components/EmergencyContactForm';
 import Modal from '../components/common/Modal';
 import ConfirmDialog from '../components/common/ConfirmDialog';
+import toast from 'react-hot-toast';
+import { triggerSOS } from '../api/emergency';
 
 const EmergencyContactsPage: React.FC = () => {
     const [contacts, setContacts] = useState<EmergencyContact[]>([]);
@@ -22,6 +24,10 @@ const EmergencyContactsPage: React.FC = () => {
     const [showConfirmDialog, setShowConfirmDialog] = useState<boolean>(false);
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [isDeleting, setIsDeleting] = useState<boolean>(false);
+
+    // SOS state
+    const [showSOSConfirm, setShowSOSConfirm] = useState<boolean>(false);
+    const [isSendingSOS, setIsSendingSOS] = useState<boolean>(false);
 
     const loadInitialContacts = useCallback(async () => {
         setIsLoading(true);
@@ -125,6 +131,51 @@ const EmergencyContactsPage: React.FC = () => {
         setDeleteId(null);
     };
 
+    // SOS handlers
+    const handleSOSClick = () => {
+        setShowSOSConfirm(true);
+    };
+
+    const handleConfirmSOS = () => {
+        setShowSOSConfirm(false);
+        setIsSendingSOS(true);
+        const toastId = toast.loading('Getting your location and sending SOS...');
+
+        if (!navigator.geolocation) {
+            toast.error('Geolocation not supported by your browser.', { id: toastId });
+            setIsSendingSOS(false);
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const { latitude, longitude } = position.coords;
+                try {
+                    const res = await triggerSOS({ latitude, longitude });
+                    toast.success(res.status || 'SOS alert sent to your contacts.', { id: toastId, duration: 5000 });
+                } catch (err: unknown) {
+                    const msg = err instanceof Error ? err.message : 'Failed to send SOS. Please try again.';
+                    toast.error(msg, { id: toastId });
+                } finally {
+                    setIsSendingSOS(false);
+                }
+            },
+            (geoError) => {
+                let msg = 'Could not get location.';
+                switch (geoError.code) {
+                    case geoError.PERMISSION_DENIED: msg = 'Location permission denied.'; break;
+                    case geoError.POSITION_UNAVAILABLE: msg = 'Location information is unavailable.'; break;
+                    case geoError.TIMEOUT: msg = 'Location request timed out.'; break;
+                }
+                toast.error(msg, { id: toastId });
+                setIsSendingSOS(false);
+            },
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        );
+    };
+
+    const handleCancelSOS = () => setShowSOSConfirm(false);
+
     return (
         <div className="max-w-3xl mx-auto">
             <ConfirmDialog
@@ -139,13 +190,23 @@ const EmergencyContactsPage: React.FC = () => {
             />
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-3xl font-bold text-gray-800">Emergency Contacts</h1>
-                <button onClick={handleAddClick} className="btn-primary inline-flex items-center px-4 py-2">
-                    <PlusIcon className="h-5 w-5 mr-2" /> Add Contact
-                </button>
+                <div className="flex gap-2">
+                    <button
+                        onClick={handleSOSClick}
+                        disabled={isSendingSOS}
+                        className={`inline-flex items-center px-4 py-2 rounded-md shadow ${isSendingSOS ? 'bg-yellow-500 cursor-wait' : 'bg-red-600 hover:bg-red-700 text-white'}`}
+                        title="Send SOS alert to your emergency contacts"
+                    >
+                        <ShieldExclamationIcon className="h-5 w-5 mr-2" /> {isSendingSOS ? 'Sending SOS...' : 'Send SOS'}
+                    </button>
+                    <button onClick={handleAddClick} className="btn-primary inline-flex items-center px-4 py-2">
+                        <PlusIcon className="h-5 w-5 mr-2" /> Add Contact
+                    </button>
+                </div>
             </div>
              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-md mb-6 text-sm text-yellow-800">
                 <ShieldExclamationIcon className="h-5 w-5 inline mr-1 mb-0.5"/>
-                Please note: Information stored here is for your reference. Sharing it with emergency services requires separate action or features not yet implemented.
+                Tip: Keep your emergency contacts up to date. Use the "Send SOS" button to alert them with your current location in an emergency.
             </div>
 
             <Modal isOpen={showFormModal} onClose={handleFormCancel} title={editingContact ? 'Edit Emergency Contact' : 'Add Emergency Contact'}>
@@ -153,6 +214,18 @@ const EmergencyContactsPage: React.FC = () => {
             </Modal>
 
              <div>
+
+            {/* SOS Confirmation Dialog */}
+            <ConfirmDialog
+                isOpen={showSOSConfirm}
+                onClose={handleCancelSOS}
+                onConfirm={handleConfirmSOS}
+                title="Confirm SOS Alert"
+                message="Are you sure you want to send an SOS alert to all your emergency contacts with your current location?"
+                confirmText="Send SOS"
+                cancelText="Cancel"
+                isLoading={isSendingSOS}
+            />
                  {isLoading ? (
                      <p className="text-muted text-center py-4">Loading contacts...</p>
                  ) : error ? (
