@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Medication } from '../../../types/pharmacy';
 import { getMedicationById } from '../../../api/pharmacy'; // Assuming you have this API function
-import { InformationCircleIcon, ShieldExclamationIcon } from '@heroicons/react/24/outline';
+import { ShieldExclamationIcon } from '@heroicons/react/24/outline';
 
 interface MedicationInfoDisplayProps {
     medicationId: number | null; // Pass medication ID to fetch details
@@ -32,7 +32,7 @@ const DetailItem: React.FC<{ label: string; value: string | number | boolean | n
     );
 };
 
-const MedicationInfoDisplay: React.FC<MedicationInfoDisplayProps> = ({ medicationId, medicationObject, onClose }) => {
+const MedicationInfoDisplay: React.FC<MedicationInfoDisplayProps> = ({ medicationId, medicationObject }) => {
     const [medication, setMedication] = useState<Medication | null>(medicationObject || null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);

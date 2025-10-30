@@ -12,7 +12,6 @@ import {
     CalendarDaysIcon,
     BellAlertIcon,
     ArrowRightIcon,
-    ExclamationTriangleIcon,
     PlusIcon,
     ClockIcon,
     CheckCircleIcon,
@@ -25,34 +24,45 @@ import { getUnreadNotificationCount } from '../api/notifications';
 import { Appointment } from '../types/appointments';
 import { MedicationReminder } from '../types/reminders';
 import { VitalSignLog } from '../types/healthLogs';
-import SkeletonLoader from '../components/common/SkeletonLoader';
+import { LoadingSpinner, ErrorMessage, SkeletonLoader } from '../components/common';
 
-// Enhanced Loading Spinner with better styling
-const LoadingSpinner: React.FC<{ size?: string; className?: string }> = ({ 
-    size = "h-6 w-6", 
-    className = "text-primary" 
-}) => (
-    <svg className={`animate-spin ${size} ${className}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-    </svg>
+// Reusable Card Header Component
+const DashboardCardHeader: React.FC<{
+    icon: React.ElementType;
+    title: string;
+    count: number;
+    isLoading: boolean;
+    gradient: string;
+    badgeColor: string;
+}> = ({ icon: Icon, title, count, isLoading, gradient, badgeColor }) => (
+    <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold text-gray-800 flex items-center">
+            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center mr-3 shadow-md`}>
+                <Icon className="h-5 w-5 text-white" />
+            </div>
+            <span>{title}</span>
+        </h2>
+        <span className={`text-sm font-bold ${badgeColor} px-3 py-1 rounded-full`}>
+            {isLoading ? <LoadingSpinner size="sm" color="primary" /> : count}
+        </span>
+    </div>
 );
 
-// Enhanced Error Display
-const ErrorDisplay: React.FC<{ message: string; onRetry?: () => void }> = ({ message, onRetry }) => (
-    <div className="flex items-center justify-between text-sm text-red-600 bg-red-50 p-3 rounded-lg">
-        <div className="flex items-center">
-            <ExclamationTriangleIcon className="h-4 w-4 mr-2" />
-            <span>{message}</span>
+// Reusable Empty State Component
+const EmptyState: React.FC<{
+    icon: React.ElementType;
+    message: string;
+    actionLabel: string;
+    actionLink: string;
+}> = ({ icon: Icon, message, actionLabel, actionLink }) => (
+    <div className="text-center py-6">
+        <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+            <Icon className="h-8 w-8 text-gray-400" />
         </div>
-        {onRetry && (
-            <button 
-                onClick={onRetry}
-                className="text-red-700 hover:text-red-800 font-medium text-xs underline"
-            >
-                Retry
-            </button>
-        )}
+        <p className="text-gray-500 text-sm mb-2">{message}</p>
+        <Link to={actionLink} className="btn btn-outline text-sm py-2 px-4">
+            {actionLabel}
+        </Link>
     </div>
 );
 
@@ -66,12 +76,12 @@ const QuickActionButton: React.FC<{
 }> = ({ icon: Icon, label, href, color, description }) => (
     <Link
         to={href}
-        className={`block p-4 bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1 border-l-4 ${color}`}
+        className="card group cursor-pointer p-5 hover:scale-[1.02] transition-all duration-200"
     >
-        <div className="flex items-center mb-2">
-            <Icon className="h-5 w-5 mr-2" />
-            <span className="font-semibold text-gray-800">{label}</span>
+        <div className={`inline-flex items-center justify-center w-11 h-11 rounded-xl mb-3 bg-gradient-to-br ${color} shadow-md`}>
+            <Icon className="h-5 w-5 text-white" />
         </div>
+        <h3 className="font-semibold text-gray-800 mb-1 group-hover:text-primary transition-colors">{label}</h3>
         <p className="text-sm text-gray-600">{description}</p>
     </Link>
 );
@@ -180,35 +190,35 @@ const DashboardPage: React.FC = () => {
             path: '/health/vitals', 
             icon: HeartIcon, 
             description: t('healthSections.vitals.description', "Track your BP, heart rate, etc."),
-            color: 'border-blue-500'
+            gradient: 'from-blue-500 to-blue-600'
         },
         { 
             name: t('healthSections.symptoms.name', 'Log Symptoms'), 
             path: '/health/symptoms', 
             icon: ShieldExclamationIcon, 
             description: t('healthSections.symptoms.description', "Record how you're feeling."),
-            color: 'border-orange-500'
+            gradient: 'from-orange-500 to-orange-600'
         },
         { 
             name: t('healthSections.food.name', 'Food Journal'), 
             path: '/health/food', 
             icon: ShoppingBagIcon, 
             description: t('healthSections.food.description', "Keep a journal of your meals."),
-            color: 'border-green-500'
+            gradient: 'from-green-500 to-green-600'
         },
         { 
             name: t('healthSections.exercise.name', 'Exercise Log'), 
             path: '/health/exercise', 
             icon: FireIcon, 
             description: t('healthSections.exercise.description', "Monitor your physical activity."),
-            color: 'border-red-500'
+            gradient: 'from-red-500 to-red-600'
         },
         { 
             name: t('healthSections.sleep.name', 'Sleep Log'), 
             path: '/health/sleep', 
             icon: MoonIcon, 
             description: t('healthSections.sleep.description', "Track your sleep patterns."),
-            color: 'border-purple-500'
+            gradient: 'from-purple-500 to-purple-600'
         },
     ];
 
@@ -217,28 +227,28 @@ const DashboardPage: React.FC = () => {
             icon: PlusIcon,
             label: 'Book Appointment',
             href: '/doctors',
-            color: 'border-blue-500',
+            color: 'from-blue-500 to-blue-600',
             description: 'Schedule with a doctor'
         },
         {
             icon: ShoppingBagIcon,
             label: 'Find Pharmacy',
             href: '/pharmacies',
-            color: 'border-green-500',
+            color: 'from-green-500 to-green-600',
             description: 'Locate nearby pharmacies'
         },
         {
             icon: ShieldExclamationIcon,
             label: 'Emergency Contacts',
             href: '/emergency-contacts',
-            color: 'border-red-500',
+            color: 'from-red-500 to-red-600',
             description: 'Manage emergency contacts'
         },
         {
             icon: BellAlertIcon,
             label: 'Set Reminders',
             href: '/medication-reminders',
-            color: 'border-yellow-500',
+            color: 'from-yellow-500 to-yellow-600',
             description: 'Create medication reminders'
         },
     ];
@@ -282,20 +292,25 @@ const DashboardPage: React.FC = () => {
     };
 
     return (
-        <div className="space-y-8">
-            {/* Welcome Header */}
-            <div className="bg-gradient-to-r from-primary to-primary-dark text-white p-6 rounded-xl shadow-lg">
-                <h1 className="text-3xl font-bold mb-2">
-                    {t('dashboardTitle', 'Welcome back')}, {user?.first_name || user?.username || 'User'}!
-                </h1>
-                <p className="text-lg opacity-90">
-                    {t('welcomeMessage', 'Here\'s what\'s happening with your health today.')}
-                </p>
+        <div className="space-y-8 pb-8">
+            {/* Welcome Header with hero gradient */}
+            <div className="hero-gradient text-white p-8 rounded-3xl shadow-[0_20px_50px_-15px_rgba(0,0,0,0.3)] relative overflow-hidden">
+                <div className="absolute inset-0 bg-white/5" />
+                <div className="relative z-10">
+                    <h1 className="text-3xl sm:text-4xl font-extrabold mb-2">
+                        {t('dashboardTitle', 'Welcome back')}, {user?.first_name || user?.username || 'User'}!
+                    </h1>
+                    <p className="text-lg text-white/90">
+                        {t('welcomeMessage', 'Here\'s what\'s happening with your health today.')}
+                    </p>
+                </div>
             </div>
 
             {/* Quick Actions */}
             <div>
-                <h2 className="text-xl font-semibold text-gray-800 mb-4">Quick Actions</h2>
+                <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+                    <span className="gradient-text">Quick Actions</span>
+                </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {quickActions.map((action) => (
                         <QuickActionButton key={action.label} {...action} />
@@ -306,20 +321,15 @@ const DashboardPage: React.FC = () => {
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {/* Upcoming Appointments Card */}
-                <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 ease-in-out">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-xl font-semibold text-primary flex items-center">
-                            <CalendarDaysIcon className="h-6 w-6 mr-2" />
-                            Upcoming Appointments
-                        </h2>
-                        <span className="text-sm font-bold text-primary bg-primary-light px-3 py-1 rounded-full">
-                            {appointmentsLoading ? (
-                                <LoadingSpinner size="h-4 w-4" className="text-primary" />
-                            ) : (
-                                upcomingAppointments.length
-                            )}
-                        </span>
-                    </div>
+                <div className="card p-6">
+                    <DashboardCardHeader
+                        icon={CalendarDaysIcon}
+                        title="Appointments"
+                        count={upcomingAppointments.length}
+                        isLoading={appointmentsLoading}
+                        gradient="from-blue-500 to-blue-600"
+                        badgeColor="bg-blue-50 text-blue-700"
+                    />
                     
                     {appointmentsLoading ? (
                         <div className="space-y-3">
@@ -328,12 +338,12 @@ const DashboardPage: React.FC = () => {
                             <SkeletonLoader variant="text" width="65%" height="h-4" />
                         </div>
                     ) : appointmentsError ? (
-                        <ErrorDisplay message={appointmentsError} onRetry={fetchDashboardData} />
+                        <ErrorMessage message={appointmentsError} onRetry={fetchDashboardData} />
                     ) : upcomingAppointments.length > 0 && nextAppointment ? (
                         <div className="space-y-3">
                             <div className="flex items-center justify-between">
                                 <p className="text-gray-700 font-medium">
-                                    Next: <span className="text-primary">Dr. {nextAppointment.doctor}</span>
+                                    Next: <span className="text-primary font-semibold">Dr. {nextAppointment.doctor}</span>
                                 </p>
                                 {getAppointmentStatusIcon(nextAppointment.status)}
                             </div>
@@ -346,36 +356,30 @@ const DashboardPage: React.FC = () => {
                             </p>
                         </div>
                     ) : (
-                        <div className="text-center py-4">
-                            <CalendarDaysIcon className="h-12 w-12 text-gray-300 mx-auto mb-2" />
-                            <p className="text-gray-500 text-sm">No upcoming appointments</p>
-                            <Link to="/doctors" className="text-primary hover:text-primary-dark text-sm font-medium mt-2 inline-block">
-                                Book an appointment
-                            </Link>
-                        </div>
+                        <EmptyState
+                            icon={CalendarDaysIcon}
+                            message="No upcoming appointments"
+                            actionLabel="Book an appointment"
+                            actionLink="/doctors"
+                        />
                     )}
                     
-                    <Link to="/appointments" className="mt-4 inline-flex items-center text-sm text-primary hover:text-primary-dark font-medium group">
+                    <Link to="/appointments" className="mt-5 inline-flex items-center text-sm text-primary hover:text-primary-dark font-medium group">
                         View All Appointments
                         <ArrowRightIcon className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
                     </Link>
                 </div>
 
                 {/* Medication Reminders Card */}
-                <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 ease-in-out">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-xl font-semibold text-green-600 flex items-center">
-                            <BellAlertIcon className="h-6 w-6 mr-2" />
-                            Active Reminders
-                        </h2>
-                        <span className="text-sm font-bold text-green-600 bg-green-100 px-3 py-1 rounded-full">
-                            {remindersLoading ? (
-                                <LoadingSpinner size="h-4 w-4" className="text-green-600" />
-                            ) : (
-                                activeReminders.length
-                            )}
-                        </span>
-                    </div>
+                <div className="card p-6">
+                    <DashboardCardHeader
+                        icon={BellAlertIcon}
+                        title="Reminders"
+                        count={activeReminders.length}
+                        isLoading={remindersLoading}
+                        gradient="from-green-500 to-green-600"
+                        badgeColor="bg-green-50 text-green-700"
+                    />
                     
                     {remindersLoading ? (
                         <div className="space-y-3">
@@ -384,11 +388,11 @@ const DashboardPage: React.FC = () => {
                             <SkeletonLoader variant="text" width="65%" height="h-4" />
                         </div>
                     ) : remindersError ? (
-                        <ErrorDisplay message={remindersError} onRetry={fetchDashboardData} />
+                        <ErrorMessage message={remindersError} onRetry={fetchDashboardData} />
                     ) : activeReminders.length > 0 && nextReminder ? (
                         <div className="space-y-3">
                             <p className="text-gray-700 font-medium">
-                                Next: <span className="text-green-600">{nextReminder.medication_display.name}</span>
+                                Next: <span className="text-green-600 font-semibold">{nextReminder.medication_display.name}</span>
                             </p>
                             <p className="text-sm text-gray-600 flex items-center">
                                 <ClockIcon className="h-4 w-4 mr-1" />
@@ -399,36 +403,30 @@ const DashboardPage: React.FC = () => {
                             </p>
                         </div>
                     ) : (
-                        <div className="text-center py-4">
-                            <BellAlertIcon className="h-12 w-12 text-gray-300 mx-auto mb-2" />
-                            <p className="text-gray-500 text-sm">No active medication reminders</p>
-                            <Link to="/medication-reminders" className="text-green-600 hover:text-green-700 text-sm font-medium mt-2 inline-block">
-                                Set up reminders
-                            </Link>
-                        </div>
+                        <EmptyState
+                            icon={BellAlertIcon}
+                            message="No active medication reminders"
+                            actionLabel="Set up reminders"
+                            actionLink="/medication-reminders"
+                        />
                     )}
                     
-                    <Link to="/medication-reminders" className="mt-4 inline-flex items-center text-sm text-green-600 hover:text-green-700 font-medium group">
+                    <Link to="/medication-reminders" className="mt-5 inline-flex items-center text-sm text-green-600 hover:text-green-700 font-medium group">
                         Manage Reminders
                         <ArrowRightIcon className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
                     </Link>
                 </div>
 
                 {/* Recent Vital Signs Card */}
-                <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 ease-in-out">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-xl font-semibold text-blue-600 flex items-center">
-                            <HeartIcon className="h-6 w-6 mr-2" />
-                            Recent Vital Signs
-                        </h2>
-                        <span className="text-sm font-bold text-blue-600 bg-blue-100 px-3 py-1 rounded-full">
-                            {vitalsLoading ? (
-                                <LoadingSpinner size="h-4 w-4" className="text-blue-600" />
-                            ) : (
-                                recentVitals.length
-                            )}
-                        </span>
-                    </div>
+                <div className="card p-6">
+                    <DashboardCardHeader
+                        icon={HeartIcon}
+                        title="Vital Signs"
+                        count={recentVitals.length}
+                        isLoading={vitalsLoading}
+                        gradient="from-red-500 to-red-600"
+                        badgeColor="bg-red-50 text-red-700"
+                    />
                     
                     {vitalsLoading ? (
                         <div className="space-y-3">
@@ -437,11 +435,11 @@ const DashboardPage: React.FC = () => {
                             <SkeletonLoader variant="text" width="65%" height="h-4" />
                         </div>
                     ) : vitalsError ? (
-                        <ErrorDisplay message={vitalsError} onRetry={fetchDashboardData} />
+                        <ErrorMessage message={vitalsError} onRetry={fetchDashboardData} />
                     ) : recentVitals.length > 0 ? (
                         <div className="space-y-3">
                             {recentVitals.map((vital, index) => (
-                                <div key={vital.id} className={`${index > 0 ? 'border-t pt-2' : ''}`}>
+                                <div key={vital.id} className={`${index > 0 ? 'border-t border-gray-100 pt-3' : ''}`}>
                                     <p className="text-sm text-gray-600 flex items-center mb-1">
                                         <ClockIcon className="h-3 w-3 mr-1" />
                                         {formatDate(vital.date_recorded.split('T')[0])}
@@ -450,7 +448,7 @@ const DashboardPage: React.FC = () => {
                                         {vital.systolic_pressure && vital.diastolic_pressure && (
                                             <div>
                                                 <span className="text-gray-500">BP:</span>
-                                                <span className="ml-1 font-medium text-blue-600">
+                                                <span className="ml-1 font-semibold text-red-600">
                                                     {vital.systolic_pressure}/{vital.diastolic_pressure}
                                                 </span>
                                             </div>
@@ -458,7 +456,7 @@ const DashboardPage: React.FC = () => {
                                         {vital.heart_rate && (
                                             <div>
                                                 <span className="text-gray-500">HR:</span>
-                                                <span className="ml-1 font-medium text-blue-600">
+                                                <span className="ml-1 font-semibold text-red-600">
                                                     {vital.heart_rate} bpm
                                                 </span>
                                             </div>
@@ -466,7 +464,7 @@ const DashboardPage: React.FC = () => {
                                         {vital.temperature && (
                                             <div>
                                                 <span className="text-gray-500">Temp:</span>
-                                                <span className="ml-1 font-medium text-blue-600">
+                                                <span className="ml-1 font-semibold text-red-600">
                                                     {vital.temperature}°C
                                                 </span>
                                             </div>
@@ -474,7 +472,7 @@ const DashboardPage: React.FC = () => {
                                         {vital.weight && (
                                             <div>
                                                 <span className="text-gray-500">Weight:</span>
-                                                <span className="ml-1 font-medium text-blue-600">
+                                                <span className="ml-1 font-semibold text-red-600">
                                                     {vital.weight} kg
                                                 </span>
                                             </div>
@@ -484,16 +482,15 @@ const DashboardPage: React.FC = () => {
                             ))}
                         </div>
                     ) : (
-                        <div className="text-center py-4">
-                            <HeartIcon className="h-12 w-12 text-gray-300 mx-auto mb-2" />
-                            <p className="text-gray-500 text-sm">No vital signs recorded yet</p>
-                            <Link to="/health/vitals" className="text-blue-600 hover:text-blue-700 text-sm font-medium mt-2 inline-block">
-                                Log vitals
-                            </Link>
-                        </div>
+                        <EmptyState
+                            icon={HeartIcon}
+                            message="No vital signs recorded yet"
+                            actionLabel="Log vitals"
+                            actionLink="/health/vitals"
+                        />
                     )}
                     
-                    <Link to="/health/vitals" className="mt-4 inline-flex items-center text-sm text-blue-600 hover:text-blue-700 font-medium group">
+                    <Link to="/health/vitals" className="mt-5 inline-flex items-center text-sm text-red-600 hover:text-red-700 font-medium group">
                         View All Vitals
                         <ArrowRightIcon className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
                     </Link>
@@ -501,17 +498,17 @@ const DashboardPage: React.FC = () => {
             </div>
 
             {/* Notifications Overview Card */}
-            <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-6 rounded-xl shadow-lg">
+            <div className="card bg-gradient-to-br from-yellow-50 to-orange-50 p-6 border-l-4 border-yellow-500">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center">
-                        <div className="bg-yellow-500 text-white p-3 rounded-full mr-4">
+                        <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 text-white w-12 h-12 rounded-xl flex items-center justify-center mr-4 shadow-md">
                             <BellAlertIcon className="h-6 w-6" />
                         </div>
                         <div>
-                            <h3 className="text-lg font-semibold text-gray-800">Notifications</h3>
+                            <h3 className="text-lg font-bold text-gray-800">Notifications</h3>
                             <p className="text-sm text-gray-600">
                                 {notificationsLoading ? (
-                                    <LoadingSpinner size="h-4 w-4" className="text-yellow-600" />
+                                    <LoadingSpinner size="sm" color="primary" />
                                 ) : (
                                     <>
                                         You have <span className="font-bold text-yellow-700">{unreadCount}</span> unread notification{unreadCount !== 1 ? 's' : ''}
@@ -522,7 +519,7 @@ const DashboardPage: React.FC = () => {
                     </div>
                     <Link 
                         to="/settings/notifications" 
-                        className="bg-white text-yellow-600 hover:bg-yellow-600 hover:text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors shadow"
+                        className="btn btn-primary text-sm py-2 px-4 whitespace-nowrap"
                     >
                         View All
                     </Link>
@@ -531,18 +528,20 @@ const DashboardPage: React.FC = () => {
 
             {/* Health Tracking Section */}
             <div>
-                <h2 className="text-2xl font-semibold text-gray-700 mb-5">Health Tracking & Logs</h2>
+                <h2 className="text-2xl font-bold text-gray-800 mb-5 flex items-center">
+                    <span className="gradient-text">Health Tracking & Logs</span>
+                </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                     {healthSections.map((section) => (
                         <Link
                             key={section.path}
                             to={section.path}
-                            className={`block p-6 bg-white rounded-xl shadow-lg hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50 transition-all duration-300 ease-in-out group transform hover:-translate-y-1 border-l-4 ${section.color}`}
+                            className="card p-6 group hover:scale-[1.02] transition-all duration-200"
                         >
-                            <div className="flex items-center justify-center mb-4 bg-primary-light text-primary rounded-full h-12 w-12 group-hover:bg-primary group-hover:text-white transition-colors">
-                                <section.icon className="h-6 w-6" />
+                            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${section.gradient} flex items-center justify-center mb-4 shadow-md group-hover:scale-110 transition-transform`}>
+                                <section.icon className="h-6 w-6 text-white" />
                             </div>
-                            <h3 className="text-lg font-semibold text-gray-800 mb-1 group-hover:text-primary-dark transition-colors">
+                            <h3 className="text-lg font-bold text-gray-800 mb-1 group-hover:text-primary transition-colors">
                                 {section.name}
                             </h3>
                             <p className="text-sm text-gray-600">{section.description}</p>

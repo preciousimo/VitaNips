@@ -1,6 +1,4 @@
 // src/types/health.ts
-import { PaginatedResponse } from './common';
-
 export interface MedicalDocument {
     id: number;
     user: number;

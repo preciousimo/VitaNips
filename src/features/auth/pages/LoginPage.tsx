@@ -8,6 +8,7 @@ import { AuthTokens } from '../../../types/auth';
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
@@ -23,112 +24,150 @@ const LoginPage: React.FC = () => {
       const { access, refresh } = response.data;
       await login(access, refresh);
       navigate('/dashboard');
-    } catch (err: any) {
+    } catch (err: unknown) {
+      // Attempt to extract a helpful error message from Axios-like errors
+      const axiosErr = err as { response?: { data?: unknown; status?: number } } | undefined;
       console.error('Login failed:', err);
-      if (err.response?.data?.detail) {
-        setError(err.response.data.detail);
-      } else if (err.response?.status === 401) {
+      const data = axiosErr?.response?.data as unknown;
+      if (
+        typeof data === 'object' &&
+        data !== null &&
+        'detail' in data &&
+        typeof (data as { detail: unknown }).detail === 'string'
+      ) {
+        setError((data as { detail: string }).detail);
+      } else if (axiosErr?.response?.status === 401) {
         setError('Invalid email or password.');
       } else {
         setError('Login failed. Please check your connection and try again.');
       }
+    } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-tr from-gray-100 to-blue-100 p-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 sm:p-10 space-y-6">
-        <div className="text-center">
-          <img className="mx-auto h-16" src="/logo.png" alt="VitaNips Logo" />
-          <h2 className="mt-4 text-2xl sm:text-3xl font-bold text-gray-900">
-            Sign in to <span className="text-primary">VitaNips</span>
-          </h2>
-          <p className="text-sm text-gray-500 mt-1">Welcome back! Please enter your details.</p>
+    <div className="min-h-screen grid lg:grid-cols-2 bg-white">
+      {/* Left hero panel */}
+      <div className="hidden lg:flex items-center justify-center p-12">
+        <div className="hero-gradient w-full h-[80vh] rounded-3xl relative overflow-hidden flex items-center justify-center shadow-[0_30px_80px_-20px_rgba(0,0,0,0.25)]">
+          <div className="absolute inset-0 bg-white/10" />
+          <div className="relative z-10 text-center text-white px-10">
+            <img src="/logo.png" alt="VitaNips" className="mx-auto h-20 drop-shadow-md" />
+            <h1 className="mt-6 text-4xl font-extrabold tracking-tight">Welcome to <span className="whitespace-nowrap">VitaNips</span></h1>
+            <p className="mt-3 text-white/90 max-w-md mx-auto text-balance">
+              Your personal health hub — appointments, medications, documents, and telehealth in one secure place.
+            </p>
+            <div className="mt-6 flex items-center justify-center gap-3 text-sm text-white/80">
+              <span className="px-3 py-1 rounded-full bg-white/10 border border-white/20">Secure</span>
+              <span className="px-3 py-1 rounded-full bg-white/10 border border-white/20">Fast</span>
+              <span className="px-3 py-1 rounded-full bg-white/10 border border-white/20">Reliable</span>
+            </div>
+          </div>
         </div>
+      </div>
 
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded text-sm">
-            {error}
-          </div>
-        )}
+      {/* Right form panel */}
+      <div className="flex items-center justify-center p-6 lg:p-12 bg-surface">
+        <div className="w-full max-w-md">
+          <div className="card p-8 sm:p-10">
+            <div className="text-center">
+              <img className="mx-auto h-14" src="/logo.png" alt="VitaNips Logo" />
+              <h2 className="mt-4 text-2xl sm:text-3xl font-bold">
+                Sign in to <span className="gradient-text">VitaNips</span>
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">Welcome back! Please enter your details.</p>
+            </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Email address
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              required
-              disabled={isLoading}
-              onChange={(e) => setEmail(e.target.value)}
-              className="input-field mt-1"
-              placeholder="you@example.com"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              required
-              disabled={isLoading}
-              onChange={(e) => setPassword(e.target.value)}
-              className="input-field mt-1"
-              placeholder="••••••••"
-            />
-          </div>
-
-          <div className="flex items-center justify-between text-sm">
-            <span></span>
-            <a href="#" className="text-primary hover:text-primary-dark font-medium">
-              Forgot password?
-            </a>
-          </div>
-
-          <button
-            type="submit"
-            className="btn-primary w-full"
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <span className="flex items-center justify-center space-x-2">
-                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8v8z"
-                  ></path>
-                </svg>
-                <span>Signing in...</span>
-              </span>
-            ) : (
-              'Sign in'
+            {error && (
+              <div role="alert" aria-live="assertive" className="mt-5 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+                {error}
+              </div>
             )}
-          </button>
-        </form>
 
-        <p className="text-center text-sm text-gray-600">
-          Don't have an account?{' '}
-          <Link to="/register" className="text-primary hover:text-primary-dark font-medium">
-            Register here
-          </Link>
-        </p>
+            <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                  Email address
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  required
+                  disabled={isLoading}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="input-field mt-1"
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                  Password
+                </label>
+                <div className="relative mt-1">
+                  <input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    required
+                    disabled={isLoading}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="input-field pr-10"
+                    placeholder="••••••••"
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((s) => !s)}
+                    className="absolute inset-y-0 right-2 my-auto h-8 px-2 rounded-md text-sm text-gray-600 hover:bg-gray-100"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-500" />
+                <a href="#" className="text-primary hover:text-primary-dark font-medium">
+                  Forgot password?
+                </a>
+              </div>
+
+              <button
+                type="submit"
+                className="btn btn-primary w-full"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <span className="flex items-center justify-center space-x-2">
+                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                    </svg>
+                    <span>Signing in...</span>
+                  </span>
+                ) : (
+                  'Sign in'
+                )}
+              </button>
+            </form>
+
+            <p className="mt-6 text-center text-sm text-gray-600">
+              Don't have an account?{' '}
+              <Link to="/register" className="text-primary hover:text-primary-dark font-medium">
+                Register here
+              </Link>
+            </p>
+          </div>
+
+          <p className="mt-6 text-center text-xs text-gray-500">
+            By signing in you agree to our <a href="#" className="text-primary">Terms</a> and <a href="#" className="text-primary">Privacy Policy</a>.
+          </p>
+        </div>
       </div>
     </div>
   );

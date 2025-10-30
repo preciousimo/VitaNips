@@ -5,6 +5,8 @@ import { Prescription } from '../types/prescriptions';
 import PrescriptionListItem from '../features/prescriptions/components/PrescriptionListItem';
 import PrescriptionDetailView from '../features/prescriptions/components/PrescriptionDetailView';
 import { SkeletonList } from '../components/common/SkeletonLoader';
+import { ErrorMessage, EmptyState } from '../components/common';
+import { DocumentTextIcon } from '@heroicons/react/24/outline';
 
 const PrescriptionsPage: React.FC = () => {
     const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
@@ -58,7 +60,7 @@ const PrescriptionsPage: React.FC = () => {
             {isLoading ? (
                 <SkeletonList count={4} />
             ) : error ? (
-                <p className="text-red-600 text-center py-4 bg-red-50 rounded">{error}</p>
+                <ErrorMessage message={error} onRetry={loadPrescriptions} />
             ) : (
                  <>
                     {totalCount > 0 && (
@@ -83,9 +85,11 @@ const PrescriptionsPage: React.FC = () => {
                             ))}
                         </ul>
                     ) : (
-                        <div className="text-center py-10 bg-gray-50 rounded-md">
-                             <p className="text-gray-600">You do not have any prescriptions recorded.</p>
-                        </div>
+                        <EmptyState
+                            icon={DocumentTextIcon}
+                            title="No prescriptions"
+                            description="You do not have any prescriptions recorded yet."
+                        />
                     )}
                  </>
             )}

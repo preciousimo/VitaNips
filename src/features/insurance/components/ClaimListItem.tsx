@@ -1,7 +1,7 @@
 // src/features/insurance/components/ClaimListItem.tsx
 import React from 'react';
 import { InsuranceClaim, ClaimStatus } from '../../../types/insuranceClaims';
-import { CalendarDaysIcon, HashtagIcon, BanknotesIcon, InformationCircleIcon, CheckCircleIcon, ClockIcon, DocumentTextIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { CalendarDaysIcon, BanknotesIcon, InformationCircleIcon, CheckCircleIcon, ClockIcon, DocumentTextIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
 interface ClaimListItemProps {
     claim: InsuranceClaim;

@@ -2,7 +2,7 @@
 import React from 'react';
 import { UserInsurance } from '../../../types/insurance';
 import Modal from '../../../components/common/Modal'; // Your existing Modal component
-import { IdentificationIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
+import { ShieldCheckIcon } from '@heroicons/react/24/outline';
 
 interface DigitalInsuranceCardModalProps {
     isOpen: boolean;

@@ -6,7 +6,6 @@ import { formatTime } from '../../../utils';
 import toast from 'react-hot-toast';
 import { 
     ClockIcon, 
-    CalendarDaysIcon, 
     EllipsisHorizontalIcon, 
     ExclamationTriangleIcon,
     CheckCircleIcon,
@@ -168,9 +167,10 @@ const MedicationReminderForm: React.FC<MedicationReminderFormProps> = ({
         try {
             await onSubmit(payload, initialData?.id);
             toast.success(`Reminder ${initialData ? 'updated' : 'added'} successfully!`);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Form submission error from form:", err);
-            const errorData = err.response?.data;
+            const anyErr = err as { response?: { data?: unknown }, message?: string };
+            const errorData = anyErr.response?.data;
             let errorMessage = `Failed to ${initialData ? 'update' : 'add'} reminder.`;
 
             if (errorData && typeof errorData === 'object') {
@@ -180,8 +180,8 @@ const MedicationReminderForm: React.FC<MedicationReminderFormProps> = ({
                     )
                     .join('\n');
                 errorMessage = messages || errorMessage;
-            } else if (err.message) {
-                errorMessage = err.message;
+            } else if (anyErr.message) {
+                errorMessage = anyErr.message;
             }
 
             setError(errorMessage);

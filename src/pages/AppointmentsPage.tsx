@@ -4,7 +4,8 @@ import { getUserAppointments, cancelAppointment } from '../api/appointments';
 import { Appointment } from '../types/appointments';
 import AppointmentListItem from '../features/appointments/components/AppointmentListItem';
 import { SkeletonList } from '../components/common/SkeletonLoader';
-import ConfirmDialog from '../components/common/ConfirmDialog';
+import { ConfirmDialog, Button, ErrorMessage, EmptyState } from '../components/common';
+import { CalendarDaysIcon } from '@heroicons/react/24/outline';
 
 const AppointmentsPage: React.FC = () => {
     const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -145,7 +146,7 @@ const AppointmentsPage: React.FC = () => {
              )}
 
              {!isLoading && error && (
-                <p className="text-red-600 text-center py-4 bg-red-50 rounded">{error}</p>
+                <ErrorMessage message={error} onRetry={loadInitialAppointments} />
              )}
 
              {!isLoading && !error && (
@@ -169,9 +170,11 @@ const AppointmentsPage: React.FC = () => {
                                     ))}
                                 </ul>
                             ) : (
-                                <p className="text-muted text-center py-5 px-3 bg-gray-50 rounded-md">
-                                    You have no upcoming appointments.
-                                </p>
+                                <EmptyState
+                                    icon={CalendarDaysIcon}
+                                    title="No upcoming appointments"
+                                    description="You have no scheduled appointments at this time."
+                                />
                             )}
                         </div>
 
@@ -188,22 +191,24 @@ const AppointmentsPage: React.FC = () => {
                                     ))}
                                 </ul>
                             ) : (
-                                <p className="text-muted text-center py-5 px-3 bg-gray-50 rounded-md">
-                                    No past appointment history found.
-                                </p>
+                                <EmptyState
+                                    title="No past appointments"
+                                    description="No appointment history found."
+                                />
                             )}
                         </div>
                     </div>
 
                      {nextPageUrl && (
                         <div className="mt-8 text-center">
-                            <button
+                            <Button
                                 onClick={loadMoreAppointments}
+                                isLoading={isLoadingMore}
                                 disabled={isLoadingMore}
-                                className="btn-primary px-6 py-2 disabled:opacity-50"
+                                variant="primary"
                             >
-                                {isLoadingMore ? 'Loading...' : 'Load More Appointments'}
-                            </button>
+                                Load More Appointments
+                            </Button>
                         </div>
                     )}
 
@@ -212,7 +217,13 @@ const AppointmentsPage: React.FC = () => {
                     )}
 
                     {totalCount === 0 && (
-                        <p className="text-center text-muted text-lg mt-10">You haven't scheduled any appointments yet.</p>
+                        <EmptyState
+                            icon={CalendarDaysIcon}
+                            title="No appointments yet"
+                            description="You haven't scheduled any appointments yet. Book your first appointment with a doctor."
+                            actionLabel="Find Doctors"
+                            onAction={() => window.location.href = '/doctors'}
+                        />
                     )}
                 </>
             )}

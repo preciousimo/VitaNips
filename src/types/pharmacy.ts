@@ -1,6 +1,4 @@
 // src/types/pharmacy.ts
-import { PrescriptionItem } from './prescriptions';
-
 export interface Pharmacy {
     id: number;
     name: string;
