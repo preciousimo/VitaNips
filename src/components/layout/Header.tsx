@@ -102,6 +102,9 @@ const Header: React.FC = () => {
                   <button
                     onClick={toggleDropdown}
                     className="flex items-center space-x-2 nav-link p-2 rounded-md focus:outline-none focus:ring-2 ring-primary"
+                    aria-haspopup="menu"
+                    aria-expanded={isDropdownOpen}
+                    aria-controls="header-profile-menu"
                   >
                     {user?.profile_picture ? (
                       <img 
@@ -121,7 +124,12 @@ const Header: React.FC = () => {
                   </button>
 
                   {isDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-56 bg-white/95 backdrop-blur rounded-xl shadow-xl ring-1 ring-black/5 z-50">
+                    <div
+                      id="header-profile-menu"
+                      role="menu"
+                      aria-labelledby="header-profile-button"
+                      className="absolute right-0 mt-2 w-56 bg-white/95 backdrop-blur rounded-xl shadow-xl ring-1 ring-black/5 z-50"
+                    >
                       <div className="py-1">
                         {/* User Info */}
                         <div className="px-4 py-3 border-b border-gray-100">
@@ -138,6 +146,7 @@ const Header: React.FC = () => {
                           to="/profile"
                           onClick={() => setIsDropdownOpen(false)}
                           className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-primary-light/60 transition-colors duration-200"
+                          role="menuitem"
                         >
                           <UserIcon className="h-4 w-4 mr-3" />
                           Profile & Settings
@@ -147,6 +156,7 @@ const Header: React.FC = () => {
                           to="/settings/notifications"
                           onClick={() => setIsDropdownOpen(false)}
                           className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-primary-light/60 transition-colors duration-200"
+                          role="menuitem"
                         >
                           <BellAlertIcon className="h-4 w-4 mr-3" />
                           Notification Settings
@@ -156,6 +166,7 @@ const Header: React.FC = () => {
                           to="/medication-reminders"
                           onClick={() => setIsDropdownOpen(false)}
                           className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-primary-light/60 transition-colors duration-200"
+                          role="menuitem"
                         >
                           <BellAlertIcon className="h-4 w-4 mr-3" />
                           Medication Reminders
@@ -165,6 +176,7 @@ const Header: React.FC = () => {
                           to="/insurance"
                           onClick={() => setIsDropdownOpen(false)}
                           className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-primary-light/60 transition-colors duration-200"
+                          role="menuitem"
                         >
                           <ShieldExclamationIcon className="h-4 w-4 mr-3" />
                           Insurance
@@ -174,6 +186,7 @@ const Header: React.FC = () => {
                           to="/map-locator"
                           onClick={() => setIsDropdownOpen(false)}
                           className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-primary-light/60 transition-colors duration-200"
+                          role="menuitem"
                         >
                           <ShoppingBagIcon className="h-4 w-4 mr-3" />
                           Find Services
@@ -186,6 +199,7 @@ const Header: React.FC = () => {
                         <button
                           onClick={handleLogout}
                           className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-200"
+                          role="menuitem"
                         >
                           <ArrowLeftOnRectangleIcon className="h-4 w-4 mr-3" />
                           Sign Out

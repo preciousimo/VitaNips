@@ -1,68 +1,38 @@
 // src/pages/VideoCallPage.tsx
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getTwilioToken, TwilioTokenResponse } from '../api/appointments';
-import VideoCallUI from '../features/telehealth/components/VideoCallUI';
+import VideoCallRoom from '../features/appointments/components/VideoCallRoom';
 
 const VideoCallPage: React.FC = () => {
     const { appointmentId } = useParams<{ appointmentId: string }>();
     const navigate = useNavigate();
-    const [tokenInfo, setTokenInfo] = useState<TwilioTokenResponse | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (!appointmentId) {
-            setError("Appointment ID is missing.");
-            setIsLoading(false);
-            return;
+    const handleCallEnd = () => {
+        // Navigate back to appointment details or appointments list
+        if (appointmentId) {
+            navigate(`/appointments/${appointmentId}`);
+        } else {
+            navigate('/appointments');
         }
-
-        setIsLoading(true);
-        setError(null);
-
-        getTwilioToken(parseInt(appointmentId, 10))
-            .then(data => {
-                setTokenInfo(data);
-            })
-            .catch((err: any) => {
-                setError(err.message || "Failed to get video access token.");
-                console.error(err);
-            })
-            .finally(() => {
-                setIsLoading(false);
-            });
-    }, [appointmentId]);
-
-    const handleDisconnect = () => {
-        console.log("Video call disconnected/ended.");
-        navigate('/appointments');
     };
 
-    if (isLoading) {
-        return <div className="flex justify-center items-center h-screen"><p>Loading Video Call...</p>{/* <LoadingSpinner /> */}</div>;
-    }
-
-    if (error) {
+    if (!appointmentId) {
         return (
-             <div className="flex flex-col justify-center items-center h-screen p-4">
-                 <p className="text-red-600 text-center mb-4">Error: {error}</p>
-                 <button onClick={() => navigate('/appointments')} className='btn-primary'>Go Back</button>
+            <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white">
+                <div className="text-center">
+                    <p className="text-xl mb-4">Invalid appointment ID</p>
+                    <button
+                        onClick={() => navigate('/appointments')}
+                        className="bg-primary hover:bg-primary-dark text-white px-6 py-2 rounded-lg transition-colors"
+                    >
+                        Go Back
+                    </button>
+                </div>
             </div>
         );
     }
 
-    if (!tokenInfo) {
-         return <div className="flex justify-center items-center h-screen"><p>Could not initialize video call.</p></div>;
-    }
-
-    return (
-        <VideoCallUI
-            token={tokenInfo.token}
-            roomName={tokenInfo.roomName}
-            onDisconnect={handleDisconnect}
-        />
-    );
+    return <VideoCallRoom appointmentId={parseInt(appointmentId)} onCallEnd={handleCallEnd} />;
 };
 
 export default VideoCallPage;
