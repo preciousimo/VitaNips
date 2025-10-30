@@ -10,25 +10,8 @@ import { getAppointmentDetails, cancelAppointment } from '../api/appointments';
 import { Appointment } from '../types/appointments';
 import toast from 'react-hot-toast';
 import ConfirmDialog from '../components/common/ConfirmDialog';
+import { formatDate, formatTime } from '../utils/date';
 
-const formatTime = (timeStr: string): string => {
-    if (!timeStr) return '';
-    try {
-        const [hours, minutes] = timeStr.split(':');
-        const date = new Date();
-        date.setHours(parseInt(hours, 10), parseInt(minutes, 10));
-        return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-    } catch { return timeStr; }
-};
-
-const formatDate = (dateStr: string | null) => {
-    if (!dateStr) return 'N/A';
-    try {
-        return new Date(dateStr + 'T00:00:00Z').toLocaleDateString('en-US', {
-            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-        });
-    } catch { return 'Invalid Date'; }
-};
 
 const getStatusInfo = (status: Appointment['status']): { text: string; color: string; icon: React.ElementType, bgColor?: string } => {
     switch (status) {

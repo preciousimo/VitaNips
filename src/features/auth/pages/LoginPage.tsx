@@ -1,48 +1,44 @@
 // src/features/auth/pages/LoginPage.tsx
-import React, { useState, FormEvent } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import axiosInstance from '../../../api/axiosInstance';
 import { AuthTokens } from '../../../types/auth';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { apiErrorToMessage } from '../../../utils/errors';
 
 const LoginPage: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const schema = z.object({
+    email: z.string().email('Please enter a valid email address.'),
+    password: z
+      .string()
+      .min(8, 'Password must be at least 8 characters long.')
+      .max(128, 'Password is too long.')
+  });
+
+  type FormValues = z.infer<typeof schema>;
+
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: { email: '', password: '' }
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (values: FormValues) => {
     setError(null);
-    setIsLoading(true);
-
     try {
-      const response = await axiosInstance.post<AuthTokens>('/token/', { email, password });
+      const response = await axiosInstance.post<AuthTokens>('/token/', values);
       const { access, refresh } = response.data;
       await login(access, refresh);
       navigate('/dashboard');
     } catch (err: unknown) {
-      // Attempt to extract a helpful error message from Axios-like errors
-      const axiosErr = err as { response?: { data?: unknown; status?: number } } | undefined;
       console.error('Login failed:', err);
-      const data = axiosErr?.response?.data as unknown;
-      if (
-        typeof data === 'object' &&
-        data !== null &&
-        'detail' in data &&
-        typeof (data as { detail: unknown }).detail === 'string'
-      ) {
-        setError((data as { detail: string }).detail);
-      } else if (axiosErr?.response?.status === 401) {
-        setError('Invalid email or password.');
-      } else {
-        setError('Login failed. Please check your connection and try again.');
-      }
-    } finally {
-      setIsLoading(false);
+      setError(apiErrorToMessage(err, 'Login failed. Please check your connection and try again.'));
     }
   };
 
@@ -85,7 +81,7 @@ const LoginPage: React.FC = () => {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+            <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-5" noValidate>
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                   Email address
@@ -93,14 +89,18 @@ const LoginPage: React.FC = () => {
                 <input
                   id="email"
                   type="email"
-                  value={email}
+                  {...register('email')}
+                  aria-invalid={!!errors.email}
+                  aria-describedby={errors.email ? 'email-error' : undefined}
                   required
-                  disabled={isLoading}
-                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={isSubmitting}
                   className="input-field mt-1"
                   placeholder="you@example.com"
                   autoComplete="email"
                 />
+                {errors.email && (
+                  <p id="email-error" className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+                )}
               </div>
 
               <div>
@@ -111,10 +111,11 @@ const LoginPage: React.FC = () => {
                   <input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
-                    value={password}
+                    {...register('password')}
+                    aria-invalid={!!errors.password}
+                    aria-describedby={errors.password ? 'password-error' : undefined}
                     required
-                    disabled={isLoading}
-                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={isSubmitting}
                     className="input-field pr-10"
                     placeholder="••••••••"
                     autoComplete="current-password"
@@ -128,6 +129,9 @@ const LoginPage: React.FC = () => {
                     {showPassword ? 'Hide' : 'Show'}
                   </button>
                 </div>
+                {errors.password && (
+                  <p id="password-error" className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+                )}
               </div>
 
               <div className="flex items-center justify-between text-sm">
@@ -140,9 +144,9 @@ const LoginPage: React.FC = () => {
               <button
                 type="submit"
                 className="btn btn-primary w-full"
-                disabled={isLoading}
+                disabled={isSubmitting}
               >
-                {isLoading ? (
+                {isSubmitting ? (
                   <span className="flex items-center justify-center space-x-2">
                     <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

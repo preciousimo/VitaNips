@@ -42,7 +42,7 @@ export const createOrderFromPrescription = async (
 ): Promise<MedicationOrder> => {
     try {
         const response = await axiosInstance.post<MedicationOrder>(
-            `/doctors/prescriptions/${prescriptionId}/create_order/`,
+            `/pharmacy/prescriptions/${prescriptionId}/create_order/`,
             { pharmacy_id: pharmacyId }
         );
         return response.data;
@@ -66,11 +66,14 @@ export const forwardPrescriptionToPharmacy = async (
     pharmacyId: number
 ): Promise<ForwardPrescriptionResponse> => {
     try {
-        const response = await axiosInstance.post<ForwardPrescriptionResponse>(
-            `/doctors/prescriptions/${prescriptionId}/forward/`,
+        const response = await axiosInstance.post<MedicationOrder>(
+            `/pharmacy/prescriptions/${prescriptionId}/create_order/`,
             { pharmacy_id: pharmacyId }
         );
-        return response.data;
+        return {
+            message: 'Prescription successfully forwarded to pharmacy.',
+            order: response.data
+        };
     } catch (error) {
         console.error(`Failed to forward prescription ${prescriptionId} to pharmacy:`, error);
         throw error;
