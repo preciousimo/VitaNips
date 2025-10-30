@@ -8,6 +8,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { apiErrorToMessage } from '../../../utils/errors';
+import { getDashboardRoute } from '../../../utils/routing';
 
 const LoginPage: React.FC = () => {
   const schema = z.object({
@@ -34,8 +35,18 @@ const LoginPage: React.FC = () => {
     try {
       const response = await axiosInstance.post<AuthTokens>('/token/', values);
       const { access, refresh } = response.data;
+      
+      // Login will fetch user profile
       await login(access, refresh);
-      navigate('/dashboard');
+      
+      // Fetch user profile to determine role
+      const userResponse = await axiosInstance.get('/users/profile/', {
+        headers: { Authorization: `Bearer ${access}` }
+      });
+      
+      // Redirect to appropriate dashboard based on user role
+      const dashboardRoute = getDashboardRoute(userResponse.data);
+      navigate(dashboardRoute);
     } catch (err: unknown) {
       console.error('Login failed:', err);
       setError(apiErrorToMessage(err, 'Login failed. Please check your connection and try again.'));

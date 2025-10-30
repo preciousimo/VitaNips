@@ -2,7 +2,9 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { getDashboardRoute } from '../utils/routing';
 import MainLayout from '../components/layout/MainLayout';
+import SmartDashboardRedirect from '../components/routing/SmartDashboardRedirect';
 import LandingPage from '../pages/LandingPage';
 import LoginPage from '../features/auth/pages/LoginPage';
 import RegisterPage from '../features/auth/pages/RegisterPage';
@@ -36,7 +38,13 @@ import HealthLibraryPage from '../pages/HealthLibraryPage';
 import HealthyEatingTipsPage from '../pages/articles/HealthyEatingTipsPage';
 // import UnderstandingDiabetesPage from '../pages/articles/UnderstandingDiabetesPage';
 import MentalWellnessResourcesPage from '../pages/MentalWellnessResourcesPage';
+import DoctorDashboardPage from '../pages/doctor/DoctorDashboardPage';
 import DoctorPrescriptionWorkspacePage from '../pages/doctor/DoctorPrescriptionWorkspacePage';
+import AdminDashboardPage from '../pages/admin/AdminDashboardPage';
+import AdminUsersPage from '../pages/admin/AdminUsersPage';
+import AdminDoctorsPage from '../pages/admin/AdminDoctorsPage';
+import AdminPharmaciesPage from '../pages/admin/AdminPharmaciesPage';
+import AdminAnalyticsPage from '../pages/admin/AdminAnalyticsPage';
 import toast from 'react-hot-toast';
 
 const LoadingScreen: React.FC = () => (
@@ -46,14 +54,17 @@ const LoadingScreen: React.FC = () => (
 );
 
 const PublicRoute: React.FC = () => {
-  const { isAuthenticated, isLoading } = useAuth();
-  const location = useLocation();
+  const { user, isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) return <LoadingScreen />;
 
-  // If authenticated user tries to access login/register, redirect to dashboard
-  const from = location.state?.from?.pathname || "/dashboard";
-  return isAuthenticated ? <Navigate to={from} replace /> : <Outlet />;
+  // If authenticated user tries to access login/register, redirect to their appropriate dashboard
+  if (isAuthenticated) {
+    const dashboardRoute = getDashboardRoute(user);
+    return <Navigate to={dashboardRoute} replace />;
+  }
+  
+  return <Outlet />;
 };
 
 const ProtectedRoute: React.FC = () => {
@@ -121,6 +132,27 @@ const DoctorRoute: React.FC = () => {
    );
 };
 
+const AdminRoute: React.FC = () => {
+  const { user, isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
+
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-screen"><p>Loading Admin Panel...</p></div>;
+  }
+  if (!isAuthenticated) {
+    return <Navigate to="/" state={{ from: location }} replace />;
+  }
+  if (!user?.is_staff && !user?.is_superuser) {
+      toast.error("Access Denied: Admin credentials required.", { duration: 4000 });
+      return <Navigate to="/" replace />;
+  }
+  return (
+      <MainLayout>
+         <Outlet />
+      </MainLayout>
+   );
+};
+
 const LandingPageRoute: React.FC = () => {
   const { isLoading } = useAuth();
 
@@ -149,11 +181,24 @@ const AppRouter: React.FC = () => {
         </Route>
 
         <Route element={<DoctorRoute />}>
+          <Route path="/doctor/dashboard" element={<DoctorDashboardPage />} />
           <Route path="/doctor/prescriptions" element={<DoctorPrescriptionWorkspacePage />} />
         </Route>
 
+        <Route element={<AdminRoute />}>
+          <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+          <Route path="/admin/users" element={<AdminUsersPage />} />
+          <Route path="/admin/doctors" element={<AdminDoctorsPage />} />
+          <Route path="/admin/pharmacies" element={<AdminPharmaciesPage />} />
+          <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
+        </Route>
+
         <Route element={<ProtectedRoute />}>
-          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/dashboard" element={
+            <SmartDashboardRedirect>
+              <DashboardPage />
+            </SmartDashboardRedirect>
+          } />
           <Route path="/doctors" element={<DoctorListPage />} />
           <Route path="/doctors/:doctorId" element={<DoctorDetailPage />} />
           <Route path="/pharmacies" element={<PharmacyListPage />} />

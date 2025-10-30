@@ -27,6 +27,9 @@ export interface User {
     is_doctor: boolean;
     doctor_id?: number | null;
 
+    is_staff?: boolean;
+    is_superuser?: boolean;
+
     notify_appointment_reminder_email?: boolean;
     notify_appointment_reminder_sms?: boolean;
     notify_refill_reminder_email?: boolean;
